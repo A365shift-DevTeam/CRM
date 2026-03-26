@@ -1,0 +1,188 @@
+using System.Text.Json;
+using A365ShiftTracker.Application.DTOs;
+using A365ShiftTracker.Application.Interfaces;
+using A365ShiftTracker.Domain.Entities;
+
+namespace A365ShiftTracker.Application.Services;
+
+public class TimesheetService : ITimesheetService
+{
+    private readonly IUnitOfWork _uow;
+
+    public TimesheetService(IUnitOfWork uow) => _uow = uow;
+
+    // ─── Entries ───────────────────────────────────────────
+
+    public async Task<IEnumerable<TimesheetEntryDto>> GetEntriesAsync()
+    {
+        var entries = await _uow.TimesheetEntries.GetAllAsync();
+        return entries.Select(MapEntryToDto);
+    }
+
+    public async Task<TimesheetEntryDto> CreateEntryAsync(CreateTimesheetEntryRequest request)
+    {
+        var entity = new TimesheetEntry
+        {
+            Task = request.Task,
+            StartDatetime = request.StartDatetime,
+            EndDatetime = request.EndDatetime,
+            Notes = request.Notes,
+            Person = request.Person,
+            Customer = request.Customer,
+            Site = request.Site,
+            Attachments = request.Attachments,
+            Values = request.Values is not null ? JsonSerializer.Serialize(request.Values) : null
+        };
+
+        await _uow.TimesheetEntries.AddAsync(entity);
+        await _uow.SaveChangesAsync();
+        return MapEntryToDto(entity);
+    }
+
+    public async Task<TimesheetEntryDto> UpdateEntryAsync(int id, UpdateTimesheetEntryRequest request)
+    {
+        var entity = await _uow.TimesheetEntries.GetByIdAsync(id)
+            ?? throw new KeyNotFoundException($"Timesheet entry {id} not found.");
+
+        entity.Task = request.Task;
+        entity.StartDatetime = request.StartDatetime;
+        entity.EndDatetime = request.EndDatetime;
+        entity.Notes = request.Notes;
+        entity.Person = request.Person;
+        entity.Customer = request.Customer;
+        entity.Site = request.Site;
+        entity.Attachments = request.Attachments;
+        if (request.Values is not null)
+            entity.Values = JsonSerializer.Serialize(request.Values);
+
+        await _uow.TimesheetEntries.UpdateAsync(entity);
+        await _uow.SaveChangesAsync();
+        return MapEntryToDto(entity);
+    }
+
+    public async Task DeleteEntryAsync(int id)
+    {
+        var entity = await _uow.TimesheetEntries.GetByIdAsync(id)
+            ?? throw new KeyNotFoundException($"Timesheet entry {id} not found.");
+        await _uow.TimesheetEntries.DeleteAsync(entity);
+        await _uow.SaveChangesAsync();
+    }
+
+    // ─── Columns ───────────────────────────────────────────
+
+    public async Task<IEnumerable<TimesheetColumnDto>> GetColumnsAsync()
+    {
+        var columns = await _uow.TimesheetColumns.GetAllAsync();
+
+        // Seed defaults if empty
+        if (!columns.Any())
+        {
+            var defaults = GetDefaultColumns();
+            foreach (var col in defaults)
+                await _uow.TimesheetColumns.AddAsync(col);
+            await _uow.SaveChangesAsync();
+            columns = await _uow.TimesheetColumns.GetAllAsync();
+        }
+
+        return columns.OrderBy(c => c.Order).Select(MapColumnToDto);
+    }
+
+    public async Task<TimesheetColumnDto> AddColumnAsync(CreateTimesheetColumnRequest request)
+    {
+        var allColumns = await _uow.TimesheetColumns.GetAllAsync();
+        var order = allColumns.Count();
+
+        var entity = new TimesheetColumn
+        {
+            ColId = $"col-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}",
+            Name = request.Name,
+            Type = request.Type,
+            Required = request.Required,
+            Visible = request.Visible,
+            Order = order,
+            Config = request.Config is not null ? JsonSerializer.Serialize(request.Config) : null
+        };
+
+        await _uow.TimesheetColumns.AddAsync(entity);
+        await _uow.SaveChangesAsync();
+        return MapColumnToDto(entity);
+    }
+
+    public async Task<TimesheetColumnDto> UpdateColumnAsync(string colId, UpdateTimesheetColumnRequest request)
+    {
+        var columns = await _uow.TimesheetColumns.FindAsync(c => c.ColId == colId);
+        var entity = columns.FirstOrDefault()
+            ?? throw new KeyNotFoundException($"Column '{colId}' not found.");
+
+        if (request.Name is not null) entity.Name = request.Name;
+        if (request.Type is not null) entity.Type = request.Type;
+        if (request.Required.HasValue) entity.Required = request.Required.Value;
+        if (request.Visible.HasValue) entity.Visible = request.Visible.Value;
+        if (request.Config is not null) entity.Config = JsonSerializer.Serialize(request.Config);
+
+        await _uow.TimesheetColumns.UpdateAsync(entity);
+        await _uow.SaveChangesAsync();
+        return MapColumnToDto(entity);
+    }
+
+    public async Task DeleteColumnAsync(string colId)
+    {
+        var defaultIds = new[] { "col-id", "col-task", "col-start-datetime", "col-end-datetime",
+                                  "col-notes", "col-name", "col-customer", "col-site", "col-attachments" };
+        if (defaultIds.Contains(colId))
+            throw new InvalidOperationException("Cannot delete default columns.");
+
+        var columns = await _uow.TimesheetColumns.FindAsync(c => c.ColId == colId);
+        var entity = columns.FirstOrDefault()
+            ?? throw new KeyNotFoundException($"Column '{colId}' not found.");
+
+        await _uow.TimesheetColumns.DeleteAsync(entity);
+        await _uow.SaveChangesAsync();
+    }
+
+    public async Task ReorderColumnsAsync(List<string> orderedColIds)
+    {
+        var allColumns = await _uow.TimesheetColumns.GetAllAsync();
+        foreach (var col in allColumns)
+        {
+            var newOrder = orderedColIds.IndexOf(col.ColId);
+            if (newOrder >= 0)
+            {
+                col.Order = newOrder;
+                await _uow.TimesheetColumns.UpdateAsync(col);
+            }
+        }
+        await _uow.SaveChangesAsync();
+    }
+
+    // ─── Helpers ───────────────────────────────────────────
+
+    private static TimesheetEntryDto MapEntryToDto(TimesheetEntry e) => new()
+    {
+        Id = e.Id, Task = e.Task, StartDatetime = e.StartDatetime,
+        EndDatetime = e.EndDatetime, Notes = e.Notes, Person = e.Person,
+        Customer = e.Customer, Site = e.Site, Attachments = e.Attachments,
+        Values = e.Values is not null ? JsonSerializer.Deserialize<object>(e.Values) : null,
+        CreatedAt = e.CreatedAt
+    };
+
+    private static TimesheetColumnDto MapColumnToDto(TimesheetColumn c) => new()
+    {
+        Id = c.Id, ColId = c.ColId, Name = c.Name, Type = c.Type,
+        Required = c.Required, Visible = c.Visible, Order = c.Order,
+        Config = c.Config is not null ? JsonSerializer.Deserialize<object>(c.Config) : null
+    };
+
+    private static List<TimesheetColumn> GetDefaultColumns() =>
+    [
+        new() { ColId = "col-id", Name = "ID", Type = "text", Required = false, Visible = false, Order = 0, Config = "{\"readOnly\":true}" },
+        new() { ColId = "col-task", Name = "Task", Type = "text", Required = true, Visible = true, Order = 1 },
+        new() { ColId = "col-start-datetime", Name = "Start Date & Time", Type = "datetime", Required = true, Visible = true, Order = 2 },
+        new() { ColId = "col-end-datetime", Name = "End Date & Time", Type = "datetime", Required = false, Visible = true, Order = 3 },
+        new() { ColId = "col-notes", Name = "Notes", Type = "text", Required = false, Visible = true, Order = 4, Config = "{\"multiline\":true}" },
+        new() { ColId = "col-name", Name = "Person", Type = "text", Required = false, Visible = true, Order = 5 },
+        new() { ColId = "col-customer", Name = "Customer", Type = "text", Required = false, Visible = true, Order = 6 },
+        new() { ColId = "col-site", Name = "Site", Type = "text", Required = false, Visible = true, Order = 7 },
+        new() { ColId = "col-attachments", Name = "Attachments", Type = "file", Required = false, Visible = true, Order = 8 }
+    ];
+}

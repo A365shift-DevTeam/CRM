@@ -1,0 +1,162 @@
+.stage-modal .modal-dialog {
+    max-width: 800px;
+}
+
+.stage-modal-title {
+    color: #10b981;
+    font-weight: 600;
+    font-style: italic;
+    font-size: 1.5rem;
+}
+
+.stage-body {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 20px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.stage-body::-webkit-scrollbar {
+    display: none;
+}
+
+.stage-row {
+    padding: 12px;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+}
+
+.stage-row:hover {
+    background-color: #f8fafc;
+}
+
+.stage-row input,
+.stage-row select {
+    border-radius: 8px;
+}
+
+.sort-icons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    font-size: 16px;
+    color: #64748b;
+    gap: 4px;
+}
+
+.sort-icons div {
+    padding: 2px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.sort-icons div:hover:not(.disabled) {
+    color: #10b981;
+    background-color: rgba(16, 185, 129, 0.08);
+}
+
+.sort-icons div.disabled {
+    color: #94a3b8;
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.stage-table-header {
+    border-bottom: 1px solid #e2e8f0;
+    background-color: #f8fafc;
+}
+
+.color-picker-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.color-picker {
+    width: 40px;
+    height: 40px;
+    padding: 2px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    background: white;
+}
+
+.color-label {
+    font-size: 12px;
+    color: #64748b;
+}
+
+/* Modal */
+.stage-modal .modal-content {
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.stage-modal .modal-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    padding: 20px 24px;
+}
+
+.stage-modal .modal-footer {
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    padding: 16px 24px;
+    background: #f9fafb;
+}
+
+.stage-modal .btn-success {
+    background-color: #10b981;
+    border-color: #10b981;
+    color: #fff;
+}
+
+.stage-modal .btn-success:hover {
+    background-color: #059669;
+    border-color: #059669;
+}
+
+.stage-modal .btn-outline-success {
+    color: #10b981;
+    border-color: #10b981;
+}
+
+.stage-modal .btn-outline-success:hover {
+    background-color: #10b981;
+    color: #fff;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .stage-modal .modal-dialog {
+        max-width: 96vw;
+    }
+
+    .stage-body {
+        padding: 12px;
+    }
+
+    .stage-row {
+        padding: 8px;
+    }
+
+    .stage-row .d-flex {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .stage-row input,
+    .stage-row select {
+        width: 100% !important;
+    }
+
+    .color-picker-wrapper {
+        justify-content: flex-start;
+    }
+
+    .sort-icons {
+        flex-direction: row;
+        gap: 8px;
+    }
+}

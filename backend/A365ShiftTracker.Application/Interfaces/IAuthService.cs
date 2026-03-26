@@ -1,0 +1,10 @@
+using A365ShiftTracker.Application.DTOs;
+
+namespace A365ShiftTracker.Application.Interfaces;
+
+public interface IAuthService
+{
+    Task<AuthResponse> LoginAsync(LoginRequest request);
+    Task<AuthResponse> RegisterAsync(RegisterRequest request);
+    string GenerateJwtToken(int userId, string email);
+}

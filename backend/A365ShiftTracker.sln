@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "A365ShiftTracker.Domain", "A365ShiftTracker.Domain\A365ShiftTracker.Domain.csproj", "{F8C23BC0-9675-4232-B6FF-C8A5883A0EA2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "A365ShiftTracker.Application", "A365ShiftTracker.Application\A365ShiftTracker.Application.csproj", "{FFD10D77-BFCE-431F-A5C4-6E3A010DDB60}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "A365ShiftTracker.Infrastructure", "A365ShiftTracker.Infrastructure\A365ShiftTracker.Infrastructure.csproj", "{79DAA482-3B94-4D20-9984-74FAF9A1EF79}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "A365ShiftTracker.API", "A365ShiftTracker.API\A365ShiftTracker.API.csproj", "{D169F7A2-98C6-46BC-9ABD-DDF9A2353B47}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F8C23BC0-9675-4232-B6FF-C8A5883A0EA2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8C23BC0-9675-4232-B6FF-C8A5883A0EA2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8C23BC0-9675-4232-B6FF-C8A5883A0EA2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8C23BC0-9675-4232-B6FF-C8A5883A0EA2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FFD10D77-BFCE-431F-A5C4-6E3A010DDB60}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FFD10D77-BFCE-431F-A5C4-6E3A010DDB60}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FFD10D77-BFCE-431F-A5C4-6E3A010DDB60}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FFD10D77-BFCE-431F-A5C4-6E3A010DDB60}.Release|Any CPU.Build.0 = Release|Any CPU
+		{79DAA482-3B94-4D20-9984-74FAF9A1EF79}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79DAA482-3B94-4D20-9984-74FAF9A1EF79}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79DAA482-3B94-4D20-9984-74FAF9A1EF79}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79DAA482-3B94-4D20-9984-74FAF9A1EF79}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D169F7A2-98C6-46BC-9ABD-DDF9A2353B47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D169F7A2-98C6-46BC-9ABD-DDF9A2353B47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D169F7A2-98C6-46BC-9ABD-DDF9A2353B47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D169F7A2-98C6-46BC-9ABD-DDF9A2353B47}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

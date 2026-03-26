@@ -1,0 +1,6 @@
+@A365ShiftTracker.API_HostAddress = http://localhost:5231
+
+GET {{A365ShiftTracker.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

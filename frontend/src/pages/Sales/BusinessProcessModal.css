@@ -1,0 +1,236 @@
+/* Business Process Modal — Glassmorphism Light Theme */
+
+.business-process-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.bp-modal-header {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    color: #0f172a;
+    padding: 16px 24px;
+    font-weight: 600;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+.bp-close-btn {
+    background: transparent;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.bp-close-btn:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.bp-content-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.bp-sidebar {
+    background-color: white;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border-right: 1px solid #e2e8f0;
+    min-height: 100%;
+}
+
+.bp-stage-btn {
+    background-color: white;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    width: 100%;
+}
+
+.bp-stage-btn:hover {
+    background-color: #f8fafc;
+    color: #0f172a;
+    transform: translateX(3px);
+}
+
+.bp-stage-btn.active {
+    background: rgba(59, 130, 246, 0.08);
+    border-color: rgba(59, 130, 246, 0.25);
+    color: #3b82f6;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+    transform: translateX(3px);
+}
+
+.bp-form-section {
+    padding: 30px 40px;
+    background-color: transparent;
+    min-height: 100%;
+}
+
+.bp-form-section .form-label {
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.bp-form-section .form-control {
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 15px;
+    background: white;
+    color: #0f172a;
+}
+
+.bp-form-section .form-control:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.bp-status-section {
+    padding: 30px;
+    background-color: #f8fafc;
+    border-left: 1px solid #e2e8f0;
+    min-height: 100%;
+}
+
+.bp-status-content {
+    height: 100%;
+}
+
+.bp-status-content h6 {
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 20px;
+    font-size: 16px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.business-process-overlay {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+.bp-modal-header {
+    animation: slideUp 0.4s ease-out 0.1s both;
+}
+
+.bp-content-body {
+    animation: slideUp 0.5s ease-out 0.2s both;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .bp-content-body .row {
+        flex-direction: column;
+    }
+
+    .bp-sidebar {
+        border-right: none;
+        border-bottom: 1px solid #e2e8f0;
+        flex-direction: row;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: 8px;
+        padding: 12px 16px;
+        min-height: auto;
+    }
+
+    .bp-stage-btn {
+        white-space: nowrap;
+        min-width: fit-content;
+        padding: 10px 16px;
+    }
+
+    .bp-form-section {
+        padding: 20px;
+    }
+
+    .bp-status-section {
+        border-left: none;
+        border-top: 1px solid #e2e8f0;
+        padding: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .bp-modal-header {
+        padding: 12px 16px;
+        font-size: 16px;
+    }
+
+    .bp-form-section {
+        padding: 16px;
+    }
+
+    .bp-status-section {
+        padding: 16px;
+    }
+
+    .bp-sidebar {
+        padding: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .bp-form-section .form-control {
+        font-size: 14px;
+        padding: 8px 10px;
+    }
+
+    .bp-stage-btn {
+        font-size: 12px;
+        padding: 8px 12px;
+    }
+}
