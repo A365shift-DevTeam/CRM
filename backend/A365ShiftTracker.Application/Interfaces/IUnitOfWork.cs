@@ -23,5 +23,13 @@ public interface IUnitOfWork : IDisposable
     IRepository<TimesheetColumn> TimesheetColumns { get; }
     IRepository<VendorResponse> VendorResponses { get; }
     IRepository<VendorEmail> VendorEmails { get; }
+    IRepository<ActivityLog> ActivityLogs { get; }
+    IRepository<Notification> Notifications { get; }
+    IRepository<SavedFilter> SavedFilters { get; }
+    IRepository<Note> Notes { get; }
+    IRepository<Tag> Tags { get; }
+    IRepository<EntityTag> EntityTags { get; }
+    IRepository<EmailTemplate> EmailTemplates { get; }
+    IRepository<Document> Documents { get; }
     Task<int> SaveChangesAsync();
 }

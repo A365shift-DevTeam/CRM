@@ -9,7 +9,7 @@ namespace A365ShiftTracker.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class ContactsController : ControllerBase
+public class ContactsController : BaseApiController
 {
     private readonly IContactService _service;
 
@@ -18,39 +18,44 @@ public class ContactsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<ApiResponse<IEnumerable<ContactDto>>>> GetAll()
     {
-        var result = await _service.GetAllAsync();
+        var userId = GetCurrentUserId();
+        var result = await _service.GetAllAsync(userId);
         return Ok(ApiResponse<IEnumerable<ContactDto>>.Ok(result));
     }
 
     [HttpGet("vendors")]
     public async Task<ActionResult<ApiResponse<IEnumerable<ContactDto>>>> GetVendors()
     {
-        var result = await _service.GetVendorsAsync();
+        var userId = GetCurrentUserId();
+        var result = await _service.GetVendorsAsync(userId);
         return Ok(ApiResponse<IEnumerable<ContactDto>>.Ok(result));
     }
 
     [HttpPost]
     public async Task<ActionResult<ApiResponse<ContactDto>>> Create(CreateContactRequest request)
     {
-        var result = await _service.CreateAsync(request);
+        var userId = GetCurrentUserId();
+        var result = await _service.CreateAsync(request, userId);
         return Ok(ApiResponse<ContactDto>.Ok(result, "Contact created."));
     }
 
     [HttpPut("{id}")]
     public async Task<ActionResult<ApiResponse<ContactDto>>> Update(int id, UpdateContactRequest request)
     {
-        var result = await _service.UpdateAsync(id, request);
+        var userId = GetCurrentUserId();
+        var result = await _service.UpdateAsync(id, request, userId);
         return Ok(ApiResponse<ContactDto>.Ok(result, "Contact updated."));
     }
 
     [HttpDelete("{id}")]
     public async Task<ActionResult<ApiResponse<bool>>> Delete(int id)
     {
-        await _service.DeleteAsync(id);
+        var userId = GetCurrentUserId();
+        await _service.DeleteAsync(id, userId);
         return Ok(ApiResponse<bool>.Ok(true, "Contact deleted."));
     }
 
-    // ─── Columns ───────────────────────────────────────
+    // ─── Columns (shared across users) ───────────────────
     [HttpGet("columns")]
     public async Task<ActionResult<ApiResponse<IEnumerable<ContactColumnDto>>>> GetColumns()
     {

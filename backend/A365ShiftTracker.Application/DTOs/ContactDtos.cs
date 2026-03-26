@@ -30,6 +30,7 @@ public class ContactDto
     public decimal? MatchPercentage { get; set; }
     public string? Services { get; set; }
     public string? Notes { get; set; }
+    public decimal? Score { get; set; }
 }
 
 public class CreateContactRequest

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /e/Arul/PROJECTS/CRM/backend -name *Dashboard* -o -name *dashboard*)",
+      "Bash(grep -r \"dashboard\\\\|Dashboard\" /e/Arul/PROJECTS/CRM/backend/A365ShiftTracker.Application --include=*.cs)"
+    ]
+  }
+}

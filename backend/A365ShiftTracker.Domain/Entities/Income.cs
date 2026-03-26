@@ -2,8 +2,9 @@ using A365ShiftTracker.Domain.Common;
 
 namespace A365ShiftTracker.Domain.Entities;
 
-public class Income : AuditableEntity
+public class Income : AuditableEntity, IOwnedByUser
 {
+    public int UserId { get; set; }
     public DateTime Date { get; set; }
     public string? Category { get; set; }
     public decimal Amount { get; set; }

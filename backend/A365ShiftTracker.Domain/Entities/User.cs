@@ -10,6 +10,8 @@ public class User : BaseEntity
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? LastLoginAt { get; set; }
     public bool IsActive { get; set; } = true;
+    public string? ResetToken { get; set; }
+    public DateTime? ResetTokenExpiry { get; set; }
 
     // Navigation
     public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();

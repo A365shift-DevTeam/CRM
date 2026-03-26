@@ -4,6 +4,8 @@ import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 import MainLayout from './layouts/MainLayout';
 import Login from './pages/Auth/Login';
+import ForgotPassword from './pages/Auth/ForgotPassword';
+import ResetPassword from './pages/Auth/ResetPassword';
 
 import Dashboard from './pages/Dashboard/Dashboard';
 import Sales from './pages/Sales/Sales';
@@ -24,6 +26,8 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           <Route path="/" element={
             <PrivateRoute>
@@ -38,7 +42,6 @@ function App() {
             <Route path="todolist" element={<PrivateRoute permission="todolist.view"><TodoList /></PrivateRoute>} />
             <Route path="invoice" element={<PrivateRoute permission="invoice.view"><Invoice /></PrivateRoute>} />
             <Route path="admin" element={<PrivateRoute permission="admin.view"><Admin /></PrivateRoute>} />
-
             <Route path="ai-agents" element={<PrivateRoute permission="aiagents.view"><AIAgentsLayout /></PrivateRoute>}>
               <Route index element={<Navigate to="ai-followup" replace />} />
               <Route path="ai-followup" element={<AIFollowup />} />

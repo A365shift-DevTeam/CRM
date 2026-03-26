@@ -29,6 +29,14 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<TimesheetColumn>? _timesheetColumns;
     private IRepository<VendorResponse>? _vendorResponses;
     private IRepository<VendorEmail>? _vendorEmails;
+    private IRepository<ActivityLog>? _activityLogs;
+    private IRepository<Notification>? _notifications;
+    private IRepository<SavedFilter>? _savedFilters;
+    private IRepository<Note>? _notes;
+    private IRepository<Tag>? _tags;
+    private IRepository<EntityTag>? _entityTags;
+    private IRepository<EmailTemplate>? _emailTemplates;
+    private IRepository<Document>? _documents;
 
     public IRepository<User> Users => _users ??= new Repository<User>(_context);
     public IRepository<Role> Roles => _roles ??= new Repository<Role>(_context);
@@ -49,6 +57,14 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<TimesheetColumn> TimesheetColumns => _timesheetColumns ??= new Repository<TimesheetColumn>(_context);
     public IRepository<VendorResponse> VendorResponses => _vendorResponses ??= new Repository<VendorResponse>(_context);
     public IRepository<VendorEmail> VendorEmails => _vendorEmails ??= new Repository<VendorEmail>(_context);
+    public IRepository<ActivityLog> ActivityLogs => _activityLogs ??= new Repository<ActivityLog>(_context);
+    public IRepository<Notification> Notifications => _notifications ??= new Repository<Notification>(_context);
+    public IRepository<SavedFilter> SavedFilters => _savedFilters ??= new Repository<SavedFilter>(_context);
+    public IRepository<Note> Notes => _notes ??= new Repository<Note>(_context);
+    public IRepository<Tag> Tags => _tags ??= new Repository<Tag>(_context);
+    public IRepository<EntityTag> EntityTags => _entityTags ??= new Repository<EntityTag>(_context);
+    public IRepository<EmailTemplate> EmailTemplates => _emailTemplates ??= new Repository<EmailTemplate>(_context);
+    public IRepository<Document> Documents => _documents ??= new Repository<Document>(_context);
 
     public async Task<int> SaveChangesAsync()
         => await _context.SaveChangesAsync();

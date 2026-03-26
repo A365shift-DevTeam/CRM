@@ -13,16 +13,17 @@ public class TimesheetService : ITimesheetService
 
     // ─── Entries ───────────────────────────────────────────
 
-    public async Task<IEnumerable<TimesheetEntryDto>> GetEntriesAsync()
+    public async Task<IEnumerable<TimesheetEntryDto>> GetEntriesAsync(int userId)
     {
-        var entries = await _uow.TimesheetEntries.GetAllAsync();
+        var entries = await _uow.TimesheetEntries.FindAsync(e => e.UserId == userId);
         return entries.Select(MapEntryToDto);
     }
 
-    public async Task<TimesheetEntryDto> CreateEntryAsync(CreateTimesheetEntryRequest request)
+    public async Task<TimesheetEntryDto> CreateEntryAsync(CreateTimesheetEntryRequest request, int userId)
     {
         var entity = new TimesheetEntry
         {
+            UserId = userId,
             Task = request.Task,
             StartDatetime = request.StartDatetime,
             EndDatetime = request.EndDatetime,
@@ -39,10 +40,13 @@ public class TimesheetService : ITimesheetService
         return MapEntryToDto(entity);
     }
 
-    public async Task<TimesheetEntryDto> UpdateEntryAsync(int id, UpdateTimesheetEntryRequest request)
+    public async Task<TimesheetEntryDto> UpdateEntryAsync(int id, UpdateTimesheetEntryRequest request, int userId)
     {
         var entity = await _uow.TimesheetEntries.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Timesheet entry {id} not found.");
+
+        if (entity.UserId != userId)
+            throw new UnauthorizedAccessException("You do not have access to this timesheet entry.");
 
         entity.Task = request.Task;
         entity.StartDatetime = request.StartDatetime;
@@ -60,15 +64,19 @@ public class TimesheetService : ITimesheetService
         return MapEntryToDto(entity);
     }
 
-    public async Task DeleteEntryAsync(int id)
+    public async Task DeleteEntryAsync(int id, int userId)
     {
         var entity = await _uow.TimesheetEntries.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Timesheet entry {id} not found.");
+
+        if (entity.UserId != userId)
+            throw new UnauthorizedAccessException("You do not have access to this timesheet entry.");
+
         await _uow.TimesheetEntries.DeleteAsync(entity);
         await _uow.SaveChangesAsync();
     }
 
-    // ─── Columns ───────────────────────────────────────────
+    // ─── Columns (shared across users) ───────────────────
 
     public async Task<IEnumerable<TimesheetColumnDto>> GetColumnsAsync()
     {

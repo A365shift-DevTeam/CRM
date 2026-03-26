@@ -35,7 +35,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("ManagerOrAdmin", policy => policy.RequireRole("Admin", "Manager"));
 
     // Module-level policies
-    var modules = new[] { "Dashboard", "Sales", "Contacts", "Timesheet", "Finance", "TodoList", "Invoice", "AIAgents", "Admin" };
+    var modules = new[] { "Dashboard", "Sales", "Contacts", "Timesheet", "Finance", "TodoList", "Invoice", "AIAgents", "Admin", "ActivityLog", "Notifications", "Calendar", "Notes", "Tags", "EmailTemplates", "Documents", "Reports" };
     var actions = new[] { "View", "Create", "Edit", "Delete" };
     foreach (var module in modules)
     {

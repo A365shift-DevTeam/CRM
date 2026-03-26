@@ -38,6 +38,20 @@ public class AdminController : ControllerBase
         return Ok(ApiResponse<UserDto>.Ok(user, $"User {(request.IsActive ? "activated" : "deactivated")}."));
     }
 
+    [HttpDelete("users/{userId}")]
+    public async Task<ActionResult<ApiResponse<object>>> DeleteUser(int userId)
+    {
+        await _adminService.DeleteUserAsync(userId);
+        return Ok(ApiResponse<object>.Ok(null!, "User deleted."));
+    }
+
+    [HttpPut("users/{userId}/reset-password")]
+    public async Task<ActionResult<ApiResponse<object>>> ResetUserPassword(int userId, AdminResetPasswordRequest request)
+    {
+        await _adminService.AdminResetPasswordAsync(userId, request);
+        return Ok(ApiResponse<object>.Ok(null!, "Password reset successfully."));
+    }
+
     // ─── Roles ─────────────────────────────────────────────────
 
     [HttpGet("roles")]

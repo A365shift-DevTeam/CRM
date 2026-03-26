@@ -11,22 +11,24 @@ public class ProjectService : IProjectService
 
     public ProjectService(IUnitOfWork uow) => _uow = uow;
 
-    public async Task<IEnumerable<ProjectDto>> GetAllAsync()
+    public async Task<IEnumerable<ProjectDto>> GetAllAsync(int userId)
     {
-        var projects = await _uow.Projects.GetAllAsync();
+        var projects = await _uow.Projects.FindAsync(p => p.UserId == userId);
         return projects.Select(MapToDto);
     }
 
-    public async Task<ProjectDto?> GetByIdAsync(int id)
+    public async Task<ProjectDto?> GetByIdAsync(int id, int userId)
     {
         var project = await _uow.Projects.GetByIdAsync(id);
-        return project is null ? null : MapToDto(project);
+        if (project is null || project.UserId != userId) return null;
+        return MapToDto(project);
     }
 
-    public async Task<ProjectDto> CreateAsync(CreateProjectRequest request)
+    public async Task<ProjectDto> CreateAsync(CreateProjectRequest request, int userId)
     {
         var entity = new Project
         {
+            UserId = userId,
             CustomId = request.CustomId,
             Title = request.Title,
             ClientName = request.ClientName,
@@ -41,10 +43,13 @@ public class ProjectService : IProjectService
         return MapToDto(entity);
     }
 
-    public async Task<ProjectDto> UpdateAsync(int id, UpdateProjectRequest request)
+    public async Task<ProjectDto> UpdateAsync(int id, UpdateProjectRequest request, int userId)
     {
         var entity = await _uow.Projects.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Project {id} not found.");
+
+        if (entity.UserId != userId)
+            throw new UnauthorizedAccessException("You do not have access to this project.");
 
         entity.CustomId = request.CustomId;
         entity.Title = request.Title;
@@ -60,10 +65,14 @@ public class ProjectService : IProjectService
         return MapToDto(entity);
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(int id, int userId)
     {
         var entity = await _uow.Projects.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Project {id} not found.");
+
+        if (entity.UserId != userId)
+            throw new UnauthorizedAccessException("You do not have access to this project.");
+
         await _uow.Projects.DeleteAsync(entity);
         await _uow.SaveChangesAsync();
     }

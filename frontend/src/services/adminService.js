@@ -5,6 +5,8 @@ export const adminService = {
     getUsers: () => apiClient.get('/admin/users'),
     updateUserRoles: (userId, roleIds) => apiClient.put(`/admin/users/${userId}/roles`, { roleIds }),
     updateUserStatus: (userId, isActive) => apiClient.put(`/admin/users/${userId}/status`, { isActive }),
+    deleteUser: (userId) => apiClient.delete(`/admin/users/${userId}`),
+    resetUserPassword: (userId, newPassword) => apiClient.put(`/admin/users/${userId}/reset-password`, { newPassword }),
 
     // Roles
     getRoles: () => apiClient.get('/admin/roles'),

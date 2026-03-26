@@ -2,6 +2,8 @@ import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FaChartColumn, FaUserGroup, FaClock, FaRightFromBracket, FaHouse, FaMoneyBillWave, FaListCheck, FaFileInvoice, FaBars, FaXmark, FaBrain, FaShieldHalved } from 'react-icons/fa6';
+import NotificationBell from '../components/NotificationBell';
+import GlobalSearch from '../components/GlobalSearch';
 
 function useIsMobile(breakpoint = 768) {
     const [isMobile, setIsMobile] = React.useState(window.innerWidth <= breakpoint);
@@ -325,6 +327,10 @@ export default function MainLayout() {
                         <h5 className="m-0 fw-bold" style={{ color: '#475569', letterSpacing: '-0.3px' }}>
                             {allNavItems.find(item => item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path))?.label || 'A365 Tracker'}
                         </h5>
+                        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <GlobalSearch />
+                            <NotificationBell />
+                        </div>
                     </div>
                     {/* Scrollable Content */}
                     <div className="flex-grow-1 overflow-auto">

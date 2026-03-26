@@ -2,8 +2,9 @@ using A365ShiftTracker.Domain.Common;
 
 namespace A365ShiftTracker.Domain.Entities;
 
-public class Contact : AuditableEntity
+public class Contact : AuditableEntity, IOwnedByUser
 {
+    public int UserId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? JobTitle { get; set; }
     public string? Phone { get; set; }
@@ -31,6 +32,7 @@ public class Contact : AuditableEntity
     public decimal? MatchPercentage { get; set; }
     public string? Services { get; set; }
     public string? Notes { get; set; }
+    public decimal? Score { get; set; }
 
     // Navigation properties
     public ICollection<VendorResponse> VendorResponses { get; set; } = new List<VendorResponse>();

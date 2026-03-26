@@ -5,12 +5,12 @@ namespace A365ShiftTracker.Application.Interfaces;
 public interface ITimesheetService
 {
     // Entries
-    Task<IEnumerable<TimesheetEntryDto>> GetEntriesAsync();
-    Task<TimesheetEntryDto> CreateEntryAsync(CreateTimesheetEntryRequest request);
-    Task<TimesheetEntryDto> UpdateEntryAsync(int id, UpdateTimesheetEntryRequest request);
-    Task DeleteEntryAsync(int id);
+    Task<IEnumerable<TimesheetEntryDto>> GetEntriesAsync(int userId);
+    Task<TimesheetEntryDto> CreateEntryAsync(CreateTimesheetEntryRequest request, int userId);
+    Task<TimesheetEntryDto> UpdateEntryAsync(int id, UpdateTimesheetEntryRequest request, int userId);
+    Task DeleteEntryAsync(int id, int userId);
 
-    // Columns
+    // Columns (shared across users)
     Task<IEnumerable<TimesheetColumnDto>> GetColumnsAsync();
     Task<TimesheetColumnDto> AddColumnAsync(CreateTimesheetColumnRequest request);
     Task<TimesheetColumnDto> UpdateColumnAsync(string colId, UpdateTimesheetColumnRequest request);

@@ -4,9 +4,9 @@ namespace A365ShiftTracker.Application.Interfaces;
 
 public interface IProjectService
 {
-    Task<IEnumerable<ProjectDto>> GetAllAsync();
-    Task<ProjectDto?> GetByIdAsync(int id);
-    Task<ProjectDto> CreateAsync(CreateProjectRequest request);
-    Task<ProjectDto> UpdateAsync(int id, UpdateProjectRequest request);
-    Task DeleteAsync(int id);
+    Task<IEnumerable<ProjectDto>> GetAllAsync(int userId);
+    Task<ProjectDto?> GetByIdAsync(int id, int userId);
+    Task<ProjectDto> CreateAsync(CreateProjectRequest request, int userId);
+    Task<ProjectDto> UpdateAsync(int id, UpdateProjectRequest request, int userId);
+    Task DeleteAsync(int id, int userId);
 }

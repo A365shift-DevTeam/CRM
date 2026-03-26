@@ -56,3 +56,8 @@ public class UpdateUserStatusRequest
 {
     public bool IsActive { get; set; }
 }
+
+public class AdminResetPasswordRequest
+{
+    public string NewPassword { get; set; } = string.Empty;
+}

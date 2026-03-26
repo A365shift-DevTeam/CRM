@@ -125,6 +125,35 @@ public class AuthService : IAuthService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
+    public async Task<string> RequestPasswordResetAsync(string email)
+    {
+        var users = await _uow.Users.FindAsync(u => u.Email == email);
+        var user = users.FirstOrDefault()
+            ?? throw new KeyNotFoundException("No account found with that email.");
+
+        var token = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+        user.ResetToken = token;
+        user.ResetTokenExpiry = DateTime.UtcNow.AddMinutes(30);
+        await _uow.Users.UpdateAsync(user);
+        await _uow.SaveChangesAsync();
+
+        return token;
+    }
+
+    public async Task ResetPasswordAsync(string token, string newPassword)
+    {
+        var users = await _uow.Users.FindAsync(u =>
+            u.ResetToken == token && u.ResetTokenExpiry > DateTime.UtcNow);
+        var user = users.FirstOrDefault()
+            ?? throw new InvalidOperationException("Invalid or expired reset token.");
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        user.ResetToken = null;
+        user.ResetTokenExpiry = null;
+        await _uow.Users.UpdateAsync(user);
+        await _uow.SaveChangesAsync();
+    }
+
     private async Task<(string roleName, List<string> permissions)> GetUserRoleAndPermissionsAsync(int userId)
     {
         // Get user's roles

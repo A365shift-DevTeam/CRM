@@ -11,16 +11,17 @@ public class TaskService : ITaskService
 
     public TaskService(IUnitOfWork uow) => _uow = uow;
 
-    public async Task<IEnumerable<TaskDto>> GetAllAsync()
+    public async Task<IEnumerable<TaskDto>> GetAllAsync(int userId)
     {
-        var tasks = await _uow.Tasks.GetAllAsync();
+        var tasks = await _uow.Tasks.FindAsync(t => t.UserId == userId);
         return tasks.Select(MapToDto);
     }
 
-    public async Task<TaskDto> CreateAsync(CreateTaskRequest request)
+    public async Task<TaskDto> CreateAsync(CreateTaskRequest request, int userId)
     {
         var entity = new TaskItem
         {
+            UserId = userId,
             Title = request.Title,
             Status = request.Status,
             Priority = request.Priority,
@@ -33,10 +34,13 @@ public class TaskService : ITaskService
         return MapToDto(entity);
     }
 
-    public async Task<TaskDto> UpdateAsync(int id, UpdateTaskRequest request)
+    public async Task<TaskDto> UpdateAsync(int id, UpdateTaskRequest request, int userId)
     {
         var entity = await _uow.Tasks.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Task {id} not found.");
+
+        if (entity.UserId != userId)
+            throw new UnauthorizedAccessException("You do not have access to this task.");
 
         entity.Title = request.Title;
         entity.Status = request.Status;
@@ -50,10 +54,14 @@ public class TaskService : ITaskService
         return MapToDto(entity);
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(int id, int userId)
     {
         var entity = await _uow.Tasks.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Task {id} not found.");
+
+        if (entity.UserId != userId)
+            throw new UnauthorizedAccessException("You do not have access to this task.");
+
         await _uow.Tasks.DeleteAsync(entity);
         await _uow.SaveChangesAsync();
     }

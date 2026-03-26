@@ -10,16 +10,17 @@ public class IncomeService : IIncomeService
 
     public IncomeService(IUnitOfWork uow) => _uow = uow;
 
-    public async Task<IEnumerable<IncomeDto>> GetAllAsync()
+    public async Task<IEnumerable<IncomeDto>> GetAllAsync(int userId)
     {
-        var incomes = await _uow.Incomes.GetAllAsync();
+        var incomes = await _uow.Incomes.FindAsync(i => i.UserId == userId);
         return incomes.OrderByDescending(i => i.Date).Select(MapToDto);
     }
 
-    public async Task<IncomeDto> CreateAsync(CreateIncomeRequest request)
+    public async Task<IncomeDto> CreateAsync(CreateIncomeRequest request, int userId)
     {
         var entity = new Income
         {
+            UserId = userId,
             Date = request.Date,
             Category = request.Category,
             Amount = request.Amount,
@@ -34,10 +35,13 @@ public class IncomeService : IIncomeService
         return MapToDto(entity);
     }
 
-    public async Task<IncomeDto> UpdateAsync(int id, UpdateIncomeRequest request)
+    public async Task<IncomeDto> UpdateAsync(int id, UpdateIncomeRequest request, int userId)
     {
         var entity = await _uow.Incomes.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Income {id} not found.");
+
+        if (entity.UserId != userId)
+            throw new UnauthorizedAccessException("You do not have access to this income.");
 
         entity.Date = request.Date;
         entity.Category = request.Category;
@@ -52,10 +56,14 @@ public class IncomeService : IIncomeService
         return MapToDto(entity);
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(int id, int userId)
     {
         var entity = await _uow.Incomes.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Income {id} not found.");
+
+        if (entity.UserId != userId)
+            throw new UnauthorizedAccessException("You do not have access to this income.");
+
         await _uow.Incomes.DeleteAsync(entity);
         await _uow.SaveChangesAsync();
     }

@@ -31,6 +31,15 @@ public static class DependencyInjection
         services.AddScoped<ITimesheetService, TimesheetService>();
         services.AddScoped<IProjectFinanceService, ProjectFinanceService>();
         services.AddScoped<IAdminService, AdminService>();
+        services.AddScoped<IActivityLogService, ActivityLogService>();
+        services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<ICalendarService, CalendarService>();
+        services.AddScoped<ISearchService, SearchService>();
+        services.AddScoped<INoteService, NoteService>();
+        services.AddScoped<ITagService, TagService>();
+        services.AddScoped<IEmailTemplateService, EmailTemplateService>();
+        services.AddScoped<IDocumentService, DocumentService>();
+        services.AddScoped<IReportService, ReportService>();
 
         return services;
     }

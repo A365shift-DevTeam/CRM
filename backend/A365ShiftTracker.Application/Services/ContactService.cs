@@ -11,47 +11,57 @@ public class ContactService : IContactService
 
     public ContactService(IUnitOfWork uow) => _uow = uow;
 
-    public async Task<IEnumerable<ContactDto>> GetAllAsync()
+    public async Task<IEnumerable<ContactDto>> GetAllAsync(int userId)
     {
-        var contacts = await _uow.Contacts.GetAllAsync();
+        var contacts = await _uow.Contacts.FindAsync(c => c.UserId == userId);
         return contacts.Select(MapToDto);
     }
 
-    public async Task<ContactDto> CreateAsync(CreateContactRequest req)
+    public async Task<ContactDto> CreateAsync(CreateContactRequest req, int userId)
     {
         var entity = MapFromRequest(new Contact(), req);
+        entity.UserId = userId;
+        entity.Score = CalculateLeadScore(entity);
         await _uow.Contacts.AddAsync(entity);
         await _uow.SaveChangesAsync();
         return MapToDto(entity);
     }
 
-    public async Task<ContactDto> UpdateAsync(int id, UpdateContactRequest req)
+    public async Task<ContactDto> UpdateAsync(int id, UpdateContactRequest req, int userId)
     {
         var entity = await _uow.Contacts.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Contact {id} not found.");
 
+        if (entity.UserId != userId)
+            throw new UnauthorizedAccessException("You do not have access to this contact.");
+
         MapFromRequest(entity, req);
+        entity.Score = CalculateLeadScore(entity);
         await _uow.Contacts.UpdateAsync(entity);
         await _uow.SaveChangesAsync();
         return MapToDto(entity);
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(int id, int userId)
     {
         var entity = await _uow.Contacts.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Contact {id} not found.");
+
+        if (entity.UserId != userId)
+            throw new UnauthorizedAccessException("You do not have access to this contact.");
+
         await _uow.Contacts.DeleteAsync(entity);
         await _uow.SaveChangesAsync();
     }
 
-    public async Task<IEnumerable<ContactDto>> GetVendorsAsync()
+    public async Task<IEnumerable<ContactDto>> GetVendorsAsync(int userId)
     {
         var vendors = await _uow.Contacts.FindAsync(c =>
-            c.EntityType == "Vendor" || c.Status == "Vendor");
+            c.UserId == userId && (c.EntityType == "Vendor" || c.Status == "Vendor"));
         return vendors.Select(MapToDto);
     }
 
-    // --- Columns ---
+    // --- Columns (shared across users) ---
     public async Task<IEnumerable<ContactColumnDto>> GetColumnsAsync()
     {
         var columns = await _uow.ContactColumns.GetAllAsync();
@@ -153,6 +163,26 @@ public class ContactService : IContactService
     }
 
     // --- Mapping helpers ---
+    private static decimal CalculateLeadScore(Contact c)
+    {
+        decimal score = 0;
+        // Status weight (max 20)
+        score += c.Status switch
+        {
+            "Active" => 20, "Vendor" => 15, "Lead" => 10, "Customer" => 25, _ => 5
+        };
+        // Rating (max 25)
+        score += (c.Rating ?? 0) * 5;
+        // Reviews count (max 20)
+        if (int.TryParse(c.Reviews, out var reviewCount))
+            score += Math.Min(reviewCount * 2, 20);
+        // Match percentage (max 30)
+        score += (c.MatchPercentage ?? 0) * 0.3m;
+        // Years in business (max 5)
+        score += Math.Min((c.Years ?? 0) * 1m, 5);
+        return Math.Min(Math.Round(score, 1), 100);
+    }
+
     private static ContactDto MapToDto(Contact c) => new()
     {
         Id = c.Id, Name = c.Name, JobTitle = c.JobTitle, Phone = c.Phone,
@@ -165,7 +195,7 @@ public class ContactService : IContactService
         Rating = c.Rating, Reviews = c.Reviews, Years = c.Years,
         Margin = c.Margin, Avatar = c.Avatar, MatchScore = c.MatchScore,
         MatchLabel = c.MatchLabel, MatchPercentage = c.MatchPercentage,
-        Services = c.Services, Notes = c.Notes
+        Services = c.Services, Notes = c.Notes, Score = c.Score
     };
 
     private static Contact MapFromRequest(Contact c, CreateContactRequest req)

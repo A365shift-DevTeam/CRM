@@ -9,7 +9,7 @@ namespace A365ShiftTracker.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class TimesheetController : ControllerBase
+public class TimesheetController : BaseApiController
 {
     private readonly ITimesheetService _service;
 
@@ -19,32 +19,36 @@ public class TimesheetController : ControllerBase
     [HttpGet("entries")]
     public async Task<ActionResult<ApiResponse<IEnumerable<TimesheetEntryDto>>>> GetEntries()
     {
-        var result = await _service.GetEntriesAsync();
+        var userId = GetCurrentUserId();
+        var result = await _service.GetEntriesAsync(userId);
         return Ok(ApiResponse<IEnumerable<TimesheetEntryDto>>.Ok(result));
     }
 
     [HttpPost("entries")]
     public async Task<ActionResult<ApiResponse<TimesheetEntryDto>>> CreateEntry(CreateTimesheetEntryRequest request)
     {
-        var result = await _service.CreateEntryAsync(request);
+        var userId = GetCurrentUserId();
+        var result = await _service.CreateEntryAsync(request, userId);
         return Ok(ApiResponse<TimesheetEntryDto>.Ok(result, "Entry created."));
     }
 
     [HttpPut("entries/{id}")]
     public async Task<ActionResult<ApiResponse<TimesheetEntryDto>>> UpdateEntry(int id, UpdateTimesheetEntryRequest request)
     {
-        var result = await _service.UpdateEntryAsync(id, request);
+        var userId = GetCurrentUserId();
+        var result = await _service.UpdateEntryAsync(id, request, userId);
         return Ok(ApiResponse<TimesheetEntryDto>.Ok(result, "Entry updated."));
     }
 
     [HttpDelete("entries/{id}")]
     public async Task<ActionResult<ApiResponse<bool>>> DeleteEntry(int id)
     {
-        await _service.DeleteEntryAsync(id);
+        var userId = GetCurrentUserId();
+        await _service.DeleteEntryAsync(id, userId);
         return Ok(ApiResponse<bool>.Ok(true, "Entry deleted."));
     }
 
-    // ─── Columns ───────────────────────────────────────
+    // ─── Columns (shared across users) ───────────────
     [HttpGet("columns")]
     public async Task<ActionResult<ApiResponse<IEnumerable<TimesheetColumnDto>>>> GetColumns()
     {

@@ -2,8 +2,9 @@ using A365ShiftTracker.Domain.Common;
 
 namespace A365ShiftTracker.Domain.Entities;
 
-public class ProjectFinance : BaseEntity
+public class ProjectFinance : BaseEntity, IOwnedByUser
 {
+    public int UserId { get; set; }
     public string? ProjectId { get; set; }
     public string? ClientName { get; set; }
     public string? ClientAddress { get; set; }

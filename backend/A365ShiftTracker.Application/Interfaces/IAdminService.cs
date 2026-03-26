@@ -8,6 +8,8 @@ public interface IAdminService
     Task<IEnumerable<UserDto>> GetAllUsersAsync();
     Task<UserDto> UpdateUserRolesAsync(int userId, UpdateUserRolesRequest request);
     Task<UserDto> UpdateUserStatusAsync(int userId, UpdateUserStatusRequest request);
+    Task DeleteUserAsync(int userId);
+    Task AdminResetPasswordAsync(int userId, AdminResetPasswordRequest request);
 
     // Roles
     Task<IEnumerable<RoleDto>> GetAllRolesAsync();

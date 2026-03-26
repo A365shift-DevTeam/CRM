@@ -11,9 +11,10 @@ public class ProjectFinanceService : IProjectFinanceService
 
     public ProjectFinanceService(IUnitOfWork uow) => _uow = uow;
 
-    public async Task<IEnumerable<ProjectFinanceDto>> GetAllAsync()
+    public async Task<IEnumerable<ProjectFinanceDto>> GetAllAsync(int userId)
     {
         var finances = await _uow.ProjectFinances.Query()
+            .Where(pf => pf.UserId == userId)
             .Include(pf => pf.Milestones)
             .Include(pf => pf.Stakeholders)
             .Include(pf => pf.Charges)
@@ -22,21 +23,22 @@ public class ProjectFinanceService : IProjectFinanceService
         return finances.Select(MapToDto);
     }
 
-    public async Task<ProjectFinanceDto?> GetByIdAsync(int id)
+    public async Task<ProjectFinanceDto?> GetByIdAsync(int id, int userId)
     {
         var entity = await _uow.ProjectFinances.Query()
             .Include(pf => pf.Milestones)
             .Include(pf => pf.Stakeholders)
             .Include(pf => pf.Charges)
-            .FirstOrDefaultAsync(pf => pf.Id == id);
+            .FirstOrDefaultAsync(pf => pf.Id == id && pf.UserId == userId);
 
         return entity is null ? null : MapToDto(entity);
     }
 
-    public async Task<ProjectFinanceDto> CreateAsync(CreateProjectFinanceRequest request)
+    public async Task<ProjectFinanceDto> CreateAsync(CreateProjectFinanceRequest request, int userId)
     {
         var entity = new ProjectFinance
         {
+            UserId = userId,
             ProjectId = request.ProjectId,
             ClientName = request.ClientName,
             ClientAddress = request.ClientAddress,
@@ -86,7 +88,7 @@ public class ProjectFinanceService : IProjectFinanceService
         return MapToDto(entity);
     }
 
-    public async Task<ProjectFinanceDto> UpdateAsync(int id, UpdateProjectFinanceRequest request)
+    public async Task<ProjectFinanceDto> UpdateAsync(int id, UpdateProjectFinanceRequest request, int userId)
     {
         var entity = await _uow.ProjectFinances.Query()
             .Include(pf => pf.Milestones)
@@ -94,6 +96,9 @@ public class ProjectFinanceService : IProjectFinanceService
             .Include(pf => pf.Charges)
             .FirstOrDefaultAsync(pf => pf.Id == id)
             ?? throw new KeyNotFoundException($"ProjectFinance {id} not found.");
+
+        if (entity.UserId != userId)
+            throw new UnauthorizedAccessException("You do not have access to this project finance.");
 
         entity.ProjectId = request.ProjectId;
         entity.ClientName = request.ClientName;
@@ -146,10 +151,14 @@ public class ProjectFinanceService : IProjectFinanceService
         return MapToDto(entity);
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(int id, int userId)
     {
         var entity = await _uow.ProjectFinances.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"ProjectFinance {id} not found.");
+
+        if (entity.UserId != userId)
+            throw new UnauthorizedAccessException("You do not have access to this project finance.");
+
         await _uow.ProjectFinances.DeleteAsync(entity);
         await _uow.SaveChangesAsync();
     }

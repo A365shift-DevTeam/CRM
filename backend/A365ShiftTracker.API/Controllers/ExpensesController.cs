@@ -9,7 +9,7 @@ namespace A365ShiftTracker.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class ExpensesController : ControllerBase
+public class ExpensesController : BaseApiController
 {
     private readonly IExpenseService _service;
 
@@ -18,28 +18,32 @@ public class ExpensesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<ApiResponse<IEnumerable<ExpenseDto>>>> GetAll()
     {
-        var result = await _service.GetAllAsync();
+        var userId = GetCurrentUserId();
+        var result = await _service.GetAllAsync(userId);
         return Ok(ApiResponse<IEnumerable<ExpenseDto>>.Ok(result));
     }
 
     [HttpPost]
     public async Task<ActionResult<ApiResponse<ExpenseDto>>> Create(CreateExpenseRequest request)
     {
-        var result = await _service.CreateAsync(request);
+        var userId = GetCurrentUserId();
+        var result = await _service.CreateAsync(request, userId);
         return Ok(ApiResponse<ExpenseDto>.Ok(result, "Expense created."));
     }
 
     [HttpPut("{id}")]
     public async Task<ActionResult<ApiResponse<ExpenseDto>>> Update(int id, UpdateExpenseRequest request)
     {
-        var result = await _service.UpdateAsync(id, request);
+        var userId = GetCurrentUserId();
+        var result = await _service.UpdateAsync(id, request, userId);
         return Ok(ApiResponse<ExpenseDto>.Ok(result, "Expense updated."));
     }
 
     [HttpDelete("{id}")]
     public async Task<ActionResult<ApiResponse<bool>>> Delete(int id)
     {
-        await _service.DeleteAsync(id);
+        var userId = GetCurrentUserId();
+        await _service.DeleteAsync(id, userId);
         return Ok(ApiResponse<bool>.Ok(true, "Expense deleted."));
     }
 }

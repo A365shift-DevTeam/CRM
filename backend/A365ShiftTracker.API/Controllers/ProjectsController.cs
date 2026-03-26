@@ -9,7 +9,7 @@ namespace A365ShiftTracker.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class ProjectsController : ControllerBase
+public class ProjectsController : BaseApiController
 {
     private readonly IProjectService _service;
 
@@ -18,14 +18,16 @@ public class ProjectsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<ApiResponse<IEnumerable<ProjectDto>>>> GetAll()
     {
-        var result = await _service.GetAllAsync();
+        var userId = GetCurrentUserId();
+        var result = await _service.GetAllAsync(userId);
         return Ok(ApiResponse<IEnumerable<ProjectDto>>.Ok(result));
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<ApiResponse<ProjectDto>>> GetById(int id)
     {
-        var result = await _service.GetByIdAsync(id);
+        var userId = GetCurrentUserId();
+        var result = await _service.GetByIdAsync(id, userId);
         if (result is null) return NotFound(ApiResponse<ProjectDto>.Fail("Project not found."));
         return Ok(ApiResponse<ProjectDto>.Ok(result));
     }
@@ -33,7 +35,8 @@ public class ProjectsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ApiResponse<ProjectDto>>> Create(CreateProjectRequest request)
     {
-        var result = await _service.CreateAsync(request);
+        var userId = GetCurrentUserId();
+        var result = await _service.CreateAsync(request, userId);
         return CreatedAtAction(nameof(GetById), new { id = result.Id },
             ApiResponse<ProjectDto>.Ok(result, "Project created."));
     }
@@ -41,14 +44,16 @@ public class ProjectsController : ControllerBase
     [HttpPut("{id}")]
     public async Task<ActionResult<ApiResponse<ProjectDto>>> Update(int id, UpdateProjectRequest request)
     {
-        var result = await _service.UpdateAsync(id, request);
+        var userId = GetCurrentUserId();
+        var result = await _service.UpdateAsync(id, request, userId);
         return Ok(ApiResponse<ProjectDto>.Ok(result, "Project updated."));
     }
 
     [HttpDelete("{id}")]
     public async Task<ActionResult<ApiResponse<bool>>> Delete(int id)
     {
-        await _service.DeleteAsync(id);
+        var userId = GetCurrentUserId();
+        await _service.DeleteAsync(id, userId);
         return Ok(ApiResponse<bool>.Ok(true, "Project deleted."));
     }
 }

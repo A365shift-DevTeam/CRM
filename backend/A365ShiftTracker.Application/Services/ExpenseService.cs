@@ -11,16 +11,17 @@ public class ExpenseService : IExpenseService
 
     public ExpenseService(IUnitOfWork uow) => _uow = uow;
 
-    public async Task<IEnumerable<ExpenseDto>> GetAllAsync()
+    public async Task<IEnumerable<ExpenseDto>> GetAllAsync(int userId)
     {
-        var expenses = await _uow.Expenses.GetAllAsync();
+        var expenses = await _uow.Expenses.FindAsync(e => e.UserId == userId);
         return expenses.OrderByDescending(e => e.Date).Select(MapToDto);
     }
 
-    public async Task<ExpenseDto> CreateAsync(CreateExpenseRequest request)
+    public async Task<ExpenseDto> CreateAsync(CreateExpenseRequest request, int userId)
     {
         var entity = new Expense
         {
+            UserId = userId,
             Date = request.Date,
             Category = request.Category,
             Amount = request.Amount,
@@ -36,10 +37,13 @@ public class ExpenseService : IExpenseService
         return MapToDto(entity);
     }
 
-    public async Task<ExpenseDto> UpdateAsync(int id, UpdateExpenseRequest request)
+    public async Task<ExpenseDto> UpdateAsync(int id, UpdateExpenseRequest request, int userId)
     {
         var entity = await _uow.Expenses.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Expense {id} not found.");
+
+        if (entity.UserId != userId)
+            throw new UnauthorizedAccessException("You do not have access to this expense.");
 
         entity.Date = request.Date;
         entity.Category = request.Category;
@@ -56,10 +60,14 @@ public class ExpenseService : IExpenseService
         return MapToDto(entity);
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(int id, int userId)
     {
         var entity = await _uow.Expenses.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Expense {id} not found.");
+
+        if (entity.UserId != userId)
+            throw new UnauthorizedAccessException("You do not have access to this expense.");
+
         await _uow.Expenses.DeleteAsync(entity);
         await _uow.SaveChangesAsync();
     }

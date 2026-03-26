@@ -80,6 +80,33 @@ public class AdminService : IAdminService
         return MapUserToDto(updated);
     }
 
+    public async Task DeleteUserAsync(int userId)
+    {
+        var user = await _uow.Users.GetByIdAsync(userId)
+            ?? throw new KeyNotFoundException("User not found.");
+
+        // Remove user roles first
+        var userRoles = await _uow.UserRoles.FindAsync(ur => ur.UserId == userId);
+        foreach (var ur in userRoles)
+            await _uow.UserRoles.DeleteAsync(ur);
+
+        await _uow.Users.DeleteAsync(user);
+        await _uow.SaveChangesAsync();
+    }
+
+    public async Task AdminResetPasswordAsync(int userId, AdminResetPasswordRequest request)
+    {
+        var user = await _uow.Users.GetByIdAsync(userId)
+            ?? throw new KeyNotFoundException("User not found.");
+
+        if (string.IsNullOrWhiteSpace(request.NewPassword) || request.NewPassword.Length < 6)
+            throw new InvalidOperationException("Password must be at least 6 characters.");
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        await _uow.Users.UpdateAsync(user);
+        await _uow.SaveChangesAsync();
+    }
+
     // ─── Roles ─────────────────────────────────────────────────
 
     public async Task<IEnumerable<RoleDto>> GetAllRolesAsync()

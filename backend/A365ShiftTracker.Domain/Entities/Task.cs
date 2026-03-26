@@ -2,8 +2,9 @@ using A365ShiftTracker.Domain.Common;
 
 namespace A365ShiftTracker.Domain.Entities;
 
-public class TaskItem : AuditableEntity
+public class TaskItem : AuditableEntity, IOwnedByUser
 {
+    public int UserId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Status { get; set; } = "Pending";
     public string Priority { get; set; } = "Medium";
