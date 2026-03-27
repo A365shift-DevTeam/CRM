@@ -43,7 +43,13 @@ async function request(endpoint, options = {}) {
         throw new Error('Session expired. Please log in again.');
     }
 
-    const json = await res.json();
+    // Safely parse JSON — handle non-JSON responses (e.g., 502 HTML error pages)
+    let json;
+    try {
+        json = await res.json();
+    } catch {
+        throw new Error(`Request failed (${res.status})`);
+    }
 
     if (!res.ok || json.success === false) {
         const msg = json.message || json.errors?.join(', ') || `Request failed (${res.status})`;

@@ -78,10 +78,10 @@ const TodoList = () => {
 
     // Computed Stats
     const totalTasks = tasks.length
-    const highPriorityTasks = tasks.filter(t => t.values.priority === 'High').length
-    const pendingTasks = tasks.filter(t => t.values.status === 'Pending').length
+    const highPriorityTasks = tasks.filter(t => t.values?.priority === 'High').length
+    const pendingTasks = tasks.filter(t => t.values?.status === 'Pending').length
     const dueSoonTasks = tasks.filter(t => {
-        if (!t.values.dueDate) return false
+        if (!t.values?.dueDate) return false
         const wDate = new Date(t.values.dueDate)
         const today = new Date()
         const diff = wDate - today

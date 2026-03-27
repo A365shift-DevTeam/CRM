@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(find /e/Arul/PROJECTS/CRM/backend -name *Dashboard* -o -name *dashboard*)",
-      "Bash(grep -r \"dashboard\\\\|Dashboard\" /e/Arul/PROJECTS/CRM/backend/A365ShiftTracker.Application --include=*.cs)"
+      "Bash(grep -r \"dashboard\\\\|Dashboard\" /e/Arul/PROJECTS/CRM/backend/A365ShiftTracker.Application --include=*.cs)",
+      "Bash(find /e/Arul/PROJECTS/CRM/backend -type f -name *.cs -not -path */obj/* -not -path */.vs/*)",
+      "Bash(xargs grep:*)",
+      "Bash(grep -E \"\\\\.cs$\")"
     ]
   }
 }

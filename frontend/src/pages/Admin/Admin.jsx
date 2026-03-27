@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaShieldHalved, FaUsers, FaUserGear, FaKey, FaToggleOn, FaToggleOff, FaPen, FaPlus, FaTrash } from 'react-icons/fa6';
+import { FaShieldHalved, FaUsers, FaUserGear, FaKey, FaToggleOn, FaToggleOff, FaPen, FaPlus, FaTrash, FaLock } from 'react-icons/fa6';
 import { adminService } from '../../services/adminService';
 import { useAuth } from '../../context/AuthContext';
 import './Admin.css';
@@ -13,7 +13,7 @@ export default function Admin() {
     const [loading, setLoading] = useState(true);
 
     // Modal state
-    const [modalType, setModalType] = useState(null); // 'editUserRoles' | 'editRole' | 'createRole'
+    const [modalType, setModalType] = useState(null);
     const [modalData, setModalData] = useState(null);
 
     useEffect(() => {
@@ -60,6 +60,27 @@ export default function Admin() {
         }
     };
 
+    const handleDeleteUser = async (user) => {
+        if (user.id === currentUser.id) return alert("You cannot delete yourself.");
+        if (!window.confirm(`Are you sure you want to delete "${user.displayName || user.email}"? This action cannot be undone.`)) return;
+        try {
+            await adminService.deleteUser(user.id);
+            setUsers(prev => prev.filter(u => u.id !== user.id));
+        } catch (err) {
+            alert(err.message);
+        }
+    };
+
+    const handleResetPassword = async (userId, newPassword) => {
+        try {
+            await adminService.resetUserPassword(userId, newPassword);
+            setModalType(null);
+            alert('Password has been reset successfully.');
+        } catch (err) {
+            alert(err.message);
+        }
+    };
+
     // ─── Role Actions ──────────────────────────────────────────
 
     const handleSaveRole = async (roleId, data) => {
@@ -99,21 +120,59 @@ export default function Admin() {
 
     return (
         <div className="admin-page">
-            <h2><FaShieldHalved style={{ color: '#3b82f6' }} /> Admin Panel</h2>
-            <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>Manage users, roles, and permissions</p>
-
-            <div className="admin-tabs">
-                <button className={`admin-tab ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
-                    <FaUsers className="me-2" />Users ({users.length})
-                </button>
-                <button className={`admin-tab ${activeTab === 'roles' ? 'active' : ''}`} onClick={() => setActiveTab('roles')}>
-                    <FaUserGear className="me-2" />Roles ({roles.length})
-                </button>
-                <button className={`admin-tab ${activeTab === 'permissions' ? 'active' : ''}`} onClick={() => setActiveTab('permissions')}>
-                    <FaKey className="me-2" />Permissions ({permissions.length})
-                </button>
+            {/* Header */}
+            <div className="admin-page-header">
+                <h2><FaShieldHalved style={{ color: '#3b82f6' }} /> Admin Panel</h2>
+                <p>Manage users, roles, and permissions</p>
             </div>
 
+            {/* Stat Cards */}
+            <div className="admin-stats-grid">
+                <div className="admin-stat-card">
+                    <div className="admin-stat-icon blue"><FaUsers size={24} /></div>
+                    <div className="admin-stat-info">
+                        <span className="admin-stat-label">Total Users</span>
+                        <span className="admin-stat-number">{users.length}</span>
+                    </div>
+                </div>
+                <div className="admin-stat-card">
+                    <div className="admin-stat-icon green"><FaUserGear size={24} /></div>
+                    <div className="admin-stat-info">
+                        <span className="admin-stat-label">Roles</span>
+                        <span className="admin-stat-number">{roles.length}</span>
+                    </div>
+                </div>
+                <div className="admin-stat-card">
+                    <div className="admin-stat-icon purple"><FaKey size={24} /></div>
+                    <div className="admin-stat-info">
+                        <span className="admin-stat-label">Permissions</span>
+                        <span className="admin-stat-number">{permissions.length}</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Toolbar */}
+            <div className="admin-toolbar">
+                <div className="admin-tabs">
+                    <button className={`admin-tab ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
+                        <FaUsers size={14} /> Users <span className="tab-count">{users.length}</span>
+                    </button>
+                    <button className={`admin-tab ${activeTab === 'roles' ? 'active' : ''}`} onClick={() => setActiveTab('roles')}>
+                        <FaUserGear size={14} /> Roles <span className="tab-count">{roles.length}</span>
+                    </button>
+                    <button className={`admin-tab ${activeTab === 'permissions' ? 'active' : ''}`} onClick={() => setActiveTab('permissions')}>
+                        <FaKey size={14} /> Permissions <span className="tab-count">{permissions.length}</span>
+                    </button>
+                </div>
+
+                {activeTab === 'roles' && (
+                    <button className="admin-add-btn" onClick={() => { setModalType('createRole'); setModalData(null); }}>
+                        <FaPlus size={12} /> New Role
+                    </button>
+                )}
+            </div>
+
+            {/* Users Tab */}
             {activeTab === 'users' && (
                 <div className="admin-card">
                     <table className="admin-table">
@@ -124,13 +183,13 @@ export default function Admin() {
                                 <th>Roles</th>
                                 <th>Status</th>
                                 <th>Last Login</th>
-                                <th>Actions</th>
+                                <th style={{ textAlign: 'center' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {users.map(user => (
                                 <tr key={user.id}>
-                                    <td style={{ fontWeight: 600 }}>{user.displayName || '—'}</td>
+                                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{user.displayName || '—'}</td>
                                     <td>{user.email}</td>
                                     <td>
                                         {user.roles.map(r => (
@@ -141,28 +200,45 @@ export default function Admin() {
                                         {user.roles.length === 0 && <span style={{ color: '#94a3b8' }}>No role</span>}
                                     </td>
                                     <td>
-                                        <span className={`status-dot ${user.isActive ? 'active' : 'inactive'}`} />
-                                        {user.isActive ? 'Active' : 'Inactive'}
+                                        <span className={`status-badge ${user.isActive ? 'active' : 'inactive'}`}>
+                                            <span className={`status-dot ${user.isActive ? 'active' : 'inactive'}`} />
+                                            {user.isActive ? 'Active' : 'Inactive'}
+                                        </span>
                                     </td>
                                     <td style={{ color: '#94a3b8', fontSize: '0.8rem' }}>
                                         {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'Never'}
                                     </td>
                                     <td>
-                                        <button
-                                            className="btn btn-sm btn-outline-primary me-1"
-                                            title="Edit Roles"
-                                            onClick={() => { setModalType('editUserRoles'); setModalData(user); }}
-                                        >
-                                            <FaPen size={12} />
-                                        </button>
-                                        <button
-                                            className="btn btn-sm btn-outline-secondary"
-                                            title={user.isActive ? 'Deactivate' : 'Activate'}
-                                            onClick={() => handleToggleUserStatus(user)}
-                                            disabled={user.id === currentUser.id}
-                                        >
-                                            {user.isActive ? <FaToggleOn size={14} /> : <FaToggleOff size={14} />}
-                                        </button>
+                                        <div className="admin-actions">
+                                            <div
+                                                className="admin-action-icon edit"
+                                                title="Edit Roles"
+                                                onClick={() => { setModalType('editUserRoles'); setModalData(user); }}
+                                            >
+                                                <FaPen size={14} />
+                                            </div>
+                                            <div
+                                                className={`admin-action-icon toggle ${user.isActive ? '' : 'inactive'} ${user.id === currentUser.id ? 'disabled' : ''}`}
+                                                title={user.isActive ? 'Deactivate' : 'Activate'}
+                                                onClick={() => user.id !== currentUser.id && handleToggleUserStatus(user)}
+                                            >
+                                                {user.isActive ? <FaToggleOn size={18} /> : <FaToggleOff size={18} />}
+                                            </div>
+                                            <div
+                                                className="admin-action-icon password"
+                                                title="Change Password"
+                                                onClick={() => { setModalType('resetPassword'); setModalData(user); }}
+                                            >
+                                                <FaLock size={14} />
+                                            </div>
+                                            <div
+                                                className={`admin-action-icon delete ${user.id === currentUser.id ? 'disabled' : ''}`}
+                                                title="Delete User"
+                                                onClick={() => user.id !== currentUser.id && handleDeleteUser(user)}
+                                            >
+                                                <FaTrash size={14} />
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -171,60 +247,63 @@ export default function Admin() {
                 </div>
             )}
 
+            {/* Roles Tab */}
             {activeTab === 'roles' && (
-                <>
-                    <div className="mb-3">
-                        <button className="btn btn-primary btn-sm" onClick={() => { setModalType('createRole'); setModalData(null); }}>
-                            <FaPlus className="me-1" /> New Role
-                        </button>
-                    </div>
-                    <div className="admin-card">
-                        <table className="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>Role</th>
-                                    <th>Description</th>
-                                    <th>Permissions</th>
-                                    <th>Type</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {roles.map(role => (
-                                    <tr key={role.id}>
-                                        <td style={{ fontWeight: 600 }}>
-                                            <span className={`role-badge ${role.name.toLowerCase()}`}>{role.name}</span>
-                                        </td>
-                                        <td style={{ color: '#64748b' }}>{role.description || '—'}</td>
-                                        <td>
-                                            <span style={{ color: '#3b82f6', fontWeight: 600 }}>{role.permissions.length}</span>
-                                            <span style={{ color: '#94a3b8' }}> permissions</span>
-                                        </td>
-                                        <td>{role.isSystem ? 'System' : 'Custom'}</td>
-                                        <td>
-                                            <button
-                                                className="btn btn-sm btn-outline-primary me-1"
+                <div className="admin-card">
+                    <table className="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Role</th>
+                                <th>Description</th>
+                                <th>Permissions</th>
+                                <th>Type</th>
+                                <th style={{ textAlign: 'center' }}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {roles.map(role => (
+                                <tr key={role.id}>
+                                    <td style={{ fontWeight: 600 }}>
+                                        <span className={`role-badge ${role.name.toLowerCase()}`}>{role.name}</span>
+                                    </td>
+                                    <td style={{ color: 'var(--text-muted)' }}>{role.description || '—'}</td>
+                                    <td>
+                                        <span style={{ color: '#3b82f6', fontWeight: 700 }}>{role.permissions.length}</span>
+                                        <span style={{ color: '#94a3b8', marginLeft: 4 }}>permissions</span>
+                                    </td>
+                                    <td>
+                                        <span className={`type-badge ${role.isSystem ? 'system' : 'custom'}`}>
+                                            {role.isSystem ? 'System' : 'Custom'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div className="admin-actions">
+                                            <div
+                                                className="admin-action-icon edit"
+                                                title="Edit Role"
                                                 onClick={() => { setModalType('editRole'); setModalData(role); }}
                                             >
-                                                <FaPen size={12} />
-                                            </button>
+                                                <FaPen size={14} />
+                                            </div>
                                             {!role.isSystem && (
-                                                <button
-                                                    className="btn btn-sm btn-outline-danger"
+                                                <div
+                                                    className="admin-action-icon delete"
+                                                    title="Delete Role"
                                                     onClick={() => handleDeleteRole(role.id)}
                                                 >
-                                                    <FaTrash size={12} />
-                                                </button>
+                                                    <FaTrash size={14} />
+                                                </div>
                                             )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             )}
 
+            {/* Permissions Tab */}
             {activeTab === 'permissions' && (
                 <div className="admin-card">
                     <table className="admin-table">
@@ -239,25 +318,14 @@ export default function Admin() {
                         <tbody>
                             {permissions.map(perm => (
                                 <tr key={perm.id}>
-                                    <td style={{ fontWeight: 600 }}>{perm.module}</td>
+                                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{perm.module}</td>
                                     <td>
-                                        <span style={{
-                                            padding: '0.15rem 0.5rem',
-                                            borderRadius: '6px',
-                                            fontSize: '0.75rem',
-                                            fontWeight: 600,
-                                            background: perm.action === 'View' ? 'rgba(34,197,94,0.1)' :
-                                                perm.action === 'Create' ? 'rgba(59,130,246,0.1)' :
-                                                    perm.action === 'Edit' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
-                                            color: perm.action === 'View' ? '#16a34a' :
-                                                perm.action === 'Create' ? '#2563eb' :
-                                                    perm.action === 'Edit' ? '#d97706' : '#dc2626'
-                                        }}>
+                                        <span className={`action-badge ${perm.action.toLowerCase()}`}>
                                             {perm.action}
                                         </span>
                                     </td>
                                     <td><code style={{ fontSize: '0.8rem', color: '#6366f1' }}>{perm.code}</code></td>
-                                    <td style={{ color: '#64748b' }}>{perm.description}</td>
+                                    <td style={{ color: 'var(--text-muted)' }}>{perm.description}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -272,6 +340,14 @@ export default function Admin() {
                     user={modalData}
                     roles={roles}
                     onSave={handleSaveUserRoles}
+                    onClose={() => setModalType(null)}
+                />
+            )}
+
+            {modalType === 'resetPassword' && modalData && (
+                <ResetPasswordModal
+                    user={modalData}
+                    onSave={handleResetPassword}
                     onClose={() => setModalType(null)}
                 />
             )}
@@ -304,23 +380,27 @@ function EditUserRolesModal({ user, roles, onSave, onClose }) {
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-box" onClick={e => e.stopPropagation()}>
-                <h3>Edit Roles — {user.displayName || user.email}</h3>
-                <div className="d-flex flex-column gap-2 mb-3">
-                    {roles.map(role => (
-                        <label key={role.id} className={`perm-check ${selectedRoleIds.includes(role.id) ? 'checked' : ''}`}>
-                            <input
-                                type="checkbox"
-                                checked={selectedRoleIds.includes(role.id)}
-                                onChange={() => toggleRole(role.id)}
-                            />
-                            <span style={{ fontWeight: 600 }}>{role.name}</span>
-                            <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>— {role.description}</span>
-                        </label>
-                    ))}
+                <div className="modal-box-header">
+                    <h3>Edit Roles — {user.displayName || user.email}</h3>
                 </div>
-                <div className="d-flex gap-2 justify-content-end">
-                    <button className="btn btn-sm btn-outline-secondary" onClick={onClose}>Cancel</button>
-                    <button className="btn btn-sm btn-primary" onClick={() => onSave(user.id, selectedRoleIds)}>
+                <div className="modal-box-body">
+                    <div className="d-flex flex-column gap-2">
+                        {roles.map(role => (
+                            <label key={role.id} className={`perm-check ${selectedRoleIds.includes(role.id) ? 'checked' : ''}`}>
+                                <input
+                                    type="checkbox"
+                                    checked={selectedRoleIds.includes(role.id)}
+                                    onChange={() => toggleRole(role.id)}
+                                />
+                                <span style={{ fontWeight: 600 }}>{role.name}</span>
+                                <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>— {role.description}</span>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+                <div className="modal-box-footer">
+                    <button className="modal-btn cancel" onClick={onClose}>Cancel</button>
+                    <button className="modal-btn primary" onClick={() => onSave(user.id, selectedRoleIds)}>
                         Save Roles
                     </button>
                 </div>
@@ -369,70 +449,125 @@ function EditRoleModal({ role, permissions, onSave, onClose }) {
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-box" onClick={e => e.stopPropagation()}>
-                <h3>{role ? `Edit Role — ${role.name}` : 'Create New Role'}</h3>
-
-                <div className="mb-3">
-                    <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>Role Name</label>
-                    <input
-                        className="form-control form-control-sm"
-                        value={name}
-                        onChange={e => setName(e.target.value)}
-                        disabled={role?.isSystem}
-                    />
+                <div className="modal-box-header">
+                    <h3>{role ? `Edit Role — ${role.name}` : 'Create New Role'}</h3>
                 </div>
+                <div className="modal-box-body">
+                    <div className="mb-3">
+                        <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>Role Name</label>
+                        <input
+                            className="form-control form-control-sm"
+                            value={name}
+                            onChange={e => setName(e.target.value)}
+                            disabled={role?.isSystem}
+                        />
+                    </div>
 
-                <div className="mb-3">
-                    <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>Description</label>
-                    <input
-                        className="form-control form-control-sm"
-                        value={description}
-                        onChange={e => setDescription(e.target.value)}
-                    />
-                </div>
+                    <div className="mb-3">
+                        <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>Description</label>
+                        <input
+                            className="form-control form-control-sm"
+                            value={description}
+                            onChange={e => setDescription(e.target.value)}
+                        />
+                    </div>
 
-                <div className="mb-3">
-                    <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>
-                        Permissions ({selectedPermIds.length} selected)
-                    </label>
-                    {modules.map(module => {
-                        const modulePerms = permissions.filter(p => p.module === module);
-                        const allChecked = modulePerms.every(p => selectedPermIds.includes(p.id));
-                        const someChecked = modulePerms.some(p => selectedPermIds.includes(p.id));
-                        return (
-                            <div key={module} style={{ marginBottom: '0.75rem' }}>
-                                <label
-                                    style={{ fontWeight: 700, fontSize: '0.8rem', color: '#334155', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}
-                                    onClick={() => toggleModule(module)}
-                                >
-                                    <input
-                                        type="checkbox"
-                                        checked={allChecked}
-                                        ref={el => { if (el) el.indeterminate = someChecked && !allChecked; }}
-                                        readOnly
-                                    />
-                                    {module}
-                                </label>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', paddingLeft: '1.5rem' }}>
-                                    {modulePerms.map(perm => (
-                                        <label key={perm.id} className={`perm-check ${selectedPermIds.includes(perm.id) ? 'checked' : ''}`} style={{ fontSize: '0.75rem' }}>
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedPermIds.includes(perm.id)}
-                                                onChange={() => togglePerm(perm.id)}
-                                            />
-                                            {perm.action}
-                                        </label>
-                                    ))}
+                    <div className="mb-3">
+                        <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>
+                            Permissions ({selectedPermIds.length} selected)
+                        </label>
+                        {modules.map(module => {
+                            const modulePerms = permissions.filter(p => p.module === module);
+                            const allChecked = modulePerms.every(p => selectedPermIds.includes(p.id));
+                            const someChecked = modulePerms.some(p => selectedPermIds.includes(p.id));
+                            return (
+                                <div key={module} style={{ marginBottom: '0.75rem' }}>
+                                    <label
+                                        style={{ fontWeight: 700, fontSize: '0.8rem', color: '#334155', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}
+                                        onClick={() => toggleModule(module)}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={allChecked}
+                                            ref={el => { if (el) el.indeterminate = someChecked && !allChecked; }}
+                                            readOnly
+                                        />
+                                        {module}
+                                    </label>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', paddingLeft: '1.5rem' }}>
+                                        {modulePerms.map(perm => (
+                                            <label key={perm.id} className={`perm-check ${selectedPermIds.includes(perm.id) ? 'checked' : ''}`} style={{ fontSize: '0.75rem' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedPermIds.includes(perm.id)}
+                                                    onChange={() => togglePerm(perm.id)}
+                                                />
+                                                {perm.action}
+                                            </label>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
+                    </div>
                 </div>
-
-                <div className="d-flex gap-2 justify-content-end">
-                    <button className="btn btn-sm btn-outline-secondary" onClick={onClose}>Cancel</button>
-                    <button className="btn btn-sm btn-primary" onClick={handleSubmit}>
+                <div className="modal-box-footer">
+                    <button className="modal-btn cancel" onClick={onClose}>Cancel</button>
+                    <button className="modal-btn primary" onClick={handleSubmit}>
                         {role ? 'Update Role' : 'Create Role'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── Reset Password Modal ─────────────────────────────────────
+
+function ResetPasswordModal({ user, onSave, onClose }) {
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+
+    const handleSubmit = () => {
+        if (!newPassword.trim()) return alert('Password is required.');
+        if (newPassword.length < 6) return alert('Password must be at least 6 characters.');
+        if (newPassword !== confirmPassword) return alert('Passwords do not match.');
+        onSave(user.id, newPassword);
+    };
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-box" onClick={e => e.stopPropagation()}>
+                <div className="modal-box-header">
+                    <h3>Change Password — {user.displayName || user.email}</h3>
+                </div>
+                <div className="modal-box-body">
+                    <div className="mb-3">
+                        <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>New Password</label>
+                        <input
+                            type="password"
+                            className="form-control form-control-sm"
+                            value={newPassword}
+                            onChange={e => setNewPassword(e.target.value)}
+                            placeholder="Enter new password"
+                        />
+                    </div>
+
+                    <div className="mb-3">
+                        <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>Confirm Password</label>
+                        <input
+                            type="password"
+                            className="form-control form-control-sm"
+                            value={confirmPassword}
+                            onChange={e => setConfirmPassword(e.target.value)}
+                            placeholder="Confirm new password"
+                        />
+                    </div>
+                </div>
+                <div className="modal-box-footer">
+                    <button className="modal-btn cancel" onClick={onClose}>Cancel</button>
+                    <button className="modal-btn warning" onClick={handleSubmit}>
+                        Reset Password
                     </button>
                 </div>
             </div>

@@ -16,7 +16,7 @@ function useIsMobile(breakpoint = 768) {
 }
 
 export default function MainLayout() {
-    const { logout, hasPermission, isAdmin } = useAuth();
+    const { logout, hasPermission, isAdmin, currentUser } = useAuth();
     const location = useLocation();
     const [sidebarOpen, setSidebarOpen] = React.useState(false);
     const isMobile = useIsMobile();
@@ -265,6 +265,68 @@ export default function MainLayout() {
                     })}
                 </ul>
                 <hr style={{ borderColor: 'rgba(0,0,0,0.08)', opacity: 0.5 }} />
+
+                {/* Profile Section */}
+                {currentUser && (
+                    <div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            padding: '12px',
+                            marginBottom: '12px',
+                            background: 'rgba(59, 130, 246, 0.04)',
+                            border: '1px solid rgba(59, 130, 246, 0.08)',
+                            borderRadius: '12px'
+                        }}
+                    >
+                        <div
+                            style={{
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '12px',
+                                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#fff',
+                                fontWeight: 700,
+                                fontSize: '0.9rem',
+                                flexShrink: 0,
+                                boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)'
+                            }}
+                        >
+                            {(currentUser.displayName || currentUser.email || '?')
+                                .split(' ')
+                                .map(w => w[0])
+                                .slice(0, 2)
+                                .join('')
+                                .toUpperCase()}
+                        </div>
+                        <div style={{ overflow: 'hidden', minWidth: 0 }}>
+                            <div style={{
+                                fontWeight: 600,
+                                fontSize: '0.85rem',
+                                color: '#1e293b',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                            }}>
+                                {currentUser.displayName || 'User'}
+                            </div>
+                            <div style={{
+                                fontSize: '0.7rem',
+                                color: '#94a3b8',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                            }}>
+                                {currentUser.email}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <button
                     onClick={handleLogout}
                     className="btn d-flex align-items-center w-100 py-2 gap-2 justify-content-center"

@@ -89,18 +89,17 @@ export function AuthProvider({ children }) {
     // Periodic check for expiration (every minute)
     useEffect(() => {
         const interval = setInterval(() => {
-            if (currentUser) {
-                const loginTime = localStorage.getItem('auth_login_timestamp');
-                const ONE_HOUR = 60 * 60 * 1000;
-                if (loginTime && (Date.now() - parseInt(loginTime) > ONE_HOUR)) {
-                    console.log('Session expired (periodic check), logging out.');
-                    logout();
-                }
+            const loginTime = localStorage.getItem('auth_login_timestamp');
+            if (!loginTime) return;
+            const ONE_HOUR = 60 * 60 * 1000;
+            if (Date.now() - parseInt(loginTime) > ONE_HOUR) {
+                console.log('Session expired (periodic check), logging out.');
+                logout();
             }
         }, 60000);
 
         return () => clearInterval(interval);
-    }, [currentUser]);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const value = {
         currentUser,

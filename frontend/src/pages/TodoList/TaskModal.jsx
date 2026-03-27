@@ -141,38 +141,44 @@ export const TaskModal = ({ show, onHide, task, columns, onSave, onDelete, onAdd
             )}
 
             {/* Status */}
-            {editableColumns.find(c => c.id === 'status') && (
-              <Form.Group className="mb-4">
-                <Form.Label className="task-form-label">Status</Form.Label>
-                <Form.Select
-                  className="task-form-control"
-                  value={formValues['status'] || ''}
-                  onChange={(e) => handleFieldChange('status', e.target.value)}
-                >
-                  <option value="">Select...</option>
-                  {editableColumns.find(c => c.id === 'status').config.options.map((opt, idx) => (
-                    <option key={idx} value={opt.label}>{opt.label}</option>
-                  ))}
-                </Form.Select>
-              </Form.Group>
-            )}
+            {(() => {
+              const statusCol = editableColumns.find(c => c.id === 'status');
+              return statusCol && (
+                <Form.Group className="mb-4">
+                  <Form.Label className="task-form-label">Status</Form.Label>
+                  <Form.Select
+                    className="task-form-control"
+                    value={formValues['status'] || ''}
+                    onChange={(e) => handleFieldChange('status', e.target.value)}
+                  >
+                    <option value="">Select...</option>
+                    {statusCol.config?.options?.map((opt, idx) => (
+                      <option key={idx} value={opt.label}>{opt.label}</option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+              );
+            })()}
 
             {/* Priority */}
-            {editableColumns.find(c => c.id === 'priority') && (
-              <Form.Group className="mb-4">
-                <Form.Label className="task-form-label">Priority</Form.Label>
-                <Form.Select
-                  className="task-form-control"
-                  value={formValues['priority'] || ''}
-                  onChange={(e) => handleFieldChange('priority', e.target.value)}
-                >
-                  <option value="">Select...</option>
-                  {editableColumns.find(c => c.id === 'priority').config.options.map((opt, idx) => (
-                    <option key={idx} value={opt.label}>{opt.label}</option>
-                  ))}
-                </Form.Select>
-              </Form.Group>
-            )}
+            {(() => {
+              const priorityCol = editableColumns.find(c => c.id === 'priority');
+              return priorityCol && (
+                <Form.Group className="mb-4">
+                  <Form.Label className="task-form-label">Priority</Form.Label>
+                  <Form.Select
+                    className="task-form-control"
+                    value={formValues['priority'] || ''}
+                    onChange={(e) => handleFieldChange('priority', e.target.value)}
+                  >
+                    <option value="">Select...</option>
+                    {priorityCol.config?.options?.map((opt, idx) => (
+                      <option key={idx} value={opt.label}>{opt.label}</option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+              );
+            })()}
 
             {/* Due Date */}
             {editableColumns.find(c => c.id === 'dueDate') && (

@@ -262,7 +262,7 @@ export default function Dashboard() {
     ];
   }, [stats]);
 
-  const isLoading = loadingProjects && loadingContacts && loadingTimesheet && loadingFinance;
+  const isLoading = loadingProjects || loadingContacts || loadingTimesheet || loadingFinance;
 
   const getInitials = (name) => {
     if (!name) return '??';
