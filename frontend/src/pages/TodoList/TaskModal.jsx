@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Modal, Form, Button } from 'react-bootstrap'
+import { Form, Button } from 'react-bootstrap'
 import { Plus, Edit2, Trash2 } from 'lucide-react'
 import { FieldRenderer } from './FieldRenderers'
+import { StandardModal } from '../../components/StandardModal/StandardModal'
 
 export const TaskModal = ({ show, onHide, task, columns, onSave, onDelete, onAddColumn, onEditColumn, onDeleteColumn }) => {
   const [formValues, setFormValues] = useState({})
@@ -96,19 +97,15 @@ export const TaskModal = ({ show, onHide, task, columns, onSave, onDelete, onAdd
     : []
 
   return (
-    <Modal
+    <StandardModal
       show={show}
       onHide={onHide}
-      centered
-      contentClassName="task-modal-content"
-      backdrop="static" // Prevent clicking outside to close
+      title={task ? 'Edit Task' : 'Create New Task'}
+      onSubmit={handleSave}
+      submitLabel={task ? 'Update Task' : 'Create Task'}
+      onDelete={task && onDelete ? () => { if (window.confirm('Delete?')) onDelete(task.id) } : undefined}
+      deleteLabel="Delete"
     >
-      <div className="task-modal-header">
-        <h5 className="task-modal-title">{task ? 'Edit Task' : 'Create New Task'}</h5>
-        <button type="button" className="btn-close" aria-label="Close" onClick={onHide}></button>
-      </div>
-
-      <Modal.Body className="task-modal-body">
         {editableColumns.length === 0 ? (
           <div className="text-center text-muted py-4">
             <p>No columns configured.</p>
@@ -240,21 +237,6 @@ export const TaskModal = ({ show, onHide, task, columns, onSave, onDelete, onAdd
 
           </Form>
         )}
-      </Modal.Body>
-      <div className="task-modal-footer">
-        <Button
-          className="btn-modal-cancel"
-          onClick={onHide}
-        >
-          Cancel
-        </Button>
-        <Button
-          className="btn-modal-create"
-          onClick={handleSave}
-        >
-          {task ? 'Update' : 'Create'} Task
-        </Button>
-      </div>
-    </Modal>
+    </StandardModal>
   )
 }

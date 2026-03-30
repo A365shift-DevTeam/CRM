@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Modal, Form, Button, Dropdown, InputGroup, Spinner, ProgressBar } from 'react-bootstrap'
+import { Form, Dropdown, InputGroup, Spinner } from 'react-bootstrap'
 import { Calendar, Clock, FileText, User, Building2, CheckCircle, Paperclip, ListChecks, Info, X, Upload, File, Image, FileSpreadsheet } from 'lucide-react'
 import { uploadFile, deleteFile, formatFileSize, getFileTypeLabel } from '../../services/storageService'
+import { StandardModal } from '../../components/StandardModal/StandardModal'
 
 const getColumnIcon = (columnId) => {
   const iconMap = {
@@ -580,8 +581,7 @@ export const TimesheetModal = ({ show, onHide, entry, columns, onSave, onDelete,
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
     if (validate()) {
       setSaving(true)
       try {
@@ -622,57 +622,34 @@ export const TimesheetModal = ({ show, onHide, entry, columns, onSave, onDelete,
   })
 
   return (
-    <Modal show={show} onHide={onHide} size="xl" centered className="timesheet-edit-modal">
-      <Modal.Header className="border-bottom pb-2">
-        <Modal.Title className="mb-0">
-          {entry ? 'Edit Timesheet Entry' : 'Create New Timesheet Entry'}
-        </Modal.Title>
-      </Modal.Header>
-      <Form onSubmit={handleSubmit}>
-        <Modal.Body className="pt-3 pb-3" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-          <div className="row g-3">
-            {sortedColumns
-              .filter(col => col.id !== 'col-id')
-              .map(column => {
-                const value = formData[column.id]
-                const isNotes = column.id === 'col-notes'
-                const isAttachment = column.type === 'file'
-                const colClass = (isNotes || isAttachment) ? 'col-12' : 'col-md-6'
+    <StandardModal
+      show={show}
+      onHide={onHide}
+      size="xl"
+      title={entry ? 'Edit Timesheet Entry' : 'Create New Timesheet Entry'}
+      onSubmit={handleSubmit}
+      submitLabel={entry ? 'Update Entry' : 'Create Entry'}
+      onDelete={entry ? handleDelete : undefined}
+      deleteLabel="Delete"
+      saving={saving}
+      bodyStyle={{ maxHeight: '60vh', overflowY: 'auto' }}
+    >
+      <div className="row g-3">
+        {sortedColumns
+          .filter(col => col.id !== 'col-id')
+          .map(column => {
+            const value = formData[column.id]
+            const isNotes = column.id === 'col-notes'
+            const isAttachment = column.type === 'file'
+            const colClass = (isNotes || isAttachment) ? 'col-12' : 'col-md-6'
 
-                return (
-                  <div key={column.id} className={colClass}>
-                    {renderField(column, value, handleChange, errors)}
-                  </div>
-                )
-              })}
-          </div>
-        </Modal.Body>
-        <Modal.Footer className="border-top pt-3">
-          {entry && (
-            <Button
-              variant="outline-danger"
-              onClick={handleDelete}
-              className="me-auto"
-              disabled={saving}
-            >
-              Delete
-            </Button>
-          )}
-          <Button variant="secondary" onClick={onHide} disabled={saving}>
-            Cancel
-          </Button>
-          <Button variant="primary" type="submit" disabled={saving}>
-            {saving ? (
-              <>
-                <Spinner animation="border" size="sm" className="me-2" />
-                Saving...
-              </>
-            ) : (
-              <>{entry ? 'Update' : 'Create'} Entry</>
-            )}
-          </Button>
-        </Modal.Footer>
-      </Form>
-    </Modal>
+            return (
+              <div key={column.id} className={colClass}>
+                {renderField(column, value, handleChange, errors)}
+              </div>
+            )
+          })}
+      </div>
+    </StandardModal>
   )
 }

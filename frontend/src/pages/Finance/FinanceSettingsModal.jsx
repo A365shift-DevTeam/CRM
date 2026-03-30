@@ -13,7 +13,7 @@ const FIELD_TYPES = [
 
 export const DEFAULT_EXPENSE_FIELDS = [
     { id: 'date', label: 'Date', type: 'date', required: true, system: true, order: 1 },
-    { id: 'category', label: 'Category', type: 'select', required: true, system: true, order: 2, options: ['Transport', 'Food', 'Accommodation', 'Allowances'] }, // Options handled by system logic mostly
+    { id: 'category', label: 'Category', type: 'select', required: true, system: true, order: 2, options: ['Food', 'Accommodation', 'Allowances', 'Silicon - Server', 'Travel', 'Salary', 'Bank Charges', 'Printing & Stationery', 'Rent', 'Professional Fees', 'Consultancy Charges', 'Telephone Internet', 'Software Expenses', 'Project Tax & Charges', 'General Expenses'] },
     { id: 'amount', label: 'Amount', type: 'number', required: true, system: true, order: 3 },
     { id: 'description', label: 'Description', type: 'text', required: true, system: true, order: 4 },
     { id: 'employeeName', label: 'Employee Emails', type: 'text', required: false, system: true, order: 5 },

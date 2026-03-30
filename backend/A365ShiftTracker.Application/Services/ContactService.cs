@@ -103,6 +103,91 @@ public class ContactService : IContactService
         return await GetColumnsAsync();
     }
 
+    public async Task<ContactColumnDto> AddColumnAsync(CreateContactColumnRequest request)
+    {
+        var allColumns = await _uow.ContactColumns.GetAllAsync();
+        var order = allColumns.Count();
+
+        var entity = new ContactColumn
+        {
+            ColId = $"col-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}",
+            Name = request.Name,
+            Type = request.Type,
+            Required = request.Required,
+            Visible = request.Visible,
+            Order = order,
+            Config = request.Config is not null ? JsonSerializer.Serialize(request.Config) : null
+        };
+
+        await _uow.ContactColumns.AddAsync(entity);
+        await _uow.SaveChangesAsync();
+
+        return new ContactColumnDto
+        {
+            Id = entity.Id,
+            ColId = entity.ColId,
+            Name = entity.Name,
+            Type = entity.Type,
+            Required = entity.Required,
+            Visible = entity.Visible,
+            Order = entity.Order,
+            Config = entity.Config is not null ? JsonSerializer.Deserialize<object>(entity.Config) : null
+        };
+    }
+
+    public async Task<ContactColumnDto> UpdateColumnAsync(string colId, UpdateContactColumnRequest request)
+    {
+        var columns = await _uow.ContactColumns.FindAsync(c => c.ColId == colId);
+        var entity = columns.FirstOrDefault()
+            ?? throw new KeyNotFoundException($"Column '{colId}' not found.");
+
+        if (request.Name is not null) entity.Name = request.Name;
+        if (request.Type is not null) entity.Type = request.Type;
+        if (request.Required.HasValue) entity.Required = request.Required.Value;
+        if (request.Visible.HasValue) entity.Visible = request.Visible.Value;
+        if (request.Config is not null) entity.Config = JsonSerializer.Serialize(request.Config);
+
+        await _uow.ContactColumns.UpdateAsync(entity);
+        await _uow.SaveChangesAsync();
+
+        return new ContactColumnDto
+        {
+            Id = entity.Id,
+            ColId = entity.ColId,
+            Name = entity.Name,
+            Type = entity.Type,
+            Required = entity.Required,
+            Visible = entity.Visible,
+            Order = entity.Order,
+            Config = entity.Config is not null ? JsonSerializer.Deserialize<object>(entity.Config) : null
+        };
+    }
+
+    public async Task DeleteColumnAsync(string colId)
+    {
+        var columns = await _uow.ContactColumns.FindAsync(c => c.ColId == colId);
+        var entity = columns.FirstOrDefault()
+            ?? throw new KeyNotFoundException($"Column '{colId}' not found.");
+
+        await _uow.ContactColumns.DeleteAsync(entity);
+        await _uow.SaveChangesAsync();
+    }
+
+    public async Task ReorderColumnsAsync(List<string> orderedColIds)
+    {
+        var allColumns = await _uow.ContactColumns.GetAllAsync();
+        foreach (var col in allColumns)
+        {
+            var newOrder = orderedColIds.IndexOf(col.ColId);
+            if (newOrder >= 0)
+            {
+                col.Order = newOrder;
+                await _uow.ContactColumns.UpdateAsync(col);
+            }
+        }
+        await _uow.SaveChangesAsync();
+    }
+
     // --- Vendor Responses ---
     public async Task<IEnumerable<VendorResponseDto>> GetVendorResponsesAsync(int vendorId)
     {

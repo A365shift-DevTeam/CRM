@@ -5,7 +5,11 @@
       "Bash(grep -r \"dashboard\\\\|Dashboard\" /e/Arul/PROJECTS/CRM/backend/A365ShiftTracker.Application --include=*.cs)",
       "Bash(find /e/Arul/PROJECTS/CRM/backend -type f -name *.cs -not -path */obj/* -not -path */.vs/*)",
       "Bash(xargs grep:*)",
-      "Bash(grep -E \"\\\\.cs$\")"
+      "Bash(grep -E \"\\\\.cs$\")",
+      "Bash(find '/d/client/CRM project A365/CRM/backend/A365ShiftTracker.Application/Interfaces' -name *.cs)",
+      "Bash(find '/d/client/CRM project A365/CRM/backend/A365ShiftTracker.Application/Services' -name *.cs)",
+      "Bash(npx vite:*)",
+      "Bash(find /d/client/CRM project A365/CRM -name *projectFinance* -o -name *ProjectFinance*)"
     ]
   }
 }

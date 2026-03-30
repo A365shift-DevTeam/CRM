@@ -7,6 +7,9 @@ import './Sales.css'
 import StageSettingsModal from './StageSettingsModal'
 import BusinessProcessModal from './BusinessProcessModal'
 import { projectService } from '../../services/api'
+import { incomeService } from '../../services/incomeService'
+import { projectFinanceService } from '../../services/projectFinanceService'
+import { useToast } from '../../components/Toast/ToastContext'
 
 const getDefaultStages = () => [
     { id: 0, label: 'Demo', color: 'cyan', ageing: 7 },
@@ -43,6 +46,7 @@ const GenerateCustomId = (brandingName, clientName) => {
 }
 
 const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onDelete, onEdit, onInvoice, onTimesheet, delay, clientName, brandingName, title, history = [] }) => {
+    const toast = useToast()
     const [showNotification, setShowNotification] = useState(false)
     const [stageTransition, setStageTransition] = useState({ from: '', to: '' })
 
@@ -175,7 +179,7 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
                             if (phone) {
                                 window.open(`https://wa.me/${phone.replace(/\D/g, '')}`, '_blank');
                             } else {
-                                alert('No phone number available for this client.');
+                                toast.warning('No phone number available for this client.');
                             }
                         }}
                         title="WhatsApp Client"
@@ -357,6 +361,7 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
 
 function Sales() {
     const navigate = useNavigate();
+    const toast = useToast();
     const [showSettings, setShowSettings] = useState(false)
     const [activeTab, setActiveTab] = useState('Product') // 'Product' or 'Service'
 
@@ -425,19 +430,26 @@ function Sales() {
             targetDate: logData?.targetDate
         }
 
+        const updatedHistory = [newEntry, ...(p.history || [])];
+
         const uiUpdates = {
             activeStage: newStageIndex,
-            // UI expects newest first, prepending for immediate visual update
-            history: [newEntry, ...(p.history || [])]
+            history: updatedHistory
         };
 
+        // Send ALL fields the backend expects (UpdateProjectRequest extends CreateProjectRequest)
+        // so missing fields don't get overwritten with nulls/defaults
         const apiUpdates = {
+            customId: p.customId || '',
+            title: p.title || '',
+            clientName: p.clientName || '',
             activeStage: newStageIndex,
-            history: [newEntry, ...(p.history || [])]
+            delay: p.delay || 0,
+            type: p.type || 'Product',
+            history: updatedHistory
         };
 
         // Optimistic UI update
-        // We do this AFTER modal confirmation now
         setProjects(prev => prev.map(proj =>
             proj.id === projectId ? { ...proj, ...uiUpdates } : proj
         ));
@@ -445,11 +457,70 @@ function Sales() {
         try {
             // Call API
             await projectService.update(projectId, apiUpdates);
-            console.log(`✅ Project ${projectId} updated: ${transitionStr}`);
+            toast.success(`Stage updated: ${transitionStr}`);
         } catch (error) {
             console.error('Failed to update project stage:', error);
+            toast.error('Failed to update project stage');
             // Revert on error
             loadProjects();
+            return; // Don't proceed with finance calls if stage update failed
+        }
+
+        // --- Auto-create finance & invoice entries on key stages ---
+        // These are fire-and-forget: errors here must NOT affect the main flow
+        const amount = parseFloat(logData?.amount) || 0;
+
+        // When stage is "Won" or "Closed" and has an amount, create income in Finance
+        if ((newStageLabel === 'Won' || newStageLabel === 'Closed') && amount > 0) {
+            incomeService.createIncome({
+                date: new Date().toISOString(),
+                category: 'sales',
+                amount: amount,
+                description: `${p.clientName} - ${p.title || p.brandingName || 'Project'} (${newStageLabel})`,
+                employeeName: '',
+                projectDepartment: p.title || p.brandingName || ''
+            }).then(() => {
+                toast.success(`Income of ${logData?.currency || 'USD'} ${amount.toLocaleString()} recorded in Finance`);
+            }).catch(err => {
+                console.error('Failed to create income entry:', err);
+                toast.warning('Stage updated but failed to record income in Finance');
+            });
+        }
+
+        // When stage reaches "Won", auto-create a project finance entry for Invoice tracking
+        if (newStageLabel === 'Won') {
+            projectFinanceService.create({
+                projectId: p.customId || `PROJ-${p.id}`,
+                clientName: p.clientName || 'Unknown Client',
+                clientAddress: p.clientAddress || '',
+                clientGstin: p.clientGstin || '',
+                dealValue: amount || 0,
+                currency: logData?.currency || 'INR',
+                location: p.location || '',
+                status: 'Active',
+                type: p.type || 'Product'
+            }).then(() => {
+                toast.info('Project finance record created for Invoice tracking');
+            }).catch(err => {
+                // May fail if already exists - that's fine
+                console.error('Failed to create project finance:', err);
+            });
+        }
+
+        // Record any stage transition with amount as income (for non-Won/Closed stages like milestones)
+        if (amount > 0 && newStageLabel !== 'Won' && newStageLabel !== 'Closed' && newStageLabel !== 'Lost') {
+            incomeService.createIncome({
+                date: new Date().toISOString(),
+                category: 'sales',
+                amount: amount,
+                description: `${p.clientName} - ${transitionStr}`,
+                employeeName: '',
+                projectDepartment: p.title || p.brandingName || ''
+            }).then(() => {
+                toast.info(`Payment of ${logData?.currency || 'USD'} ${amount.toLocaleString()} recorded`);
+            }).catch(err => {
+                console.error('Failed to create stage income:', err);
+            });
         }
     }
 
@@ -484,8 +555,10 @@ function Sales() {
             const created = await projectService.create(newProject);
             setProjects([...projects, created]);
             setShowAddModal(false);
+            toast.success('Project created successfully');
         } catch (error) {
             console.error("Failed to create project", error)
+            toast.error('Failed to create project');
         }
     }
 
@@ -506,8 +579,14 @@ function Sales() {
     }
 
     const handleDeleteProject = async (projectId) => {
-        await projectService.delete(projectId);
-        setProjects(projects.filter(p => p.id !== projectId));
+        try {
+            await projectService.delete(projectId);
+            setProjects(projects.filter(p => p.id !== projectId));
+            toast.success('Project deleted');
+        } catch (error) {
+            console.error('Failed to delete project:', error);
+            toast.error('Failed to delete project');
+        }
     }
 
     const handleEditProject = (project) => {
@@ -525,33 +604,51 @@ function Sales() {
 
     const handleSaveEditProject = async () => {
         if (!editingProject) return
-        const updates = {
+
+        // Determine activeStage: may change if status is set to Won/Lost
+        let newActiveStage = editingProject.activeStage || 0;
+        const currentStages = getStagesByType(editProjectData.type);
+        if (editProjectData.status === 'Won') {
+            const wonIndex = currentStages.findIndex(s => s.label === 'Won');
+            if (wonIndex !== -1) newActiveStage = wonIndex;
+        } else if (editProjectData.status === 'Lost') {
+            const lostIndex = currentStages.findIndex(s => s.label === 'Lost');
+            if (lostIndex !== -1) newActiveStage = lostIndex;
+        }
+
+        // UI-level updates (includes extra fields for local state)
+        const uiUpdates = {
             title: editProjectData.title,
             clientName: editProjectData.clientName,
             brandingName: editProjectData.brandingName,
             type: editProjectData.type,
             status: editProjectData.status,
-            phone: editProjectData.phone
+            phone: editProjectData.phone,
+            activeStage: newActiveStage
         }
 
-        // If status changed to Won/Lost, update activeStage if it matches a stage label
-        const currentStages = getStagesByType(editProjectData.type);
-        if (editProjectData.status === 'Won') {
-            const wonIndex = currentStages.findIndex(s => s.label === 'Won');
-            if (wonIndex !== -1) updates.activeStage = wonIndex;
-        } else if (editProjectData.status === 'Lost') {
-            const lostIndex = currentStages.findIndex(s => s.label === 'Lost');
-            if (lostIndex !== -1) updates.activeStage = lostIndex;
+        // Send ALL fields the backend expects to avoid nulling out data
+        const apiUpdates = {
+            customId: editingProject.customId || '',
+            title: editProjectData.title || '',
+            clientName: editProjectData.clientName || '',
+            activeStage: newActiveStage,
+            delay: editingProject.delay || 0,
+            type: editProjectData.type || 'Product',
+            history: editingProject.history || []
         }
+
         // Optimistic update
         setProjects(prev => prev.map(p =>
-            p.id === editingProject.id ? { ...p, ...updates } : p
+            p.id === editingProject.id ? { ...p, ...uiUpdates } : p
         ))
         setShowEditModal(false)
         try {
-            await projectService.update(editingProject.id, updates)
+            await projectService.update(editingProject.id, apiUpdates)
+            toast.success('Project updated successfully');
         } catch (error) {
             console.error('Failed to update project:', error)
+            toast.error('Failed to update project');
             loadProjects()
         }
     }

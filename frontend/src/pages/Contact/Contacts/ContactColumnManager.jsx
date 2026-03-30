@@ -4,20 +4,21 @@ import { Plus, Eye, EyeOff, Trash2, Edit2, GripVertical, Settings, FileText, Inf
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { timesheetService } from '../../services/timesheetService'
-import { useToast } from '../../components/Toast/ToastContext'
+import { contactService } from '../../../services/contactService'
+import { useToast } from '../../../components/Toast/ToastContext'
 
 const COLUMN_TYPES = [
   { value: 'text', label: 'Text' },
   { value: 'number', label: 'Number' },
+  { value: 'email', label: 'Email' },
   { value: 'datetime', label: 'Date & Time' },
   { value: 'date', label: 'Date' },
-  { value: 'time', label: 'Time' },
-  { value: 'file', label: 'File/Attachment' },
-  { value: 'choice', label: 'Choice/Dropdown' }
+  { value: 'choice', label: 'Choice/Dropdown' },
+  { value: 'location', label: 'Location' },
+  { value: 'currency', label: 'Currency' }
 ]
 
-const defaultColumnIds = ['col-id', 'col-notes', 'col-customer', 'col-task', 'col-start-datetime', 'col-end-datetime', 'col-name', 'col-attachments', 'col-site']
+const defaultColumnIds = ['name', 'jobTitle', 'phone', 'company', 'location', 'clientAddress', 'clientCountry', 'type', 'status']
 
 const SortableColumnItem = ({ column, onToggleVisibility, onEdit, onDelete, isDefault }) => {
   const {
@@ -87,7 +88,7 @@ const SortableColumnItem = ({ column, onToggleVisibility, onEdit, onDelete, isDe
   )
 }
 
-export const ColumnManager = ({ show, onHide, columns, onColumnsChange }) => {
+export const ContactColumnManager = ({ show, onHide, columns, onColumnsChange }) => {
   const toast = useToast()
   const [editingColumn, setEditingColumn] = useState(null)
   const [showAddModal, setShowAddModal] = useState(false)
@@ -121,7 +122,7 @@ export const ColumnManager = ({ show, onHide, columns, onColumnsChange }) => {
     try {
       const column = columns.find(col => col.id === columnId)
       if (column) {
-        await timesheetService.updateColumn(column.colId || column.id, {
+        await contactService.updateColumn(column.colId || column.id, {
           visible: column.visible === false ? true : false
         })
         const updatedColumns = columns.map(col =>
@@ -131,6 +132,7 @@ export const ColumnManager = ({ show, onHide, columns, onColumnsChange }) => {
       }
     } catch (error) {
       console.error('Error toggling column visibility:', error)
+      toast.error('Failed to toggle visibility')
     }
   }
 
@@ -142,17 +144,16 @@ export const ColumnManager = ({ show, onHide, columns, onColumnsChange }) => {
       required: column.required || false,
       visible: column.visible !== false
     })
-    // Load existing choice options if it's a choice column
     setChoiceOptions(column.config?.options || [])
     setNewChoiceValue('')
     setShowAddModal(true)
   }
 
   const handleDelete = async (columnId) => {
-    if (window.confirm('Are you sure you want to delete this column? This will not delete the data, but the column will be hidden.')) {
+    if (window.confirm('Are you sure you want to delete this column?')) {
       try {
         const column = columns.find(col => col.id === columnId)
-        await timesheetService.deleteColumn(column?.colId || columnId)
+        await contactService.deleteColumn(column?.colId || columnId)
         const updatedColumns = columns.filter(col => col.id !== columnId)
         onColumnsChange(updatedColumns)
         toast.success('Column deleted')
@@ -184,22 +185,22 @@ export const ColumnManager = ({ show, onHide, columns, onColumnsChange }) => {
     if (!validate()) return
 
     try {
-      // Build the save payload — include config.options for choice columns
       const saveData = { ...formData }
       if (formData.type === 'choice') {
         saveData.config = { ...(saveData.config || {}), options: choiceOptions }
       }
 
       if (editingColumn) {
-        await timesheetService.updateColumn(editingColumn.colId || editingColumn.id, saveData)
+        await contactService.updateColumn(editingColumn.colId || editingColumn.id, saveData)
         const updatedColumns = columns.map(col =>
           col.id === editingColumn.id ? { ...col, ...saveData } : col
         )
         onColumnsChange(updatedColumns)
         toast.success('Column updated')
       } else {
-        const newColumn = await timesheetService.addColumn(saveData)
-        onColumnsChange([...columns, newColumn])
+        const newColumn = await contactService.addColumn(saveData)
+        const mapped = { ...newColumn, id: newColumn.colId || newColumn.id, config: newColumn.config || {} }
+        onColumnsChange([...columns, mapped])
         toast.success('Column added')
       }
       setShowAddModal(false)
@@ -233,7 +234,7 @@ export const ColumnManager = ({ show, onHide, columns, onColumnsChange }) => {
       if (oldIndex !== -1 && newIndex !== -1) {
         const reorderedColumns = arrayMove(columns, oldIndex, newIndex)
         try {
-          await timesheetService.reorderColumns(reorderedColumns.map(col => col.id))
+          await contactService.reorderColumns(reorderedColumns.map(col => col.colId || col.id))
           onColumnsChange(reorderedColumns)
         } catch (error) {
           console.error('Error reordering columns:', error)
@@ -328,7 +329,7 @@ export const ColumnManager = ({ show, onHide, columns, onColumnsChange }) => {
             <Dropdown>
               <Dropdown.Toggle
                 className="timesheet-dropdown-toggle w-100"
-                id="column-type-dropdown"
+                id="contact-column-type-dropdown"
               >
                 {COLUMN_TYPES.find(t => t.value === formData.type)?.label || 'Select type'}
               </Dropdown.Toggle>
@@ -346,17 +347,12 @@ export const ColumnManager = ({ show, onHide, columns, onColumnsChange }) => {
             </Dropdown>
           </Form.Group>
 
-          {/* Choice Options — only shown when type is 'choice' */}
           {formData.type === 'choice' && (
             <Form.Group className="mb-3">
               <Form.Label className="timesheet-form-label d-flex align-items-center gap-2">
                 <Settings size={16} className="text-muted" />
-                <span className="fw-semibold">
-                  Choice Options
-                </span>
+                <span className="fw-semibold">Choice Options</span>
               </Form.Label>
-
-              {/* Existing options */}
               {choiceOptions.length > 0 && (
                 <div className="d-flex flex-wrap gap-2 mb-2">
                   {choiceOptions.map((opt, idx) => (
@@ -367,7 +363,7 @@ export const ColumnManager = ({ show, onHide, columns, onColumnsChange }) => {
                       className="d-flex align-items-center gap-1 border px-3 py-2"
                       style={{ fontSize: '0.85rem', borderRadius: '8px' }}
                     >
-                      {opt}
+                      {typeof opt === 'string' ? opt : opt.label || opt}
                       <X
                         size={14}
                         className="ms-1 text-danger"
@@ -378,8 +374,6 @@ export const ColumnManager = ({ show, onHide, columns, onColumnsChange }) => {
                   ))}
                 </div>
               )}
-
-              {/* Add new option */}
               <div className="d-flex gap-2">
                 <Form.Control
                   type="text"
@@ -406,7 +400,6 @@ export const ColumnManager = ({ show, onHide, columns, onColumnsChange }) => {
                   Add
                 </Button>
               </div>
-
               {choiceOptions.length === 0 && (
                 <Form.Text className="text-muted">
                   Add at least one option for the dropdown.
@@ -441,7 +434,7 @@ export const ColumnManager = ({ show, onHide, columns, onColumnsChange }) => {
             Cancel
           </Button>
           <Button variant="primary" onClick={handleSaveColumn}>
-            {editingColumn ? 'Update' : 'Add'} Column
+            {editingColumn ? 'Update Column' : 'Add Column'}
           </Button>
         </Modal.Footer>
       </Modal>

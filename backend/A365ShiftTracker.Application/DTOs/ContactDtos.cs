@@ -84,3 +84,26 @@ public class SaveContactColumnsRequest
 {
     public List<ContactColumnDto> Columns { get; set; } = new();
 }
+
+public class CreateContactColumnRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public string Type { get; set; } = "text";
+    public bool Required { get; set; } = false;
+    public bool Visible { get; set; } = true;
+    public object? Config { get; set; }
+}
+
+public class UpdateContactColumnRequest
+{
+    public string? Name { get; set; }
+    public string? Type { get; set; }
+    public bool? Required { get; set; }
+    public bool? Visible { get; set; }
+    public object? Config { get; set; }
+}
+
+public class ReorderContactColumnsRequest
+{
+    public List<string> OrderedColIds { get; set; } = new();
+}

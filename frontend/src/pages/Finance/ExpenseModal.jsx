@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Modal, Form, Button } from 'react-bootstrap'
+import { Form, Button } from 'react-bootstrap'
+import { StandardModal } from '../../components/StandardModal/StandardModal'
 
 const CATEGORIES = [
   { value: 'food', label: 'Food', color: '#f59e0b' },
@@ -877,65 +878,60 @@ export const ExpenseModal = ({ show, onHide, expense, onSave, onDelete, fields }
   }
 
   return (
-    <Modal show={show} onHide={onHide} size="lg">
-      <Modal.Header>
-        <Modal.Title>{expense ? 'Edit Expense' : 'Create New Expense'}</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        <Form>
-          {fields && fields.sort((a, b) => (a.order || 99) - (b.order || 99)).map(field => {
-            // Skip Receipt as it's separate at bottom
-            if (field.id === 'receipt') return null
-            // Hide employeeName if category is Food (handled in details)
-            if (field.id === 'employeeName' && formData.category === 'food') return null
+    <StandardModal
+      show={show}
+      onHide={onHide}
+      title={expense ? 'Edit Expense' : 'Create New Expense'}
+      size="lg"
+      onSubmit={handleSave}
+      submitLabel={expense ? 'Update Expense' : 'Create Expense'}
+      onDelete={expense ? () => { if (window.confirm('Delete?')) { onDelete(expense.id); onHide(); } } : undefined}
+      deleteLabel="Delete"
+    >
+      {fields && fields.sort((a, b) => (a.order || 99) - (b.order || 99)).map(field => {
+        // Skip Receipt as it's separate at bottom
+        if (field.id === 'receipt') return null
+        // Hide employeeName if category is Food (handled in details)
+        if (field.id === 'employeeName' && formData.category === 'food') return null
 
-            const customCategories = ['silicon_server', 'travel', 'salary', 'bank_charges', 'printing_stationery', 'rent', 'professional_fees', 'consultancy_charges', 'telephone_internet', 'software_expenses', 'project_tax', 'general_expenses']
-            if (customCategories.includes(formData.category)) {
-              if (['date', 'amount', 'description', 'employeeName', 'projectDepartment'].includes(field.id)) {
-                return null
-              }
-            }
+        const customCategories = ['silicon_server', 'travel', 'salary', 'bank_charges', 'printing_stationery', 'rent', 'professional_fees', 'consultancy_charges', 'telephone_internet', 'software_expenses', 'project_tax', 'general_expenses']
+        if (customCategories.includes(formData.category)) {
+          if (['date', 'amount', 'description', 'employeeName', 'projectDepartment'].includes(field.id)) {
+            return null
+          }
+        }
 
-            return renderField(field)
-          })}
+        return renderField(field)
+      })}
 
-          {/* Receipt (Hardcoded at end) */}
-          <Form.Group className="mb-3">
-            <Form.Label>Receipt</Form.Label>
-            <Form.Control
-              type="file"
-              accept="image/*,.pdf"
-              onChange={handleFileChange}
-              isInvalid={!!errors.receiptFile}
-            />
-            {errors.receiptFile && (
-              <Form.Text className="text-danger d-block">{errors.receiptFile}</Form.Text>
-            )}
-            {filePreview && (
-              <div className="mt-3">
-                <div className="d-flex align-items-center gap-2 mb-2">
-                  <span className="text-muted small">Receipt Preview:</span>
-                  <Button variant="link" size="sm" className="text-danger p-0" onClick={handleRemoveFile}>Remove</Button>
-                </div>
-                {filePreview.startsWith('data:image/') ? (
-                  <img src={filePreview} alt="Receipt preview" style={{ maxWidth: '100%', maxHeight: '200px', border: '1px solid #dee2e6', borderRadius: '4px', padding: '4px' }} />
-                ) : (
-                  <div className="border p-3 rounded bg-light">
-                    <p className="mb-0 small text-muted">PDF file selected</p>
-                  </div>
-                )}
+      {/* Receipt (Hardcoded at end) */}
+      <Form.Group className="mb-3">
+        <Form.Label>Receipt</Form.Label>
+        <Form.Control
+          type="file"
+          accept="image/*,.pdf"
+          onChange={handleFileChange}
+          isInvalid={!!errors.receiptFile}
+        />
+        {errors.receiptFile && (
+          <Form.Text className="text-danger d-block">{errors.receiptFile}</Form.Text>
+        )}
+        {filePreview && (
+          <div className="mt-3">
+            <div className="d-flex align-items-center gap-2 mb-2">
+              <span className="text-muted small">Receipt Preview:</span>
+              <Button variant="link" size="sm" className="text-danger p-0" onClick={handleRemoveFile}>Remove</Button>
+            </div>
+            {filePreview.startsWith('data:image/') ? (
+              <img src={filePreview} alt="Receipt preview" style={{ maxWidth: '100%', maxHeight: '200px', border: '1px solid #dee2e6', borderRadius: '4px', padding: '4px' }} />
+            ) : (
+              <div className="border p-3 rounded bg-light">
+                <p className="mb-0 small text-muted">PDF file selected</p>
               </div>
             )}
-          </Form.Group>
-        </Form>
-      </Modal.Body>
-      <Modal.Footer>
-        {expense && (
-          <Button variant="danger" onClick={() => { if (window.confirm('Delete?')) { onDelete(expense.id); onHide(); } }}>Delete</Button>
+          </div>
         )}
-        <Button variant="secondary" onClick={onHide}>Cancel</Button>
-        <Button variant="primary" onClick={handleSave}>{expense ? 'Update' : 'Create'} Expense</Button>
-      </Modal.Footer>
-    </Modal>
+      </Form.Group>
+    </StandardModal>
   )
 }

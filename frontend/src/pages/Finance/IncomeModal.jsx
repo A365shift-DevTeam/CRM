@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Modal, Form, Button } from 'react-bootstrap'
+import { Form, Button } from 'react-bootstrap'
+import { StandardModal } from '../../components/StandardModal/StandardModal'
 
 const CATEGORIES = [
   { value: 'sales', label: 'Sales', color: '#10b981' },
@@ -180,12 +181,16 @@ export const IncomeModal = ({ show, onHide, income, onSave, onDelete, fields }) 
   }
 
   return (
-    <Modal show={show} onHide={onHide} size="lg">
-      <Modal.Header>
-        <Modal.Title>{income ? 'Edit Income' : 'Create New Income'}</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        <Form>
+    <StandardModal
+      show={show}
+      onHide={onHide}
+      title={income ? 'Edit Income' : 'Create New Income'}
+      size="lg"
+      onSubmit={handleSave}
+      submitLabel={income ? 'Update Income' : 'Create Income'}
+      onDelete={income ? () => { if (window.confirm('Delete?')) { onDelete(income.id); onHide(); } } : undefined}
+      deleteLabel="Delete"
+    >
           {fields && fields.sort((a, b) => (a.order || 99) - (b.order || 99)).map(field => {
             if (field.id === 'receipt') return null
             return renderField(field)
@@ -220,15 +225,6 @@ export const IncomeModal = ({ show, onHide, income, onSave, onDelete, fields }) 
               </div>
             )}
           </Form.Group>
-        </Form>
-      </Modal.Body>
-      <Modal.Footer>
-        {income && (
-          <Button variant="danger" onClick={() => { if (window.confirm('Delete?')) { onDelete(income.id); onHide(); } }}>Delete</Button>
-        )}
-        <Button variant="secondary" onClick={onHide}>Cancel</Button>
-        <Button variant="primary" onClick={handleSave}>{income ? 'Update' : 'Create'} Income</Button>
-      </Modal.Footer>
-    </Modal>
+    </StandardModal>
   )
 }

@@ -8,9 +8,11 @@ import { KanbanView } from './KanbanView'
 import { ChartView } from './ChartView'
 import { TimesheetModal } from './TimesheetModal'
 import { ColumnManager } from './ColumnManager'
+import { useToast } from '../../components/Toast/ToastContext'
 import './Timesheet.css'
 
 const Timesheet = () => {
+  const toast = useToast()
   const [entries, setEntries] = useState([])
   const [columns, setColumns] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -194,11 +196,12 @@ const Timesheet = () => {
         await timesheetService.createEntry({ values: entryData })
       }
       await loadData()
+      toast.success(editingEntry ? 'Entry updated successfully' : 'Entry created successfully')
       setShowEntryModal(false)
       setEditingEntry(null)
     } catch (error) {
       console.error('Error saving entry:', error)
-      alert('Failed to save entry: ' + (error.message || 'Unknown error'))
+      toast.error('Failed to save entry: ' + (error.message || 'Unknown error'))
     }
   }
 
@@ -206,11 +209,12 @@ const Timesheet = () => {
     try {
       await timesheetService.deleteEntry(entryId)
       await loadData()
+      toast.success('Entry deleted successfully')
       setShowEntryModal(false)
       setEditingEntry(null)
     } catch (error) {
       console.error('Error deleting entry:', error)
-      alert('Failed to delete entry: ' + (error.message || 'Unknown error'))
+      toast.error('Failed to delete entry')
     }
   }
 

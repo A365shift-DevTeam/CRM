@@ -175,6 +175,7 @@ public class AppDbContext : DbContext
         {
             e.ToTable("contact_columns");
             e.HasIndex(c => c.ColId).IsUnique();
+            e.Property(c => c.Config).HasColumnType("jsonb");
         });
 
         // ─── Projects ──────────────────────────────────────

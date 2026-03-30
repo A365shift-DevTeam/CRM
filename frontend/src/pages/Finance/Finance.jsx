@@ -7,13 +7,25 @@ import { ExpenseModal } from './ExpenseModal'
 import { IncomeModal } from './IncomeModal'
 import FinanceSettingsModal, { DEFAULT_EXPENSE_FIELDS, DEFAULT_INCOME_FIELDS } from './FinanceSettingsModal'
 import { formatGlobalCurrency } from '../../utils/currencyUtils'
+import { useToast } from '../../components/Toast/ToastContext'
 import './Finance.css'
 
 const EXPENSE_CATEGORIES = [
-  { id: 'transport', label: 'Transport', color: '#3b82f6' },
   { id: 'food', label: 'Food', color: '#f59e0b' },
   { id: 'accommodation', label: 'Accommodation', color: '#8b5cf6' },
-  { id: 'allowances', label: 'Allowances', color: '#10b981' }
+  { id: 'allowances', label: 'Allowances', color: '#10b981' },
+  { id: 'silicon_server', label: 'Silicon - Server', color: '#6366f1' },
+  { id: 'travel', label: 'Travel', color: '#3b82f6' },
+  { id: 'salary', label: 'Salary', color: '#14b8a6' },
+  { id: 'bank_charges', label: 'Bank Charges', color: '#f43f5e' },
+  { id: 'printing_stationery', label: 'Printing & Stationery', color: '#d946ef' },
+  { id: 'rent', label: 'Rent', color: '#0ea5e9' },
+  { id: 'professional_fees', label: 'Professional Fees', color: '#84cc16' },
+  { id: 'consultancy_charges', label: 'Consultancy Charges', color: '#eab308' },
+  { id: 'telephone_internet', label: 'Telephone Internet', color: '#06b6d4' },
+  { id: 'software_expenses', label: 'Software Expenses', color: '#a855f7' },
+  { id: 'project_tax', label: 'Project Tax & Charges', color: '#ea580c' },
+  { id: 'general_expenses', label: 'General Expenses', color: '#64748b' }
 ]
 
 const INCOME_CATEGORIES = [
@@ -24,6 +36,7 @@ const INCOME_CATEGORIES = [
 ]
 
 const Finance = () => {
+  const toast = useToast()
   const [expenses, setExpenses] = useState([])
   const [incomes, setIncomes] = useState([])
   const [showSettingsModal, setShowSettingsModal] = useState(false)
@@ -233,10 +246,11 @@ const Finance = () => {
       }
       await loadExpenses()
       setShowExpenseModal(false)
+      toast.success(editingExpense ? 'Expense updated' : 'Expense created')
       setEditingExpense(null)
     } catch (error) {
       console.error('Error saving expense:', error)
-      alert('Failed to save expense: ' + (error.message || 'Unknown error'))
+      toast.error('Failed to save expense')
     }
   }
 
@@ -249,9 +263,10 @@ const Finance = () => {
       setShowDetailModal(false)
       setViewingItem(null)
       setViewingType(null)
+      toast.success('Expense deleted')
     } catch (error) {
       console.error('Error deleting expense:', error)
-      alert('Failed to delete expense: ' + (error.message || 'Unknown error'))
+      toast.error('Failed to delete expense')
     }
   }
 
@@ -275,10 +290,11 @@ const Finance = () => {
       }
       await loadIncomes()
       setShowIncomeModal(false)
+      toast.success(editingIncome ? 'Income updated' : 'Income recorded')
       setEditingIncome(null)
     } catch (error) {
       console.error('Error saving income:', error)
-      alert('Failed to save income: ' + (error.message || 'Unknown error'))
+      toast.error('Failed to save income')
     }
   }
 
@@ -291,9 +307,10 @@ const Finance = () => {
       setShowDetailModal(false)
       setViewingItem(null)
       setViewingType(null)
+      toast.success('Income deleted')
     } catch (error) {
       console.error('Error deleting income:', error)
-      alert('Failed to delete income: ' + (error.message || 'Unknown error'))
+      toast.error('Failed to delete income')
     }
   }
 

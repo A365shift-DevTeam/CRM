@@ -4,6 +4,7 @@ import { Plus, GripVertical, Eye, EyeOff, Trash2, Edit2, X } from 'lucide-react'
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { useToast } from '../../components/Toast/ToastContext'
 
 const fieldTypes = [
   { value: 'text', label: 'Text' },
@@ -155,6 +156,7 @@ const SortableColumnItem = ({ column, onToggleVisibility, onEdit, onDelete }) =>
 }
 
 export const ColumnConfigModal = ({ show, onHide, column, onSave, onDelete }) => {
+  const toast = useToast()
   const [formData, setFormData] = useState({
     name: column?.name || '',
     type: column?.type || 'text',
@@ -198,7 +200,7 @@ export const ColumnConfigModal = ({ show, onHide, column, onSave, onDelete }) =>
 
   const handleSave = () => {
     if (!formData.name.trim()) {
-      alert('Column name is required')
+      toast.warning('Column name is required')
       return
     }
 
@@ -214,7 +216,7 @@ export const ColumnConfigModal = ({ show, onHide, column, onSave, onDelete }) =>
       })
 
       if (validOptions.length === 0) {
-        alert('Please add at least one option for choice field')
+        toast.warning('Please add at least one option for choice field')
         return
       }
 
@@ -237,7 +239,7 @@ export const ColumnConfigModal = ({ show, onHide, column, onSave, onDelete }) =>
       onHide()
     } catch (error) {
       console.error('Error saving column:', error)
-      alert('Failed to save column. Please try again.')
+      toast.error('Failed to save column. Please try again.')
     }
   }
 
@@ -501,6 +503,7 @@ export const ColumnConfigModal = ({ show, onHide, column, onSave, onDelete }) =>
 }
 
 export const ColumnManager = ({ columns, onColumnsChange, onReorder }) => {
+  const toast = useToast()
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingColumn, setEditingColumn] = useState(null)
 
@@ -538,7 +541,7 @@ export const ColumnManager = ({ columns, onColumnsChange, onReorder }) => {
       onColumnsChange([...currentColumns, newColumn])
     } catch (error) {
       console.error('Error adding column:', error)
-      alert('Failed to add column. Please try again.')
+      toast.error('Failed to add column. Please try again.')
     }
   }
 

@@ -20,6 +20,7 @@ import { incomeService } from '../../services/incomeService';
 import { expenseService } from '../../services/expenseService';
 import { addPDFHeader, generateInvoicePDF, generateTaxInvoicePDF, generateInvestorPaymentPDF, generatePaymentInvoicePDF } from '../../utils/pdfGenerator';
 import { numberToWords } from '../../utils/currencyUtils';
+import { useToast } from '../../components/Toast/ToastContext';
 
 // ==========================================
 // 1. STYLES (Injected CSS)
@@ -1551,6 +1552,7 @@ const detectTaxFromAddress = (address) => {
 };
 
 const ProjectTrackerComplete = () => {
+    const toast = useToast();
     const location = useLocation();
     const [searchParams] = useSearchParams();
 
@@ -1584,6 +1586,28 @@ const ProjectTrackerComplete = () => {
             }
 
             if (receivedProject) {
+                // Fetch the latest projects from backend to avoid race conditions
+                let fetchedProjects = [];
+                try {
+                    fetchedProjects = await projectFinanceService.getAll();
+                } catch (err) {
+                    console.error("Error fetching project finances during init:", err);
+                }
+
+                // Check if a project finance already exists for this project (by id or by matching projectId/clientName)
+                const existingProject = fetchedProjects.find(p =>
+                    p.id === receivedProject.id ||
+                    p._id === receivedProject.id ||
+                    (p.projectId && receivedProject.customId && p.projectId === receivedProject.customId)
+                );
+
+                if (existingProject) {
+                    setProjects(fetchedProjects);
+                    setActiveProjectId(existingProject.id || existingProject._id);
+                    setView('invoice');
+                    return;
+                }
+
                 // Fetch contacts to find address/country
                 let retrievedAddress = '';
                 let retrievedCountry = 'India'; // Default fallback
@@ -1628,52 +1652,56 @@ const ProjectTrackerComplete = () => {
                     console.error("Error fetching contacts for invoice init:", err);
                 }
 
-                setProjects(prevProjects => {
-                    const exists = prevProjects.find(p => p.id === receivedProject.id);
-                    if (exists) {
-                        setActiveProjectId(receivedProject.id);
-                        setView('invoice');
-                        return prevProjects;
-                    }
+                // Map Sales data to Invoice structure with fetched Location
+                const taxConfig = detectTaxFromAddress(receivedProject.clientAddress || retrievedAddress);
 
-                    // Map Sales data to Invoice structure with fetched Location
-                    const taxConfig = detectTaxFromAddress(receivedProject.clientAddress || retrievedAddress);
+                const newProject = {
+                    type: receivedProject.type || 'Product',
+                    projectId: receivedProject.customId || `PROJ-${receivedProject.id}`,
+                    dateCreated: new Date().toISOString(),
+                    clientName: receivedProject.clientName || 'Unknown Client',
+                    delivery: receivedProject.brandingName || '',
+                    dealValue: 0,
+                    currency: taxConfig.country === 'Other' ? 'AED' : 'INR',
+                    location: retrievedAddress || 'India',
+                    stakeholders: [],
+                    milestones: [],
+                    charges: [{
+                        id: 1,
+                        name: taxConfig.name,
+                        taxType: taxConfig.taxType,
+                        country: taxConfig.country,
+                        state: taxConfig.state,
+                        percentage: taxConfig.percentage
+                    }],
+                    clientEmail: receivedProject.clientEmail || '',
+                    clientPhone: receivedProject.clientPhone || '',
+                    clientAddress: receivedProject.clientAddress || '',
+                    clientGstin: receivedProject.clientGstin || '',
+                    clientPan: receivedProject.clientPan || '',
+                    clientCin: receivedProject.clientCin || '',
+                    msmeStatus: receivedProject.msmeStatus || 'NON MSME',
+                    tdsSection: receivedProject.tdsSection || '',
+                    tdsRate: receivedProject.tdsRate || ''
+                };
 
-                    const newProject = {
-                        type: receivedProject.type || 'Product',
-                        id: receivedProject.id,
-                        projectId: receivedProject.customId || `PROJ-${receivedProject.id}`,
-                        dateCreated: new Date().toISOString(),
-                        clientName: receivedProject.clientName || 'Unknown Client',
-                        delivery: receivedProject.brandingName || '',
-                        dealValue: 0,
-                        currency: taxConfig.country === 'Other' ? 'AED' : 'INR',
-                        location: retrievedAddress || 'India',
-                        stakeholders: [],
-                        milestones: [],
-                        charges: [{
-                            id: 1,
-                            name: taxConfig.name,
-                            taxType: taxConfig.taxType,
-                            country: taxConfig.country,
-                            state: taxConfig.state,
-                            percentage: taxConfig.percentage
-                        }],
-                        clientEmail: receivedProject.clientEmail || '',
-                        clientPhone: receivedProject.clientPhone || '',
-                        clientAddress: receivedProject.clientAddress || '',
-                        clientGstin: receivedProject.clientGstin || '',
-                        clientPan: receivedProject.clientPan || '',
-                        clientCin: receivedProject.clientCin || '',
-                        msmeStatus: receivedProject.msmeStatus || 'NON MSME',
-                        tdsSection: receivedProject.tdsSection || '',
-                        tdsRate: receivedProject.tdsRate || ''
-                    };
-
-                    setActiveProjectId(newProject.id);
+                try {
+                    // Persist to backend and use the returned ID (which may differ from receivedProject.id)
+                    const savedProject = await projectFinanceService.create(newProject);
+                    const savedId = savedProject.id || savedProject._id;
+                    const projectWithId = { ...newProject, id: savedId, _id: savedId };
+                    setProjects([...fetchedProjects, projectWithId]);
+                    setActiveProjectId(savedId);
                     setView('invoice');
-                    return [...prevProjects, newProject];
-                });
+                } catch (err) {
+                    console.error("Error creating project finance:", err);
+                    // Fallback: add to local state with a generated ID so the page still works
+                    const fallbackId = receivedProject.id || Date.now();
+                    const projectWithId = { ...newProject, id: fallbackId };
+                    setProjects([...fetchedProjects, projectWithId]);
+                    setActiveProjectId(fallbackId);
+                    setView('invoice');
+                }
             }
         };
 
@@ -1707,7 +1735,7 @@ const ProjectTrackerComplete = () => {
                 }
             } catch (err) {
                 console.error("Error deleting project:", err);
-                alert('Failed to delete project.');
+                toast.error('Failed to delete project.');
             }
         }
     };
@@ -1722,10 +1750,10 @@ const ProjectTrackerComplete = () => {
             } catch {
                 await projectFinanceService.create(activeProject);
             }
-            alert('Project finance details saved successfully!');
+            toast.success('Project finance details saved successfully!');
         } catch (error) {
             console.error("Error saving project:", error);
-            alert('Failed to save project.');
+            toast.error('Failed to save project.');
         }
     };
 
@@ -1791,7 +1819,7 @@ const ProjectTrackerComplete = () => {
     const addMilestone = () => {
         const currentTotalPct = (activeProject?.milestones || []).reduce((sum, m) => sum + (parseFloat(m.percentage) || 0), 0);
         if (currentTotalPct >= 100) {
-            alert('Cannot add more payment stages: Total percentage is already 100%.');
+            toast.warning('Cannot add more payment stages: Total percentage is already 100%.');
             return;
         }
 

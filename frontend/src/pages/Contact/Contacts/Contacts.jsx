@@ -13,11 +13,13 @@ import { KanbanView } from './KanbanView'
 import { ChartView } from './ChartView'
 import { ContactModal } from './ContactModal'
 import { AIAssistModal } from './AIAssistModal'
+import { useToast } from '../../../components/Toast/ToastContext'
 import './Contacts.css'
 
 const DEFAULT_STATUS_COLUMNS = ['Active', 'Inactive', 'Lead', 'Customer']
 
 const Contacts = () => {
+  const toast = useToast()
   const [contacts, setContacts] = useState([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -93,7 +95,13 @@ const Contacts = () => {
     try {
       const cols = await contactService.getColumns()
       if (cols && cols.length > 0) {
-        setContactColumns(cols)
+        // Map backend colId to frontend id for compatibility
+        const mapped = cols.map(col => ({
+          ...col,
+          id: col.colId || col.id,
+          config: col.config || {}
+        }))
+        setContactColumns(mapped)
       }
     } catch (error) {
       console.error('Error loading columns:', error)
@@ -102,11 +110,20 @@ const Contacts = () => {
     }
   }
 
-  useEffect(() => {
-    if (columnsLoaded) {
-      contactService.saveColumns(contactColumns).catch(console.error)
+  const handleColumnsChange = async (newColumns) => {
+    try {
+      const updatedColumns = await contactService.getColumns()
+      const mapped = (updatedColumns || []).map(col => ({
+        ...col,
+        id: col.colId || col.id,
+        config: col.config || {}
+      }))
+      setContactColumns(mapped)
+    } catch (error) {
+      console.error('Error refreshing columns:', error)
+      setContactColumns(newColumns || [])
     }
-  }, [contactColumns, columnsLoaded])
+  }
 
   const loadContacts = async () => {
     try {
@@ -207,7 +224,7 @@ const Contacts = () => {
         setStatusColumns([...statusColumns, newCol])
       }
     } else {
-      alert('Can only add columns when grouping by Status')
+      toast.warning('Can only add columns when grouping by Status')
     }
   }
 
@@ -216,6 +233,7 @@ const Contacts = () => {
       handleAddColumn(newColumnName.trim())
       setNewColumnName('')
       setShowAddColumnModal(false)
+      toast.success('Status column added')
     }
   }
 
@@ -232,7 +250,7 @@ const Contacts = () => {
         handleTaskUpdate(c.id, { status: newCol }) // Optimistic update
       })
     } else {
-      alert('Can only modify columns when grouping by Status')
+      toast.warning('Can only modify columns when grouping by Status')
     }
   }
 
@@ -246,9 +264,10 @@ const Contacts = () => {
         contactsToMove.forEach(c => {
           handleTaskUpdate(c.id, { status: fallback })
         })
+        toast.info('Column deleted')
       }
     } else {
-      alert('Can only delete columns when grouping by Status')
+      toast.warning('Can only delete columns when grouping by Status')
     }
   }
 
@@ -288,30 +307,22 @@ const Contacts = () => {
         }
       })
 
-      // Debug: Log all fields being saved, especially category
-      console.log('Saving contact data:', {
-        originalCategory: contactData.category,
-        categoryType: typeof contactData.category,
-        allFields: Object.keys(contactData),
-        cleanedData: cleanedData,
-        categoryInCleaned: cleanedData.category
-      })
-
       if (editingContact) {
-        console.log('Updating contact:', editingContact.id, 'with data:', cleanedData)
         await contactService.updateContact(editingContact.id, cleanedData)
-        console.log('Contact updated successfully')
+        await loadContacts()
+        setShowContactModal(false)
+        setEditingContact(null)
+        toast.success('Contact updated successfully')
       } else {
-        console.log('Creating new contact with data:', cleanedData)
         await contactService.createContact(cleanedData)
-        console.log('Contact created successfully')
+        await loadContacts()
+        setShowContactModal(false)
+        setEditingContact(null)
+        toast.success('Contact created successfully')
       }
-      await loadContacts()
-      setShowContactModal(false)
-      setEditingContact(null)
     } catch (error) {
       console.error('Error saving contact:', error)
-      alert('Failed to save contact')
+      toast.error('Failed to save contact')
     }
   }
 
@@ -321,9 +332,10 @@ const Contacts = () => {
       await loadContacts()
       setShowContactModal(false)
       setEditingContact(null)
+      toast.success('Contact deleted successfully')
     } catch (error) {
       console.error('Error deleting contact:', error)
-      alert('Failed to delete contact')
+      toast.error('Failed to delete contact')
     }
   }
 
@@ -390,12 +402,12 @@ const Contacts = () => {
     try {
       await projectService.create(newProject)
       const typeLabel = convertType === 'Product' ? productLabel : serviceLabel
-      alert(`✅ Contact "${c.name}" converted to a ${typeLabel} sales project!`)
+      toast.success(`Contact "${c.name}" converted to a ${typeLabel} sales project!`)
       setShowConvertModal(false)
       setConvertingContact(null)
     } catch (error) {
       console.error('Error converting contact to sales:', error)
-      alert('Failed to convert contact. Please try again.')
+      toast.error('Failed to convert contact. Please try again.')
     }
   }
 
@@ -868,6 +880,7 @@ const Contacts = () => {
                             const [moved] = newCols.splice(fromIdx, 1);
                             newCols.splice(toIdx, 0, moved);
                             setContactColumns(newCols);
+                            saveColumnsToBackend(newCols);
                           }
                         }
                       }}
@@ -924,9 +937,11 @@ const Contacts = () => {
                           variant="link"
                           size="sm"
                           onClick={() => {
-                            setContactColumns(prev => prev.map(c =>
+                            const updated = contactColumns.map(c =>
                               c.id === column.id ? { ...c, visible: !c.visible } : c
-                            ));
+                            );
+                            setContactColumns(updated);
+                            saveColumnsToBackend(updated);
                           }}
                           title={column.visible ? 'Hide column' : 'Show column'}
                           className={`action-btn visibility-btn ${!column.visible ? 'hidden' : ''}`}
@@ -939,7 +954,10 @@ const Contacts = () => {
                             size="sm"
                             onClick={() => {
                               if (window.confirm(`Delete column "${column.name}"?`)) {
-                                setContactColumns(prev => prev.filter(c => c.id !== column.id));
+                                const updated = contactColumns.filter(c => c.id !== column.id);
+                                setContactColumns(updated);
+                                saveColumnsToBackend(updated);
+                                toast.success('Column deleted');
                               }
                             }}
                             title="Delete column"
@@ -1108,8 +1126,11 @@ const Contacts = () => {
                 required: addColData.required,
                 config: addColData.config
               };
-              setContactColumns(prev => [...prev, newColumn]);
+              const updated = [...contactColumns, newColumn];
+              setContactColumns(updated);
+              saveColumnsToBackend(updated);
               setShowAddColForm(false);
+              toast.success('Column added successfully');
             }}
             disabled={!addColData.name.trim()}
             style={{ borderRadius: '8px', fontWeight: 600, padding: '8px 20px' }}
@@ -1262,8 +1283,11 @@ const Contacts = () => {
             variant="primary"
             onClick={() => {
               if (!editColData.name.trim()) return;
-              setContactColumns(prev => prev.map(c => c.id === editColData.id ? editColData : c));
+              const updated = contactColumns.map(c => c.id === editColData.id ? editColData : c);
+              setContactColumns(updated);
+              saveColumnsToBackend(updated);
               setShowEditColForm(false);
+              toast.success('Column updated successfully');
             }}
             disabled={!editColData.name.trim()}
             style={{ borderRadius: '8px', fontWeight: 600, padding: '8px 20px' }}

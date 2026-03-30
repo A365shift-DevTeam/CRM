@@ -6,9 +6,12 @@ import { KanbanView } from './KanbanView'
 import { TaskModal } from './TaskModal'
 import { ColumnManager, ColumnConfigModal } from './ColumnManager'
 import { taskService } from '../../services/api'
+import { useToast } from '../../components/Toast/ToastContext'
 import './TodoList.css'
 
 const TodoList = () => {
+    const toast = useToast()
+
     // Initial State
     const [view, setView] = useState('list') // 'list', 'board'
     const [tasks, setTasks] = useState([])
@@ -106,9 +109,10 @@ const TodoList = () => {
 
             const createdTask = await taskService.create(newTaskData)
             setTasks([createdTask, ...tasks])
+            toast.success('Task created successfully')
         } catch (error) {
             console.error("Error creating task:", error)
-            alert("Failed to create task. Please try again.")
+            toast.error('Failed to create task')
         }
     }
 
@@ -127,9 +131,10 @@ const TodoList = () => {
                     : t
             ))
             setEditingTask(null)
+            toast.success('Task updated successfully')
         } catch (error) {
             console.error("Error updating task:", error)
-            alert("Failed to update task. Please try again.")
+            toast.error('Failed to update task')
         }
     }
 
@@ -141,9 +146,10 @@ const TodoList = () => {
             try {
                 await taskService.delete(taskToDelete.firebaseId)
                 setTasks(tasks.filter(t => t.id !== taskId))
+                toast.success('Task deleted')
             } catch (error) {
                 console.error("Error deleting task:", error)
-                alert("Failed to delete task. Please try again.")
+                toast.error('Failed to delete task')
             }
         }
     }
@@ -179,7 +185,7 @@ const TodoList = () => {
             setShowColumnConfigModal(false)
         } catch (error) {
             console.error('Error saving column:', error)
-            alert('Failed to save column. Please try again.')
+            toast.error('Failed to save column. Please try again.')
         }
     }
 

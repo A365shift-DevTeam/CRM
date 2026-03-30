@@ -1,0 +1,267 @@
+/* ── Standard Kanban — Unified CRM Kanban Style ─── */
+
+.std-kanban-container {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding: 8px 4px 16px;
+  min-height: 400px;
+}
+
+/* ── Column Wrapper ──────────────────────────────── */
+.std-kanban-column-wrapper {
+  min-width: 320px;
+  max-width: 360px;
+  flex-shrink: 0;
+}
+
+.std-kanban-column {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-md, 12px);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.std-kanban-column-highlight {
+  background: rgba(59, 130, 246, 0.04);
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.08);
+}
+
+/* ── Column Header ───────────────────────────────── */
+.std-kanban-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-top: 4px solid #3b82f6;
+  border-radius: var(--radius-md, 12px) var(--radius-md, 12px) 0 0;
+  background: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.std-kanban-color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.std-kanban-column-title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #0f172a;
+}
+
+.std-kanban-count {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+  padding: 2px 8px !important;
+  border: 1px solid #e2e8f0;
+}
+
+.std-kanban-menu-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  border-radius: 6px;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.std-kanban-menu-btn:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.std-kanban-menu-btn::after {
+  display: none !important;
+}
+
+/* ── Droppable Area ──────────────────────────────── */
+.std-kanban-droppable {
+  min-height: 120px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  transition: background-color 0.2s;
+}
+
+.std-kanban-droppable-active {
+  background-color: rgba(59, 130, 246, 0.04);
+}
+
+/* ── Cards ───────────────────────────────────────── */
+.std-kanban-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 60px;
+}
+
+.std-kanban-card {
+  border: none !important;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  background: #ffffff !important;
+  transition: box-shadow 0.2s, transform 0.2s !important;
+  overflow: hidden;
+}
+
+.std-kanban-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04) !important;
+  transform: translateY(-1px);
+}
+
+.std-kanban-card .card-body {
+  padding: 14px !important;
+}
+
+/* ── Overlay Card (while dragging) ───────────────── */
+.std-kanban-overlay-card {
+  width: 320px;
+  cursor: grabbing;
+}
+
+.std-kanban-overlay-card .std-kanban-card {
+  border: 2px solid #3b82f6 !important;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(59, 130, 246, 0.2) !important;
+  transform: rotate(2deg) scale(1.02);
+}
+
+/* ── Empty State ─────────────────────────────────── */
+.std-kanban-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: #94a3b8;
+  font-size: 0.825rem;
+  border: 2px dashed #e2e8f0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.5);
+  margin: 4px;
+}
+
+/* ── Add Column ──────────────────────────────────── */
+.std-kanban-add-column {
+  min-width: 200px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.std-kanban-add-btn {
+  background: rgba(255, 255, 255, 0.6);
+  border: 2px dashed #d1d5db;
+  border-radius: var(--radius-md, 12px);
+  padding: 16px 24px;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.std-kanban-add-btn:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.04);
+}
+
+.std-kanban-add-form {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md, 12px);
+  padding: 16px;
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* ── Card Content Helpers (shared across all pages) ── */
+.std-kanban-card-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+
+.std-kanban-card-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.std-kanban-card-field svg {
+  flex-shrink: 0;
+  opacity: 0.65;
+}
+
+.std-kanban-card-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.std-kanban-card:hover .std-kanban-card-actions {
+  opacity: 1;
+}
+
+.std-kanban-card-actions button {
+  background: none;
+  border: none;
+  padding: 4px;
+  border-radius: 6px;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.15s;
+}
+
+.std-kanban-card-actions button:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.std-kanban-card-actions button.action-danger:hover {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+/* ── Avatar Helper ───────────────────────────────── */
+.std-kanban-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+/* ── Responsive ──────────────────────────────────── */
+@media (max-width: 768px) {
+  .std-kanban-column-wrapper {
+    min-width: 280px;
+  }
+}
