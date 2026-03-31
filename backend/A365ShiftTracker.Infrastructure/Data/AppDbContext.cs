@@ -353,6 +353,8 @@ public class AppDbContext : DbContext
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        NormalizeDateTimeKinds();
+
         foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
         {
             if (entry.State == EntityState.Modified)
@@ -365,6 +367,43 @@ public class AppDbContext : DbContext
         }
 
         return base.SaveChangesAsync(cancellationToken);
+    }
+
+    private void NormalizeDateTimeKinds()
+    {
+        foreach (var entry in ChangeTracker.Entries()
+                     .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified))
+        {
+            foreach (var property in entry.Properties)
+            {
+                var propertyType = property.Metadata.ClrType;
+
+                if (propertyType == typeof(DateTime))
+                {
+                    if (property.CurrentValue is DateTime dt)
+                    {
+                        property.CurrentValue = NormalizeDateTime(dt);
+                    }
+                }
+                else if (propertyType == typeof(DateTime?))
+                {
+                    if (property.CurrentValue is DateTime dtNullable)
+                    {
+                        property.CurrentValue = NormalizeDateTime(dtNullable);
+                    }
+                }
+            }
+        }
+    }
+
+    private static DateTime NormalizeDateTime(DateTime value)
+    {
+        return value.Kind switch
+        {
+            DateTimeKind.Utc => value,
+            DateTimeKind.Local => value.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+        };
     }
 
     private static string ToSnakeCase(string name)

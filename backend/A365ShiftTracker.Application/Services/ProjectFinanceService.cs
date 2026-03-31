@@ -11,6 +11,19 @@ public class ProjectFinanceService : IProjectFinanceService
 
     public ProjectFinanceService(IUnitOfWork uow) => _uow = uow;
 
+    private static DateTime? EnsureUtc(DateTime? dateTime)
+    {
+        if (!dateTime.HasValue) return null;
+        var value = dateTime.Value;
+
+        return value.Kind switch
+        {
+            DateTimeKind.Utc => value,
+            DateTimeKind.Local => value.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+        };
+    }
+
     public async Task<IEnumerable<ProjectFinanceDto>> GetAllAsync(int userId)
     {
         var finances = await _uow.ProjectFinances.Query()
@@ -57,7 +70,7 @@ public class ProjectFinanceService : IProjectFinanceService
             entity.Milestones.Add(new Milestone
             {
                 Name = m.Name, Percentage = m.Percentage, Status = m.Status,
-                InvoiceDate = m.InvoiceDate, PaidDate = m.PaidDate,
+                InvoiceDate = EnsureUtc(m.InvoiceDate), PaidDate = EnsureUtc(m.PaidDate),
                 IsCustomName = m.IsCustomName, Order = m.Order
             });
         }
@@ -68,7 +81,7 @@ public class ProjectFinanceService : IProjectFinanceService
             entity.Stakeholders.Add(new Stakeholder
             {
                 Name = s.Name, Percentage = s.Percentage, PayoutTax = s.PayoutTax,
-                PayoutStatus = s.PayoutStatus, PaidDate = s.PaidDate
+                PayoutStatus = s.PayoutStatus, PaidDate = EnsureUtc(s.PaidDate)
             });
         }
 
@@ -118,7 +131,7 @@ public class ProjectFinanceService : IProjectFinanceService
             entity.Milestones.Add(new Milestone
             {
                 Name = m.Name, Percentage = m.Percentage, Status = m.Status,
-                InvoiceDate = m.InvoiceDate, PaidDate = m.PaidDate,
+                InvoiceDate = EnsureUtc(m.InvoiceDate), PaidDate = EnsureUtc(m.PaidDate),
                 IsCustomName = m.IsCustomName, Order = m.Order
             });
         }
@@ -130,7 +143,7 @@ public class ProjectFinanceService : IProjectFinanceService
             entity.Stakeholders.Add(new Stakeholder
             {
                 Name = s.Name, Percentage = s.Percentage, PayoutTax = s.PayoutTax,
-                PayoutStatus = s.PayoutStatus, PaidDate = s.PaidDate
+                PayoutStatus = s.PayoutStatus, PaidDate = EnsureUtc(s.PaidDate)
             });
         }
 
