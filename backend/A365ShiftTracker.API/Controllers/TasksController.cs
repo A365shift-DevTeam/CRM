@@ -46,4 +46,41 @@ public class TasksController : BaseApiController
         await _service.DeleteAsync(id, userId);
         return Ok(ApiResponse<bool>.Ok(true, "Task deleted."));
     }
+
+    // ─── Columns (shared across users) ───────────────────
+
+    [HttpGet("columns")]
+    public async Task<ActionResult<ApiResponse<List<TaskColumnDto>>>> GetColumns()
+    {
+        var result = await _service.GetColumnsAsync();
+        return Ok(ApiResponse<List<TaskColumnDto>>.Ok(result));
+    }
+
+    [HttpPost("columns/add")]
+    public async Task<ActionResult<ApiResponse<TaskColumnDto>>> AddColumn(CreateTaskColumnRequest request)
+    {
+        var result = await _service.AddColumnAsync(request);
+        return Ok(ApiResponse<TaskColumnDto>.Ok(result, "Column added."));
+    }
+
+    [HttpPut("columns/{colId}")]
+    public async Task<ActionResult<ApiResponse<TaskColumnDto>>> UpdateColumn(string colId, UpdateTaskColumnRequest request)
+    {
+        var result = await _service.UpdateColumnAsync(colId, request);
+        return Ok(ApiResponse<TaskColumnDto>.Ok(result, "Column updated."));
+    }
+
+    [HttpDelete("columns/{colId}")]
+    public async Task<ActionResult<ApiResponse<bool>>> DeleteColumn(string colId)
+    {
+        await _service.DeleteColumnAsync(colId);
+        return Ok(ApiResponse<bool>.Ok(true, "Column deleted."));
+    }
+
+    [HttpPost("columns/reorder")]
+    public async Task<ActionResult<ApiResponse<bool>>> ReorderColumns(ReorderTaskColumnsRequest request)
+    {
+        await _service.ReorderColumnsAsync(request);
+        return Ok(ApiResponse<bool>.Ok(true, "Columns reordered."));
+    }
 }

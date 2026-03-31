@@ -19,6 +19,7 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<ContactColumn>? _contactColumns;
     private IRepository<Project>? _projects;
     private IRepository<TaskItem>? _tasks;
+    private IRepository<TaskColumn>? _taskColumns;
     private IRepository<ProjectFinance>? _projectFinances;
     private IRepository<Milestone>? _milestones;
     private IRepository<Stakeholder>? _stakeholders;
@@ -47,6 +48,7 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<ContactColumn> ContactColumns => _contactColumns ??= new Repository<ContactColumn>(_context);
     public IRepository<Project> Projects => _projects ??= new Repository<Project>(_context);
     public IRepository<TaskItem> Tasks => _tasks ??= new Repository<TaskItem>(_context);
+    public IRepository<TaskColumn> TaskColumns => _taskColumns ??= new Repository<TaskColumn>(_context);
     public IRepository<ProjectFinance> ProjectFinances => _projectFinances ??= new Repository<ProjectFinance>(_context);
     public IRepository<Milestone> Milestones => _milestones ??= new Repository<Milestone>(_context);
     public IRepository<Stakeholder> Stakeholders => _stakeholders ??= new Repository<Stakeholder>(_context);

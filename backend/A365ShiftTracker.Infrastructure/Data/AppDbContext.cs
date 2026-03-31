@@ -17,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<ContactColumn> ContactColumns => Set<ContactColumn>();
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<TaskItem> Tasks => Set<TaskItem>();
+    public DbSet<TaskColumn> TaskColumns => Set<TaskColumn>();
     public DbSet<ProjectFinance> ProjectFinances => Set<ProjectFinance>();
     public DbSet<Milestone> Milestones => Set<Milestone>();
     public DbSet<Stakeholder> Stakeholders => Set<Stakeholder>();
@@ -192,6 +193,14 @@ public class AppDbContext : DbContext
             e.ToTable("tasks");
             e.Property(t => t.Values).HasColumnType("jsonb");
             e.HasIndex(t => t.UserId);
+        });
+
+        // ─── Task Columns ──────────────────────────────────
+        modelBuilder.Entity<TaskColumn>(e =>
+        {
+            e.ToTable("task_columns");
+            e.HasIndex(c => c.ColId).IsUnique();
+            e.Property(c => c.Config).HasColumnType("jsonb");
         });
 
         // ─── Project Finances ──────────────────────────────

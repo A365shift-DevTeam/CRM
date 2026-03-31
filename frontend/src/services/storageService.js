@@ -1,15 +1,70 @@
-/**
- * Upload a file (Disabled - not yet implemented in backend)
- */
-export async function uploadFile(file, folder = 'timesheet-attachments') {
-  throw new Error('File upload is not yet implemented in the backend API.')
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5231/api'
+
+function getToken() {
+  return localStorage.getItem('auth_token')
 }
 
 /**
- * Delete a file (Disabled - not yet implemented in backend)
+ * Upload a file to the backend
+ * @param {File} file - The file to upload
+ * @param {string} folder - Subfolder name (e.g. 'timesheet-attachments', 'finance-receipts')
+ * @returns {Promise<{url: string, fileName: string, fileType: string, fileSize: number}>}
+ */
+export async function uploadFile(file, folder = 'general') {
+  const token = getToken()
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('folder', folder)
+
+  const response = await fetch(`${API_BASE_URL}/upload`, {
+    method: 'POST',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
+    body: formData
+  })
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}))
+    throw new Error(err.error || `Upload failed with status ${response.status}`)
+  }
+
+  const data = await response.json()
+  // Return full URL for display/download
+  const baseUrl = API_BASE_URL.replace('/api', '')
+  return {
+    url: `${baseUrl}${data.url}`,
+    fileName: data.fileName,
+    fileType: data.fileType,
+    fileSize: data.fileSize,
+    publicId: data.url // Use the relative path as the publicId for deletion
+  }
+}
+
+/**
+ * Delete a file from the backend
+ * @param {string} publicId - The relative URL path (e.g. /uploads/general/abc123.jpg)
  */
 export async function deleteFile(publicId) {
-  console.warn('File deletion skipped: not yet implemented in backend')
+  if (!publicId) return { success: true }
+
+  const token = getToken()
+  // Extract relative path if full URL was passed
+  const relPath = publicId.includes('/uploads/')
+    ? publicId.substring(publicId.indexOf('/uploads/'))
+    : publicId
+
+  const response = await fetch(`${API_BASE_URL}/upload?url=${encodeURIComponent(relPath)}`, {
+    method: 'DELETE',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    }
+  })
+
+  if (!response.ok) {
+    console.warn('File deletion failed:', response.status)
+  }
+
   return { success: true }
 }
 

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Container, Row, Col, Card, Button, InputGroup, Form, Dropdown } from 'react-bootstrap'
-import { Plus, LayoutGrid, List as ListIcon, Search, SlidersHorizontal, Settings, Calendar, ClipboardList, AlertCircle, Clock, ChevronDown, Filter, BarChart2, ArrowUpDown, X } from 'lucide-react'
+import { Plus, LayoutGrid, List as ListIcon, Search, SlidersHorizontal, Settings, Calendar, ClipboardList, AlertCircle, Clock, ChevronDown, Filter, BarChart2, ArrowUpDown } from 'lucide-react'
 import { ListView } from './ListView'
 import { KanbanView } from './KanbanView'
 import { TaskModal } from './TaskModal'
-import { ColumnManager, ColumnConfigModal } from './ColumnManager'
+import { ColumnManager } from './ColumnManager'
 import { taskService } from '../../services/api'
 import { useToast } from '../../components/Toast/ToastContext'
 import './TodoList.css'
@@ -17,7 +17,18 @@ const TodoList = () => {
     const [tasks, setTasks] = useState([])
     const [loading, setLoading] = useState(true)
 
-    // Fetch Tasks
+    const loadColumns = async () => {
+        try {
+            const data = await taskService.getColumns()
+            if (data && Array.isArray(data)) {
+                setColumns(data.map(col => ({ ...col, id: col.colId || col.id })))
+            }
+        } catch (error) {
+            console.error("Error fetching columns:", error)
+        }
+    }
+
+    // Fetch Tasks and Columns
     useEffect(() => {
         const fetchTasks = async () => {
             try {
@@ -31,6 +42,7 @@ const TodoList = () => {
             }
         }
         fetchTasks()
+        loadColumns()
     }, [])
 
     const [columns, setColumns] = useState([
@@ -69,8 +81,6 @@ const TodoList = () => {
     const [showTaskModal, setShowTaskModal] = useState(false)
     const [editingTask, setEditingTask] = useState(null)
     const [showColumnManager, setShowColumnManager] = useState(false)
-    const [showColumnConfigModal, setShowColumnConfigModal] = useState(false)
-    const [editingColumnConfig, setEditingColumnConfig] = useState(null)
     const [searchQuery, setSearchQuery] = useState('')
 
     // Filtering and Sorting
@@ -117,10 +127,10 @@ const TodoList = () => {
     }
 
     const handleUpdateTask = async (updatedValues, notify) => {
-        if (!editingTask || !editingTask.firebaseId) return
+        if (!editingTask || !editingTask.id) return
 
         try {
-            await taskService.update(editingTask.firebaseId, {
+            await taskService.update(editingTask.id, {
                 values: updatedValues,
                 notify
             })
@@ -139,12 +149,9 @@ const TodoList = () => {
     }
 
     const handleDeleteTask = async (taskId) => {
-        const taskToDelete = tasks.find(t => t.id === taskId)
-        if (!taskToDelete || !taskToDelete.firebaseId) return
-
         if (window.confirm('Are you sure you want to delete this task?')) {
             try {
-                await taskService.delete(taskToDelete.firebaseId)
+                await taskService.delete(taskId)
                 setTasks(tasks.filter(t => t.id !== taskId))
                 toast.success('Task deleted')
             } catch (error) {
@@ -155,11 +162,8 @@ const TodoList = () => {
     }
 
     const handleKanbanUpdate = async (taskId, updates) => {
-        const taskToUpdate = tasks.find(t => t.id === taskId)
-        if (!taskToUpdate || !taskToUpdate.firebaseId) return
-
         try {
-            await taskService.update(taskToUpdate.firebaseId, updates)
+            await taskService.update(taskId, updates)
             setTasks(tasks.map(t =>
                 t.id === taskId ? { ...t, ...updates } : t
             ))
@@ -168,33 +172,8 @@ const TodoList = () => {
         }
     }
 
-    const handleSaveColumnFromModal = (columnData) => {
-        try {
-            if (editingColumnConfig) {
-                setColumns(columns.map(col =>
-                    col.id === editingColumnConfig.id ? { ...col, ...columnData } : col
-                ))
-            } else {
-                const newColumn = {
-                    ...columnData,
-                    id: `col-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-                }
-                setColumns([...columns, newColumn])
-            }
-            setEditingColumnConfig(null)
-            setShowColumnConfigModal(false)
-        } catch (error) {
-            console.error('Error saving column:', error)
-            toast.error('Failed to save column. Please try again.')
-        }
-    }
-
-    const handleDeleteColumnFromModal = (columnId) => {
-        if (window.confirm('Are you sure you want to delete this field? All data in this field will be lost.')) {
-            setColumns(columns.filter(col => col.id !== columnId))
-            setEditingColumnConfig(null)
-            setShowColumnConfigModal(false)
-        }
+    const handleColumnsChange = async () => {
+        await loadColumns()
     }
 
     // Filtered Tasks
@@ -419,53 +398,17 @@ const TodoList = () => {
                 columns={columns}
                 onSave={editingTask ? handleUpdateTask : handleAddTask}
                 onDelete={handleDeleteTask}
-                onAddColumn={() => {
-                    setEditingColumnConfig(null)
-                    setShowColumnConfigModal(true)
-                }}
-                onEditColumn={(col) => {
-                    setEditingColumnConfig(col)
-                    setShowColumnConfigModal(true)
-                }}
-                onDeleteColumn={handleDeleteColumnFromModal}
+                onAddColumn={() => setShowColumnManager(true)}
+                onEditColumn={() => setShowColumnManager(true)}
+                onDeleteColumn={() => setShowColumnManager(true)}
             />
 
-            <ColumnConfigModal
-                show={showColumnConfigModal}
-                onHide={() => {
-                    setShowColumnConfigModal(false)
-                    setEditingColumnConfig(null)
-                }}
-                column={editingColumnConfig}
-                onSave={handleSaveColumnFromModal}
-                onDelete={handleDeleteColumnFromModal}
+            <ColumnManager
+                show={showColumnManager}
+                onHide={() => setShowColumnManager(false)}
+                columns={columns}
+                onColumnsChange={handleColumnsChange}
             />
-
-            {showColumnManager && (
-                <div className="column-manager-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowColumnManager(false); }}>
-                    <div className="column-manager-modal">
-                        <div className="column-manager-modal-header">
-                            <div>
-                                <h4 className="column-manager-modal-title">Customize Columns</h4>
-                                <p className="column-manager-modal-subtitle">Drag to reorder, toggle visibility, or add new columns</p>
-                            </div>
-                            <button className="column-manager-close-btn" onClick={() => setShowColumnManager(false)}>
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="column-manager-modal-body">
-                            <ColumnManager
-                                columns={columns}
-                                onColumnsChange={setColumns}
-                                onReorder={(newOrder) => {
-                                    const newColumns = [...columns].sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id))
-                                    setColumns(newColumns)
-                                }}
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     )
 }

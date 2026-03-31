@@ -13,6 +13,7 @@ public interface IUnitOfWork : IDisposable
     IRepository<ContactColumn> ContactColumns { get; }
     IRepository<Project> Projects { get; }
     IRepository<TaskItem> Tasks { get; }
+    IRepository<TaskColumn> TaskColumns { get; }
     IRepository<ProjectFinance> ProjectFinances { get; }
     IRepository<Milestone> Milestones { get; }
     IRepository<Stakeholder> Stakeholders { get; }

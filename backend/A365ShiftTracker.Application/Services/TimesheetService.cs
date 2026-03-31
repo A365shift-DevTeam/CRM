@@ -21,6 +21,8 @@ public class TimesheetService : ITimesheetService
 
     public async Task<TimesheetEntryDto> CreateEntryAsync(CreateTimesheetEntryRequest request, int userId)
     {
+        var valuesJson = request.Values is not null ? JsonSerializer.Serialize(request.Values) : null;
+
         var entity = new TimesheetEntry
         {
             UserId = userId,
@@ -32,8 +34,11 @@ public class TimesheetService : ITimesheetService
             Customer = request.Customer,
             Site = request.Site,
             Attachments = request.Attachments,
-            Values = request.Values is not null ? JsonSerializer.Serialize(request.Values) : null
+            Values = valuesJson
         };
+
+        // Extract dedicated column values from the Values JSON when top-level fields are null
+        await ExtractDedicatedFieldsFromValues(entity);
 
         await _uow.TimesheetEntries.AddAsync(entity);
         await _uow.SaveChangesAsync();
@@ -58,6 +63,9 @@ public class TimesheetService : ITimesheetService
         entity.Attachments = request.Attachments;
         if (request.Values is not null)
             entity.Values = JsonSerializer.Serialize(request.Values);
+
+        // Extract dedicated column values from the Values JSON when top-level fields are null
+        await ExtractDedicatedFieldsFromValues(entity);
 
         await _uow.TimesheetEntries.UpdateAsync(entity);
         await _uow.SaveChangesAsync();
@@ -161,6 +169,65 @@ public class TimesheetService : ITimesheetService
             }
         }
         await _uow.SaveChangesAsync();
+    }
+
+    // ─── Field Extraction from Values JSON ─────────────────
+    // The frontend sends all data inside the "values" dict keyed by column DB id.
+    // This method maps those values back to the dedicated entity columns.
+    private async Task ExtractDedicatedFieldsFromValues(TimesheetEntry entity)
+    {
+        if (string.IsNullOrEmpty(entity.Values)) return;
+
+        Dictionary<string, JsonElement>? valuesDict;
+        try
+        {
+            valuesDict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(entity.Values);
+        }
+        catch
+        {
+            return;
+        }
+        if (valuesDict == null || valuesDict.Count == 0) return;
+
+        // Build a map of column DB id → colId
+        var columns = await _uow.TimesheetColumns.GetAllAsync();
+        var idToColId = columns.ToDictionary(c => c.Id.ToString(), c => c.ColId);
+
+        foreach (var kvp in valuesDict)
+        {
+            if (!idToColId.TryGetValue(kvp.Key, out var colId)) continue;
+            var val = kvp.Value.GetString();
+
+            switch (colId)
+            {
+                case "col-task":
+                    entity.Task ??= val;
+                    break;
+                case "col-start-datetime":
+                    if (entity.StartDatetime == null && DateTime.TryParse(val, out var startDt))
+                        entity.StartDatetime = startDt.ToUniversalTime();
+                    break;
+                case "col-end-datetime":
+                    if (entity.EndDatetime == null && DateTime.TryParse(val, out var endDt))
+                        entity.EndDatetime = endDt.ToUniversalTime();
+                    break;
+                case "col-notes":
+                    entity.Notes ??= val;
+                    break;
+                case "col-name":
+                    entity.Person ??= val;
+                    break;
+                case "col-customer":
+                    entity.Customer ??= val;
+                    break;
+                case "col-site":
+                    entity.Site ??= val;
+                    break;
+                case "col-attachments":
+                    entity.Attachments ??= val;
+                    break;
+            }
+        }
     }
 
     // ─── Helpers ───────────────────────────────────────────

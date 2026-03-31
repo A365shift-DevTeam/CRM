@@ -673,9 +673,12 @@ export const FieldRenderer = ({ column, value, onChange, isEditing = false }) =>
     email: EmailRenderer,
     image: ImageRenderer,
     choice: ChoiceRenderer,
+    dropdown: ChoiceRenderer,
+    select: ChoiceRenderer,
     currency: CurrencyRenderer,
     location: LocationRenderer,
-    datetime: DateTimeRenderer
+    datetime: DateTimeRenderer,
+    date: DateTimeRenderer
   }
 
   const Renderer = renderers[column.type]

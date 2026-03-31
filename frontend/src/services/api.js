@@ -39,5 +39,23 @@ export const taskService = {
     delete: async (id) => {
         await apiClient.delete(`/tasks/${id}`);
         return id;
-    }
+    },
+
+    // Column Management
+    getColumns: async () => {
+        return await apiClient.get('/tasks/columns');
+    },
+    addColumn: async (columnData) => {
+        return await apiClient.post('/tasks/columns/add', columnData);
+    },
+    updateColumn: async (colId, updates) => {
+        return await apiClient.put(`/tasks/columns/${colId}`, updates);
+    },
+    deleteColumn: async (colId) => {
+        await apiClient.delete(`/tasks/columns/${colId}`);
+        return colId;
+    },
+    reorderColumns: async (orderedColIds) => {
+        return await apiClient.post('/tasks/columns/reorder', { orderedColIds });
+    },
 };

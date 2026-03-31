@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Modal, Button, Form, Table, Nav, Tab } from 'react-bootstrap'
-import { Plus, Trash2, Edit } from 'lucide-react'
+import { Plus, Trash2, Edit, Settings } from 'lucide-react'
 
 const FIELD_TYPES = [
     { value: 'text', label: 'Text' },
@@ -167,12 +167,12 @@ const FinanceSettingsModal = ({ show, onHide, currentConfig, onSaveConfig }) => 
 
                 <div className="table-responsive">
                     <Table hover size="sm">
-                        <thead>
+                        <thead style={{ backgroundColor: '#1a1d21' }}>
                             <tr>
-                                <th>Label</th>
-                                <th>Type</th>
-                                <th>Required</th>
-                                <th style={{ width: '100px' }}>Actions</th>
+                                <th style={{ color: '#fff' }}>Label</th>
+                                <th style={{ color: '#fff' }}>Type</th>
+                                <th style={{ color: '#fff' }}>Required</th>
+                                <th style={{ width: '100px', color: '#fff' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -211,9 +211,12 @@ const FinanceSettingsModal = ({ show, onHide, currentConfig, onSaveConfig }) => 
     }
 
     return (
-        <Modal show={show} onHide={onHide} size="lg">
-            <Modal.Header closeButton>
-                <Modal.Title>Finance Page Settings</Modal.Title>
+        <Modal show={show} onHide={onHide} size="lg" centered className="timesheet-column-manager-modal">
+            <Modal.Header closeButton className="border-bottom pb-2">
+                <Modal.Title className="mb-0 d-flex align-items-center gap-2">
+                    <Settings size={20} className="text-muted" />
+                    Finance Page Settings
+                </Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 <Tab.Container defaultActiveKey="expense">
@@ -235,7 +238,7 @@ const FinanceSettingsModal = ({ show, onHide, currentConfig, onSaveConfig }) => 
                     </Tab.Content>
                 </Tab.Container>
             </Modal.Body>
-            <Modal.Footer>
+            <Modal.Footer className="border-top pt-3">
                 <Button variant="secondary" onClick={onHide}>Cancel</Button>
                 <Button variant="primary" onClick={handleFinalSave}>Save Changes</Button>
             </Modal.Footer>

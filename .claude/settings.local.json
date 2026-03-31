@@ -9,7 +9,14 @@
       "Bash(find '/d/client/CRM project A365/CRM/backend/A365ShiftTracker.Application/Interfaces' -name *.cs)",
       "Bash(find '/d/client/CRM project A365/CRM/backend/A365ShiftTracker.Application/Services' -name *.cs)",
       "Bash(npx vite:*)",
-      "Bash(find /d/client/CRM project A365/CRM -name *projectFinance* -o -name *ProjectFinance*)"
+      "Bash(find /d/client/CRM project A365/CRM -name *projectFinance* -o -name *ProjectFinance*)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet ef:*)",
+      "Bash(PGPASSWORD=postgres psql -U postgres -h localhost -d a365shift_tracker -c \"INSERT INTO \"\"__EFMigrationsHistory\"\" \\(\"\"MigrationId\"\", \"\"ProductVersion\"\"\\) VALUES \\(''20260326101534_AddPasswordResetAndNewFeatures'', ''8.0.25''\\) ON CONFLICT DO NOTHING;\")",
+      "Bash(where psql:*)",
+      "Read(//c/Program Files/PostgreSQL/**)",
+      "Bash(PGPASSWORD=postgres \"C:/Program Files/PostgreSQL/18/bin/psql.exe\" -U postgres -h localhost -d a365shift_tracker -c \"INSERT INTO \"\"__EFMigrationsHistory\"\" \\(\"\"MigrationId\"\", \"\"ProductVersion\"\"\\) VALUES \\(''20260326101534_AddPasswordResetAndNewFeatures'', ''8.0.25''\\) ON CONFLICT DO NOTHING;\")",
+      "Bash(PGPASSWORD=postgres \"C:/Program Files/PostgreSQL/18/bin/psql.exe\" -U postgres -h localhost -d a365shift_tracker -c \"DELETE FROM task_columns;\")"
     ]
   }
 }

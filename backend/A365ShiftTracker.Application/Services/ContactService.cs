@@ -65,6 +65,13 @@ public class ContactService : IContactService
     public async Task<IEnumerable<ContactColumnDto>> GetColumnsAsync()
     {
         var columns = await _uow.ContactColumns.GetAllAsync();
+
+        // Seed default columns if table is empty
+        if (!columns.Any())
+        {
+            columns = await SeedDefaultContactColumns();
+        }
+
         return columns.OrderBy(c => c.Order).Select(c => new ContactColumnDto
         {
             Id = c.Id,
@@ -76,6 +83,48 @@ public class ContactService : IContactService
             Order = c.Order,
             Config = c.Config is not null ? JsonSerializer.Deserialize<object>(c.Config) : null
         });
+    }
+
+    private async Task<IEnumerable<ContactColumn>> SeedDefaultContactColumns()
+    {
+        var defaults = new List<ContactColumn>
+        {
+            new() { ColId = "name", Name = "Name", Type = "text", Visible = true, Required = true, Order = 0, Config = "{}" },
+            new() { ColId = "jobTitle", Name = "Job Title", Type = "text", Visible = true, Required = false, Order = 1, Config = "{}" },
+            new() { ColId = "phone", Name = "Phone", Type = "text", Visible = true, Required = false, Order = 2, Config = "{}" },
+            new() { ColId = "company", Name = "Company", Type = "text", Visible = true, Required = false, Order = 3, Config = "{}" },
+            new() { ColId = "location", Name = "Location", Type = "location", Visible = true, Required = false, Order = 4, Config = "{}" },
+            new() { ColId = "clientAddress", Name = "Client Address", Type = "text", Visible = true, Required = false, Order = 5, Config = "{}" },
+            new() { ColId = "clientCountry", Name = "Country", Type = "text", Visible = true, Required = false, Order = 6, Config = "{}" },
+            new() { ColId = "gstin", Name = "GSTIN", Type = "text", Visible = false, Required = false, Order = 7, Config = "{}" },
+            new() { ColId = "pan", Name = "PAN", Type = "text", Visible = false, Required = false, Order = 8, Config = "{}" },
+            new() { ColId = "cin", Name = "CIN", Type = "text", Visible = false, Required = false, Order = 9, Config = "{}" },
+            new() { ColId = "internationalTaxId", Name = "Intl Tax ID (VAT/EIN)", Type = "text", Visible = false, Required = false, Order = 10, Config = "{}" },
+            new() { ColId = "msmeStatus", Name = "MSME Status", Type = "text", Visible = false, Required = false, Order = 11, Config = "{}" },
+            new() { ColId = "tdsSection", Name = "TDS Section", Type = "text", Visible = false, Required = false, Order = 12, Config = "{}" },
+            new() { ColId = "tdsRate", Name = "TDS Rate", Type = "number", Visible = false, Required = false, Order = 13, Config = "{}" },
+            new() { ColId = "type", Name = "Entity Type", Type = "choice", Visible = true, Required = false, Order = 14,
+                Config = JsonSerializer.Serialize(new { options = new[] {
+                    new { label = "Company", color = "#3b82f6" },
+                    new { label = "Individual", color = "#8b5cf6" },
+                    new { label = "Vendor", color = "#10b981" }
+                }})
+            },
+            new() { ColId = "status", Name = "Status", Type = "choice", Visible = true, Required = false, Order = 15,
+                Config = JsonSerializer.Serialize(new { options = new[] {
+                    new { label = "Active", color = "#10b981" },
+                    new { label = "Inactive", color = "#94a3b8" },
+                    new { label = "Lead", color = "#3b82f6" },
+                    new { label = "Customer", color = "#06b6d4" }
+                }})
+            }
+        };
+
+        foreach (var col in defaults)
+            await _uow.ContactColumns.AddAsync(col);
+
+        await _uow.SaveChangesAsync();
+        return defaults;
     }
 
     public async Task<IEnumerable<ContactColumnDto>> SaveColumnsAsync(List<ContactColumnDto> columns)

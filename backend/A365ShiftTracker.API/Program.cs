@@ -120,6 +120,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowFrontend");
+app.UseStaticFiles(); // Serve uploaded files from wwwroot
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
