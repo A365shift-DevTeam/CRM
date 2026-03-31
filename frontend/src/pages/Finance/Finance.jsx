@@ -110,12 +110,17 @@ const Finance = () => {
 
   // Calculate overall statistics
   const overallStats = useMemo(() => {
+    const isPaid = (item) => (item?.status || '').toString().trim().toLowerCase() === 'paid'
+
     const expenseTotal = expenses.reduce((sum, exp) => sum + (exp.amount || 0), 0)
-    const incomeTotal = incomes.reduce((sum, inc) => sum + (inc.amount || 0), 0)
+    const incomeTotal = incomes
+      .filter(isPaid)
+      .reduce((sum, inc) => sum + (inc.amount || 0), 0)
     const netProfit = incomeTotal - expenseTotal
 
     const expenseAverage = expenses.length > 0 ? expenseTotal / expenses.length : 0
-    const incomeAverage = incomes.length > 0 ? incomeTotal / incomes.length : 0
+    const paidIncomeCount = incomes.filter(isPaid).length
+    const incomeAverage = paidIncomeCount > 0 ? incomeTotal / paidIncomeCount : 0
 
     const now = new Date()
     const expenseThisMonth = expenses.filter(exp => {
@@ -123,10 +128,12 @@ const Finance = () => {
       return expDate.getMonth() === now.getMonth() && expDate.getFullYear() === now.getFullYear()
     }).reduce((sum, exp) => sum + (exp.amount || 0), 0)
 
-    const incomeThisMonth = incomes.filter(inc => {
-      const incDate = new Date(inc.date)
-      return incDate.getMonth() === now.getMonth() && incDate.getFullYear() === now.getFullYear()
-    }).reduce((sum, inc) => sum + (inc.amount || 0), 0)
+    const incomeThisMonth = incomes
+      .filter(inc => {
+        const incDate = new Date(inc.date)
+        return isPaid(inc) && incDate.getMonth() === now.getMonth() && incDate.getFullYear() === now.getFullYear()
+      })
+      .reduce((sum, inc) => sum + (inc.amount || 0), 0)
 
     const netThisMonth = incomeThisMonth - expenseThisMonth
 
