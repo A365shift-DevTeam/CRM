@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaChartColumn, FaUserGroup, FaClock, FaRightFromBracket, FaHouse, FaMoneyBillWave, FaListCheck, FaFileInvoice, FaBars, FaXmark, FaBrain, FaShieldHalved } from 'react-icons/fa6';
+import { FaChartColumn, FaUserGroup, FaClock, FaRightFromBracket, FaHouse, FaMoneyBillWave, FaListCheck, FaFileInvoice, FaBars, FaXmark, FaBrain, FaShieldHalved, FaArrowUpFromBracket } from 'react-icons/fa6';
 import NotificationBell from '../components/NotificationBell';
 import GlobalSearch from '../components/GlobalSearch';
 
@@ -49,6 +49,17 @@ export default function MainLayout() {
 
     // Filter nav items based on permissions
     const navItems = allNavItems.filter(item => hasPermission(item.permission));
+    const currentPageLabel = allNavItems.find(item => item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path))?.label || 'A365 Tracker';
+
+    const handleExportCurrentPage = () => {
+        const originalTitle = document.title;
+        const timestamp = new Date().toISOString().slice(0, 10);
+        document.title = `${currentPageLabel.replace(/\s+/g, '_')}_${timestamp}`;
+        window.print();
+        window.setTimeout(() => {
+            document.title = originalTitle;
+        }, 300);
+    };
 
     /* ───── MOBILE LAYOUT ───── */
     if (isMobile) {
@@ -56,10 +67,32 @@ export default function MainLayout() {
             <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', paddingBottom: '72px' }}>
                 {/* Main Content */}
                 <div style={{ padding: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 4px 8px 4px' }}>
+                        <button
+                            onClick={handleExportCurrentPage}
+                            style={{
+                                background: 'rgba(16, 185, 129, 0.1)',
+                                border: '1px solid rgba(16, 185, 129, 0.24)',
+                                color: '#059669',
+                                borderRadius: '10px',
+                                padding: '6px 10px',
+                                fontSize: '0.8rem',
+                                fontWeight: 600,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                cursor: 'pointer'
+                            }}
+                            title="Export current page"
+                        >
+                            <FaArrowUpFromBracket size={12} />
+                            Export
+                        </button>
+                    </div>
                     <div
                         className="w-100 overflow-auto"
                         style={{
-                            minHeight: 'calc(100vh - 88px)',
+                            minHeight: 'calc(100vh - 132px)',
                             background: 'rgba(255, 255, 255, 0.85)',
                             backdropFilter: 'blur(16px)',
                             WebkitBackdropFilter: 'blur(16px)',
@@ -387,9 +420,29 @@ export default function MainLayout() {
                             <FaBars size={18} />
                         </button>
                         <h5 className="m-0 fw-bold" style={{ color: '#475569', letterSpacing: '-0.3px' }}>
-                            {allNavItems.find(item => item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path))?.label || 'A365 Tracker'}
+                            {currentPageLabel}
                         </h5>
                         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <button
+                                onClick={handleExportCurrentPage}
+                                style={{
+                                    background: 'rgba(16, 185, 129, 0.1)',
+                                    border: '1px solid rgba(16, 185, 129, 0.24)',
+                                    color: '#059669',
+                                    borderRadius: '10px',
+                                    padding: '8px 12px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 600,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    cursor: 'pointer'
+                                }}
+                                title="Export current page"
+                            >
+                                <FaArrowUpFromBracket size={12} />
+                                Export
+                            </button>
                             <GlobalSearch />
                             <NotificationBell />
                         </div>

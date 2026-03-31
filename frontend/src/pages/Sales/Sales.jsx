@@ -26,6 +26,8 @@ const STAGE_STORAGE_KEYS = {
     Service: 'sales_stages_service'
 }
 
+const normalizeProjectKey = (value) => String(value || '').trim().toLowerCase()
+
 const getStoredStages = (type) => {
     try {
         const stored = localStorage.getItem(STAGE_STORAGE_KEYS[type])
@@ -475,8 +477,8 @@ function Sales() {
         // Stage: "Approval" (Stage 3) — Invoice Raised
         // Creates a ProjectFinance record (Invoice) and a Finance Income entry with "Raised" status
         if (newStageLabel === 'Approval' && amount > 0) {
-            // Create Invoice (ProjectFinance) entry
-            projectFinanceService.create({
+            // Upsert Invoice (ProjectFinance) entry to avoid duplicate/empty rows
+            const projectFinancePayload = {
                 projectId: p.customId || `PROJ-${p.id}`,
                 clientName: p.clientName || 'Unknown Client',
                 clientAddress: p.clientAddress || '',
@@ -485,15 +487,38 @@ function Sales() {
                 currency: currency,
                 location: p.location || '',
                 status: 'Active',
-                type: p.type || 'Product',
-                milestones: [],
-                stakeholders: [],
-                charges: []
-            }).then(() => {
-                toast.info('Invoice created for approval stage');
-            }).catch(err => {
-                console.error('Failed to create project finance:', err);
-            });
+                type: p.type || 'Product'
+            };
+
+            projectFinanceService.getAll()
+                .then((financeProjects) => {
+                    const existing = (financeProjects || []).find(fp =>
+                        normalizeProjectKey(fp?.projectId) === normalizeProjectKey(projectFinancePayload.projectId)
+                    );
+
+                    if (existing?.id) {
+                        return projectFinanceService.update(existing.id, {
+                            ...projectFinancePayload,
+                            milestones: existing.milestones || [],
+                            stakeholders: existing.stakeholders || [],
+                            charges: existing.charges || []
+                        }).then(() => {
+                            toast.info('Invoice updated for approval stage');
+                        });
+                    }
+
+                    return projectFinanceService.create({
+                        ...projectFinancePayload,
+                        milestones: [],
+                        stakeholders: [],
+                        charges: []
+                    }).then(() => {
+                        toast.info('Invoice created for approval stage');
+                    });
+                })
+                .catch(err => {
+                    console.error('Failed to upsert project finance:', err);
+                });
 
             // Create Finance Income entry with "Raised" status
             incomeService.createIncome({

@@ -1551,6 +1551,53 @@ const detectTaxFromAddress = (address) => {
     return { taxType: 'Inter-State (IGST)', name: 'IGST', percentage: 18, country: 'India', state: '' };
 };
 
+const normalizeId = (value) => (value === null || value === undefined ? '' : String(value));
+const idsEqual = (a, b) => normalizeId(a) === normalizeId(b);
+const normalizeProjectKey = (value) => String(value || '').trim().toLowerCase();
+
+const inferDealValue = (projectLike) => {
+    const direct = parseFloat(projectLike?.dealValue);
+    if (Number.isFinite(direct) && direct > 0) return direct;
+
+    const history = Array.isArray(projectLike?.history) ? projectLike.history : [];
+    for (const entry of history) {
+        const amount = parseFloat(entry?.amount);
+        if (Number.isFinite(amount) && amount > 0) return amount;
+    }
+
+    return 0;
+};
+
+const pickBetterProject = (left, right) => {
+    const leftDeal = parseFloat(left?.dealValue) || 0;
+    const rightDeal = parseFloat(right?.dealValue) || 0;
+    if (leftDeal !== rightDeal) return leftDeal > rightDeal ? left : right;
+
+    const leftMs = Array.isArray(left?.milestones) ? left.milestones.length : 0;
+    const rightMs = Array.isArray(right?.milestones) ? right.milestones.length : 0;
+    if (leftMs !== rightMs) return leftMs > rightMs ? left : right;
+
+    const leftSt = Array.isArray(left?.stakeholders) ? left.stakeholders.length : 0;
+    const rightSt = Array.isArray(right?.stakeholders) ? right.stakeholders.length : 0;
+    if (leftSt !== rightSt) return leftSt > rightSt ? left : right;
+
+    const leftId = parseInt(left?.id ?? left?._id, 10) || 0;
+    const rightId = parseInt(right?.id ?? right?._id, 10) || 0;
+    return rightId >= leftId ? right : left;
+};
+
+const dedupeProjects = (items = []) => {
+    const map = new Map();
+
+    for (const item of items) {
+        const key = normalizeProjectKey(item?.projectId) || `id:${normalizeId(item?.id ?? item?._id)}`;
+        const prev = map.get(key);
+        map.set(key, prev ? pickBetterProject(prev, item) : item);
+    }
+
+    return Array.from(map.values());
+};
+
 const ProjectTrackerComplete = () => {
     const toast = useToast();
     const location = useLocation();
@@ -1564,7 +1611,7 @@ const ProjectTrackerComplete = () => {
         const fetchProjects = async () => {
             try {
                 const fetchedProjects = await projectFinanceService.getAll();
-                setProjects(fetchedProjects);
+                setProjects(dedupeProjects(fetchedProjects || []));
             } catch (err) {
                 console.error("Error fetching project finances:", err);
             }
@@ -1593,12 +1640,13 @@ const ProjectTrackerComplete = () => {
                 } catch (err) {
                     console.error("Error fetching project finances during init:", err);
                 }
+                fetchedProjects = dedupeProjects(fetchedProjects || []);
 
                 // Check if a project finance already exists for this project (by id or by matching projectId/clientName)
                 const existingProject = fetchedProjects.find(p =>
-                    p.id === receivedProject.id ||
-                    p._id === receivedProject.id ||
-                    (p.projectId && receivedProject.customId && p.projectId === receivedProject.customId)
+                    idsEqual(p.id, receivedProject.id) ||
+                    idsEqual(p._id, receivedProject.id) ||
+                    (normalizeProjectKey(p.projectId) && normalizeProjectKey(receivedProject.customId) && normalizeProjectKey(p.projectId) === normalizeProjectKey(receivedProject.customId))
                 );
 
                 if (existingProject) {
@@ -1661,7 +1709,7 @@ const ProjectTrackerComplete = () => {
                     dateCreated: new Date().toISOString(),
                     clientName: receivedProject.clientName || 'Unknown Client',
                     delivery: receivedProject.brandingName || '',
-                    dealValue: 0,
+                    dealValue: inferDealValue(receivedProject),
                     currency: taxConfig.country === 'Other' ? 'AED' : 'INR',
                     location: retrievedAddress || 'India',
                     stakeholders: [],
@@ -1690,7 +1738,7 @@ const ProjectTrackerComplete = () => {
                     const savedProject = await projectFinanceService.create(newProject);
                     const savedId = savedProject.id || savedProject._id;
                     const projectWithId = { ...newProject, id: savedId, _id: savedId };
-                    setProjects([...fetchedProjects, projectWithId]);
+                    setProjects(dedupeProjects([...fetchedProjects, projectWithId]));
                     setActiveProjectId(savedId);
                     setView('invoice');
                 } catch (err) {
@@ -1698,7 +1746,7 @@ const ProjectTrackerComplete = () => {
                     // Fallback: add to local state with a generated ID so the page still works
                     const fallbackId = receivedProject.id || Date.now();
                     const projectWithId = { ...newProject, id: fallbackId };
-                    setProjects([...fetchedProjects, projectWithId]);
+                    setProjects(dedupeProjects([...fetchedProjects, projectWithId]));
                     setActiveProjectId(fallbackId);
                     setView('invoice');
                 }
@@ -1708,7 +1756,7 @@ const ProjectTrackerComplete = () => {
         initProject();
     }, [location.state, searchParams]);
 
-    const activeProject = projects.find(p => p.id === activeProjectId);
+    const activeProject = projects.find(p => idsEqual(p.id, activeProjectId) || idsEqual(p._id, activeProjectId));
 
     const handleCreateProject = () => {
         const newProj = {
@@ -1728,8 +1776,8 @@ const ProjectTrackerComplete = () => {
                 await projectFinanceService.delete(id);
 
                 // Update state
-                setProjects(prev => prev.filter(p => p.id !== id));
-                if (activeProjectId === id) {
+                setProjects(prev => prev.filter(p => !idsEqual(p.id, id) && !idsEqual(p._id, id)));
+                if (idsEqual(activeProjectId, id)) {
                     setActiveProjectId(null);
                     setView('dashboard');
                 }
@@ -1784,11 +1832,11 @@ const ProjectTrackerComplete = () => {
             try {
                 const updated = await projectFinanceService.update(id, payload);
                 // Update local state with server response
-                setProjects(prev => prev.map(p => p.id === id ? { ...p, ...updated } : p));
+                setProjects(prev => dedupeProjects(prev.map(p => (idsEqual(p.id, id) || idsEqual(p._id, id)) ? { ...p, ...updated, id: updated.id || p.id, _id: updated._id || p._id } : p)));
             } catch {
                 const created = await projectFinanceService.create(payload);
                 const savedId = created.id || created._id;
-                setProjects(prev => prev.map(p => p.id === id ? { ...p, ...created, id: savedId } : p));
+                setProjects(prev => dedupeProjects(prev.map(p => (idsEqual(p.id, id) || idsEqual(p._id, id)) ? { ...p, ...created, id: savedId, _id: savedId } : p)));
                 setActiveProjectId(savedId);
             }
             toast.success('Project finance details saved successfully!');
