@@ -29,7 +29,8 @@ public class ExpenseService : IExpenseService
             EmployeeName = request.EmployeeName,
             ProjectDepartment = request.ProjectDepartment,
             ReceiptUrl = request.ReceiptUrl,
-            Details = request.Details is not null ? JsonSerializer.Serialize(request.Details) : null
+            Details = request.Details is not null ? JsonSerializer.Serialize(request.Details) : null,
+            Status = request.Status ?? "Pending"
         };
 
         await _uow.Expenses.AddAsync(entity);
@@ -52,6 +53,7 @@ public class ExpenseService : IExpenseService
         entity.EmployeeName = request.EmployeeName;
         entity.ProjectDepartment = request.ProjectDepartment;
         entity.ReceiptUrl = request.ReceiptUrl;
+        entity.Status = request.Status ?? entity.Status;
         if (request.Details is not null)
             entity.Details = JsonSerializer.Serialize(request.Details);
 
@@ -78,6 +80,6 @@ public class ExpenseService : IExpenseService
         Description = e.Description, EmployeeName = e.EmployeeName,
         ProjectDepartment = e.ProjectDepartment, ReceiptUrl = e.ReceiptUrl,
         Details = e.Details is not null ? JsonSerializer.Deserialize<object>(e.Details) : null,
-        CreatedAt = e.CreatedAt
+        Status = e.Status, CreatedAt = e.CreatedAt
     };
 }

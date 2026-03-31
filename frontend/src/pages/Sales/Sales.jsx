@@ -466,58 +466,102 @@ function Sales() {
             return; // Don't proceed with finance calls if stage update failed
         }
 
-        // --- Auto-create finance & invoice entries on key stages ---
+        // --- Enterprise Flow: Auto-create finance & invoice entries on key stages ---
         // These are fire-and-forget: errors here must NOT affect the main flow
         const amount = parseFloat(logData?.amount) || 0;
+        const projectLabel = `${p.clientName} - ${p.title || p.brandingName || 'Project'}`;
+        const currency = logData?.currency || 'INR';
 
-        // When stage is "Won" or "Closed" and has an amount, create income in Finance
-        if ((newStageLabel === 'Won' || newStageLabel === 'Closed') && amount > 0) {
+        // Stage: "Approval" (Stage 3) — Invoice Raised
+        // Creates a ProjectFinance record (Invoice) and a Finance Income entry with "Raised" status
+        if (newStageLabel === 'Approval' && amount > 0) {
+            // Create Invoice (ProjectFinance) entry
+            projectFinanceService.create({
+                projectId: p.customId || `PROJ-${p.id}`,
+                clientName: p.clientName || 'Unknown Client',
+                clientAddress: p.clientAddress || '',
+                clientGstin: p.clientGstin || '',
+                dealValue: amount,
+                currency: currency,
+                location: p.location || '',
+                status: 'Active',
+                type: p.type || 'Product',
+                milestones: [],
+                stakeholders: [],
+                charges: []
+            }).then(() => {
+                toast.info('Invoice created for approval stage');
+            }).catch(err => {
+                console.error('Failed to create project finance:', err);
+            });
+
+            // Create Finance Income entry with "Raised" status
             incomeService.createIncome({
                 date: new Date().toISOString(),
                 category: 'sales',
                 amount: amount,
-                description: `${p.clientName} - ${p.title || p.brandingName || 'Project'} (${newStageLabel})`,
+                description: `${projectLabel} — Invoice Raised`,
                 employeeName: '',
-                projectDepartment: p.title || p.brandingName || ''
+                projectDepartment: p.title || p.brandingName || '',
+                status: 'Raised'
             }).then(() => {
-                toast.success(`Income of ${logData?.currency || 'USD'} ${amount.toLocaleString()} recorded in Finance`);
+                toast.success(`Invoice of ${currency} ${amount.toLocaleString()} raised in Finance`);
+            }).catch(err => {
+                console.error('Failed to create raised income:', err);
+                toast.warning('Stage updated but failed to record raised invoice in Finance');
+            });
+        }
+
+        // Stage: "Won" — Deal Won, Payment Pending
+        // Creates Finance Income entry with "Pending" status (awaiting payment)
+        if (newStageLabel === 'Won' && amount > 0) {
+            incomeService.createIncome({
+                date: new Date().toISOString(),
+                category: 'sales',
+                amount: amount,
+                description: `${projectLabel} — Deal Won (Payment Pending)`,
+                employeeName: '',
+                projectDepartment: p.title || p.brandingName || '',
+                status: 'Pending'
+            }).then(() => {
+                toast.success(`Income of ${currency} ${amount.toLocaleString()} recorded as Pending`);
             }).catch(err => {
                 console.error('Failed to create income entry:', err);
                 toast.warning('Stage updated but failed to record income in Finance');
             });
         }
 
-        // When stage reaches "Won", auto-create a project finance entry for Invoice tracking
-        if (newStageLabel === 'Won') {
-            projectFinanceService.create({
-                projectId: p.customId || `PROJ-${p.id}`,
-                clientName: p.clientName || 'Unknown Client',
-                clientAddress: p.clientAddress || '',
-                clientGstin: p.clientGstin || '',
-                dealValue: amount || 0,
-                currency: logData?.currency || 'INR',
-                location: p.location || '',
-                status: 'Active',
-                type: p.type || 'Product'
-            }).then(() => {
-                toast.info('Project finance record created for Invoice tracking');
-            }).catch(err => {
-                // May fail if already exists - that's fine
-                console.error('Failed to create project finance:', err);
-            });
-        }
-
-        // Record any stage transition with amount as income (for non-Won/Closed stages like milestones)
-        if (amount > 0 && newStageLabel !== 'Won' && newStageLabel !== 'Closed' && newStageLabel !== 'Lost') {
+        // Stage: "Closed" — Payment Received
+        // Creates Finance Income entry with "Paid" status
+        if (newStageLabel === 'Closed' && amount > 0) {
             incomeService.createIncome({
                 date: new Date().toISOString(),
                 category: 'sales',
                 amount: amount,
-                description: `${p.clientName} - ${transitionStr}`,
+                description: `${projectLabel} — Payment Received`,
                 employeeName: '',
-                projectDepartment: p.title || p.brandingName || ''
+                projectDepartment: p.title || p.brandingName || '',
+                status: 'Paid'
             }).then(() => {
-                toast.info(`Payment of ${logData?.currency || 'USD'} ${amount.toLocaleString()} recorded`);
+                toast.success(`Payment of ${currency} ${amount.toLocaleString()} marked as Paid`);
+            }).catch(err => {
+                console.error('Failed to create paid income:', err);
+                toast.warning('Stage updated but failed to record payment in Finance');
+            });
+        }
+
+        // Other stages with amounts (e.g., partial payments, milestones) — record as Pending
+        if (amount > 0 && newStageLabel !== 'Approval' && newStageLabel !== 'Won' && newStageLabel !== 'Closed' && newStageLabel !== 'Lost') {
+            incomeService.createIncome({
+                date: new Date().toISOString(),
+                category: 'sales',
+                amount: amount,
+                description: `${projectLabel} — ${transitionStr}`,
+                employeeName: '',
+                projectDepartment: p.title || p.brandingName || '',
+                status: 'Pending'
+            }).then(() => {
+                toast.info(`Payment of ${currency} ${amount.toLocaleString()} recorded`);
             }).catch(err => {
                 console.error('Failed to create stage income:', err);
             });

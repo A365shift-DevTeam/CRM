@@ -611,18 +611,19 @@ const Finance = () => {
               <table className="finance-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '30%' }}>Description</th>
-                    <th style={{ width: '15%' }}>Type</th>
-                    <th style={{ width: '15%' }}>Date</th>
-                    <th style={{ width: '15%' }}>Category</th>
-                    <th style={{ width: '15%' }}>Amount</th>
+                    <th style={{ width: '25%' }}>Description</th>
+                    <th style={{ width: '12%' }}>Type</th>
+                    <th style={{ width: '12%' }}>Date</th>
+                    <th style={{ width: '13%' }}>Category</th>
+                    <th style={{ width: '10%' }}>Status</th>
+                    <th style={{ width: '13%' }}>Amount</th>
                     <th style={{ width: '10%' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedTransactions.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="text-center py-5 text-muted">
+                      <td colSpan="7" className="text-center py-5 text-muted">
                         No transactions found matching your filters.
                       </td>
                     </tr>
@@ -666,6 +667,32 @@ const Finance = () => {
                             >
                               {category?.label || item.category}
                             </span>
+                          </td>
+                          <td>
+                            {(() => {
+                              const status = item.status || 'Pending';
+                              const statusColors = {
+                                Pending: { bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
+                                Raised: { bg: '#dbeafe', color: '#1e40af', border: '#93c5fd' },
+                                Paid: { bg: '#d1fae5', color: '#065f46', border: '#6ee7b7' }
+                              };
+                              const colors = statusColors[status] || statusColors.Pending;
+                              return (
+                                <span
+                                  className="badge px-3 py-2 rounded-pill text-uppercase"
+                                  style={{
+                                    fontSize: '0.7rem',
+                                    backgroundColor: colors.bg,
+                                    color: colors.color,
+                                    border: `1px solid ${colors.border}`,
+                                    fontWeight: '700',
+                                    letterSpacing: '0.05em'
+                                  }}
+                                >
+                                  {status}
+                                </span>
+                              );
+                            })()}
                           </td>
                           <td>
                             <span className={isExpense ? "text-danger fw-bold" : "text-success fw-bold"}>
@@ -927,6 +954,34 @@ const Finance = () => {
                     </div>
                   </div>
                 )}
+                <div className="col-md-6 mb-3">
+                  <div className="detail-label text-muted small mb-1">Status</div>
+                  <div className="detail-value">
+                    {(() => {
+                      const status = viewingItem.status || 'Pending';
+                      const statusColors = {
+                        Pending: { bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
+                        Raised: { bg: '#dbeafe', color: '#1e40af', border: '#93c5fd' },
+                        Paid: { bg: '#d1fae5', color: '#065f46', border: '#6ee7b7' }
+                      };
+                      const colors = statusColors[status] || statusColors.Pending;
+                      return (
+                        <span
+                          className="badge px-3 py-2 rounded-pill text-uppercase"
+                          style={{
+                            fontSize: '0.75rem',
+                            backgroundColor: colors.bg,
+                            color: colors.color,
+                            border: `1px solid ${colors.border}`,
+                            fontWeight: '700'
+                          }}
+                        >
+                          {status}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                </div>
               </div>
 
               {viewingItem.projectDepartment && (

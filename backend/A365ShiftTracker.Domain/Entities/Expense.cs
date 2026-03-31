@@ -13,4 +13,5 @@ public class Expense : AuditableEntity, IOwnedByUser
     public string? ProjectDepartment { get; set; }
     public string? ReceiptUrl { get; set; }
     public string? Details { get; set; } // JSON string
+    public string Status { get; set; } = "Pending"; // Pending, Raised, Paid
 }

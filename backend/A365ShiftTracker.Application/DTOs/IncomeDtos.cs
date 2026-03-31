@@ -10,6 +10,7 @@ public class IncomeDto
     public string? EmployeeName { get; set; }
     public string? ProjectDepartment { get; set; }
     public string? ReceiptUrl { get; set; }
+    public string Status { get; set; } = "Pending";
     public DateTime CreatedAt { get; set; }
 }
 
@@ -22,6 +23,7 @@ public class CreateIncomeRequest
     public string? EmployeeName { get; set; }
     public string? ProjectDepartment { get; set; }
     public string? ReceiptUrl { get; set; }
+    public string Status { get; set; } = "Pending";
 }
 
 public class UpdateIncomeRequest : CreateIncomeRequest

@@ -1743,17 +1743,58 @@ const ProjectTrackerComplete = () => {
     const handleSaveProject = async () => {
         if (!activeProject) return;
         try {
+            // Format data to match backend DTO structure
+            const payload = {
+                projectId: activeProject.projectId || '',
+                clientName: activeProject.clientName || '',
+                clientAddress: activeProject.clientAddress || '',
+                clientGstin: activeProject.clientGstin || '',
+                delivery: activeProject.delivery || '',
+                dealValue: parseFloat(activeProject.dealValue) || 0,
+                currency: activeProject.currency || 'INR',
+                location: activeProject.location || '',
+                status: activeProject.status || 'Active',
+                type: activeProject.type || 'Product',
+                milestones: (activeProject.milestones || []).map((m, idx) => ({
+                    name: m.name || '',
+                    percentage: parseFloat(m.percentage) || 0,
+                    status: m.status || 'Pending',
+                    invoiceDate: m.invoiceDate || null,
+                    paidDate: m.paidDate || null,
+                    isCustomName: m.isCustomName || false,
+                    order: m.order ?? idx
+                })),
+                stakeholders: (activeProject.stakeholders || []).map(s => ({
+                    name: s.name || '',
+                    percentage: parseFloat(s.percentage) || 0,
+                    payoutTax: parseFloat(s.payoutTax) || 0,
+                    payoutStatus: s.payoutStatus || 'Pending',
+                    paidDate: s.paidDate || null
+                })),
+                charges: (activeProject.charges || []).map(c => ({
+                    name: c.name || '',
+                    taxType: c.taxType || '',
+                    country: c.country || '',
+                    state: c.state || '',
+                    percentage: parseFloat(c.percentage) || 0
+                }))
+            };
+
             const id = activeProject.id;
-            // Try update first; if it doesn't exist yet, create it
             try {
-                await projectFinanceService.update(id, activeProject);
+                const updated = await projectFinanceService.update(id, payload);
+                // Update local state with server response
+                setProjects(prev => prev.map(p => p.id === id ? { ...p, ...updated } : p));
             } catch {
-                await projectFinanceService.create(activeProject);
+                const created = await projectFinanceService.create(payload);
+                const savedId = created.id || created._id;
+                setProjects(prev => prev.map(p => p.id === id ? { ...p, ...created, id: savedId } : p));
+                setActiveProjectId(savedId);
             }
             toast.success('Project finance details saved successfully!');
         } catch (error) {
             console.error("Error saving project:", error);
-            toast.error('Failed to save project.');
+            toast.error('Failed to save project. Please check all fields and try again.');
         }
     };
 

@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { FaShieldHalved, FaUsers, FaUserGear, FaKey, FaToggleOn, FaToggleOff, FaPen, FaPlus, FaTrash, FaLock, FaUserPlus } from 'react-icons/fa6';
 import { adminService } from '../../services/adminService';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../components/Toast/ToastContext';
 import './Admin.css';
 
 export default function Admin() {
     const { currentUser } = useAuth();
+    const toast = useToast();
     const [activeTab, setActiveTab] = useState('users');
     const [users, setUsers] = useState([]);
     const [roles, setRoles] = useState([]);
@@ -41,12 +43,13 @@ export default function Admin() {
     // ─── User Actions ──────────────────────────────────────────
 
     const handleToggleUserStatus = async (user) => {
-        if (user.id === currentUser.id) return alert("You cannot deactivate yourself.");
+        if (user.id === currentUser.id) return toast.warning("You cannot deactivate yourself.");
         try {
             const updated = await adminService.updateUserStatus(user.id, !user.isActive);
             setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
+            toast.success(`User ${updated.isActive ? 'activated' : 'deactivated'} successfully`);
         } catch (err) {
-            alert(err.message);
+            toast.error(err.message || 'Failed to update user status');
         }
     };
 
@@ -55,19 +58,21 @@ export default function Admin() {
             const updated = await adminService.updateUserRoles(userId, roleIds);
             setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
             setModalType(null);
+            toast.success('User roles updated successfully');
         } catch (err) {
-            alert(err.message);
+            toast.error(err.message || 'Failed to update user roles');
         }
     };
 
     const handleDeleteUser = async (user) => {
-        if (user.id === currentUser.id) return alert("You cannot delete yourself.");
+        if (user.id === currentUser.id) return toast.warning("You cannot delete yourself.");
         if (!window.confirm(`Are you sure you want to delete "${user.displayName || user.email}"? This action cannot be undone.`)) return;
         try {
             await adminService.deleteUser(user.id);
             setUsers(prev => prev.filter(u => u.id !== user.id));
+            toast.success('User deleted successfully');
         } catch (err) {
-            alert(err.message);
+            toast.error(err.message || 'Failed to delete user');
         }
     };
 
@@ -76,8 +81,9 @@ export default function Admin() {
             const created = await adminService.createUser(data);
             setUsers(prev => [...prev, created]);
             setModalType(null);
+            toast.success(`User "${created.displayName || created.email}" created successfully`);
         } catch (err) {
-            alert(err.message);
+            toast.error(err.message || 'Failed to create user');
         }
     };
 
@@ -86,8 +92,9 @@ export default function Admin() {
             const updated = await adminService.updateUser(userId, data);
             setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
             setModalType(null);
+            toast.success(`User "${updated.displayName || updated.email}" updated successfully`);
         } catch (err) {
-            alert(err.message);
+            toast.error(err.message || 'Failed to update user');
         }
     };
 
@@ -95,9 +102,9 @@ export default function Admin() {
         try {
             await adminService.resetUserPassword(userId, newPassword);
             setModalType(null);
-            alert('Password has been reset successfully.');
+            toast.success('Password has been reset successfully');
         } catch (err) {
-            alert(err.message);
+            toast.error(err.message || 'Failed to reset password');
         }
     };
 
@@ -108,13 +115,15 @@ export default function Admin() {
             if (roleId) {
                 const updated = await adminService.updateRole(roleId, data);
                 setRoles(prev => prev.map(r => r.id === updated.id ? updated : r));
+                toast.success(`Role "${updated.name}" updated successfully`);
             } else {
                 const created = await adminService.createRole(data);
                 setRoles(prev => [...prev, created]);
+                toast.success(`Role "${created.name}" created successfully`);
             }
             setModalType(null);
         } catch (err) {
-            alert(err.message);
+            toast.error(err.message || 'Failed to save role');
         }
     };
 
@@ -123,8 +132,9 @@ export default function Admin() {
         try {
             await adminService.deleteRole(roleId);
             setRoles(prev => prev.filter(r => r.id !== roleId));
+            toast.success('Role deleted successfully');
         } catch (err) {
-            alert(err.message);
+            toast.error(err.message || 'Failed to delete role');
         }
     };
 

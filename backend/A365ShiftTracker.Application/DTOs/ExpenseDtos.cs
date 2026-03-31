@@ -11,6 +11,7 @@ public class ExpenseDto
     public string? ProjectDepartment { get; set; }
     public string? ReceiptUrl { get; set; }
     public object? Details { get; set; }
+    public string Status { get; set; } = "Pending";
     public DateTime CreatedAt { get; set; }
 }
 
@@ -24,6 +25,7 @@ public class CreateExpenseRequest
     public string? ProjectDepartment { get; set; }
     public string? ReceiptUrl { get; set; }
     public object? Details { get; set; }
+    public string Status { get; set; } = "Pending";
 }
 
 public class UpdateExpenseRequest : CreateExpenseRequest

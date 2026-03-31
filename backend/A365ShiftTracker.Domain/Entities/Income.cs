@@ -12,4 +12,5 @@ public class Income : AuditableEntity, IOwnedByUser
     public string? EmployeeName { get; set; }
     public string? ProjectDepartment { get; set; }
     public string? ReceiptUrl { get; set; }
+    public string Status { get; set; } = "Pending"; // Pending, Raised, Paid
 }

@@ -27,6 +27,7 @@ export const IncomeModal = ({ show, onHide, income, onSave, onDelete, fields }) 
       }
       initialData.date = new Date().toISOString().split('T')[0]
       initialData.category = 'sales'
+      initialData.status = 'Pending'
 
       if (income) {
         Object.keys(income).forEach(key => {
@@ -111,7 +112,8 @@ export const IncomeModal = ({ show, onHide, income, onSave, onDelete, fields }) 
         ...formData,
         amount: formData.amount ? parseFloat(formData.amount) : 0,
         date: new Date(formData.date).toISOString(),
-        receiptUrl: formData.receiptUrl || null
+        receiptUrl: formData.receiptUrl || null,
+        status: formData.status || 'Pending'
       }
       onSave(incomeData)
       onHide()
@@ -195,6 +197,19 @@ export const IncomeModal = ({ show, onHide, income, onSave, onDelete, fields }) 
             if (field.id === 'receipt') return null
             return renderField(field)
           })}
+
+          {/* Status */}
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-bold">Status</Form.Label>
+            <Form.Select
+              value={formData.status || 'Pending'}
+              onChange={(e) => handleChange('status', e.target.value)}
+            >
+              <option value="Pending">Pending</option>
+              <option value="Raised">Raised</option>
+              <option value="Paid">Paid</option>
+            </Form.Select>
+          </Form.Group>
 
           {/* Receipt */}
           <Form.Group className="mb-3">

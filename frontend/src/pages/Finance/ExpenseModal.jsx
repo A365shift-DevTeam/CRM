@@ -43,6 +43,7 @@ export const ExpenseModal = ({ show, onHide, expense, onSave, onDelete, fields }
       // System defaults that might not be in config (if corrupted) or are objects
       initialData.date = new Date().toISOString().split('T')[0]
       initialData.category = 'travel'
+      initialData.status = 'Pending'
 
       if (expense) {
         // Merge expense data
@@ -167,7 +168,8 @@ export const ExpenseModal = ({ show, onHide, expense, onSave, onDelete, fields }
         ...formData,
         amount: formData.amount ? parseFloat(formData.amount) : 0,
         date: new Date(formData.date).toISOString(),
-        receiptUrl: formData.receiptUrl || null
+        receiptUrl: formData.receiptUrl || null,
+        status: formData.status || 'Pending'
       }
       onSave(expenseData)
       onHide()
@@ -903,6 +905,19 @@ export const ExpenseModal = ({ show, onHide, expense, onSave, onDelete, fields }
 
         return renderField(field)
       })}
+
+      {/* Status */}
+      <Form.Group className="mb-3">
+        <Form.Label className="fw-bold">Status</Form.Label>
+        <Form.Select
+          value={formData.status || 'Pending'}
+          onChange={(e) => handleChange('status', e.target.value)}
+        >
+          <option value="Pending">Pending</option>
+          <option value="Raised">Raised</option>
+          <option value="Paid">Paid</option>
+        </Form.Select>
+      </Form.Group>
 
       {/* Receipt (Hardcoded at end) */}
       <Form.Group className="mb-3">

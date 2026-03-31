@@ -16,7 +16,14 @@
       "Bash(where psql:*)",
       "Read(//c/Program Files/PostgreSQL/**)",
       "Bash(PGPASSWORD=postgres \"C:/Program Files/PostgreSQL/18/bin/psql.exe\" -U postgres -h localhost -d a365shift_tracker -c \"INSERT INTO \"\"__EFMigrationsHistory\"\" \\(\"\"MigrationId\"\", \"\"ProductVersion\"\"\\) VALUES \\(''20260326101534_AddPasswordResetAndNewFeatures'', ''8.0.25''\\) ON CONFLICT DO NOTHING;\")",
-      "Bash(PGPASSWORD=postgres \"C:/Program Files/PostgreSQL/18/bin/psql.exe\" -U postgres -h localhost -d a365shift_tracker -c \"DELETE FROM task_columns;\")"
+      "Bash(PGPASSWORD=postgres \"C:/Program Files/PostgreSQL/18/bin/psql.exe\" -U postgres -h localhost -d a365shift_tracker -c \"DELETE FROM task_columns;\")",
+      "Bash(ls \"E:\\\\Arul\\\\PROJECTS\\\\CRM\\\\backend\\\\A365ShiftTracker.Infrastructure\\\\Data\\\\Migrations\"\" 2>/dev/null | head -5 || ls \"E:ArulPROJECTSCRMbackend \")",
+      "Bash(PGPASSWORD=postgres psql -h localhost -U postgres -d a365shift_tracker -c \"INSERT INTO \"\"__EFMigrationsHistory\"\" \\(\"\"MigrationId\"\", \"\"ProductVersion\"\"\\) VALUES \\(''20260326101534_AddPasswordResetAndNewFeatures'', ''8.0.25''\\), \\(''20260330104213_AddTaskColumns'', ''8.0.25''\\);\")",
+      "Bash(dotnet run:*)",
+      "Bash(ls \"/c/Program Files/PostgreSQL/\"*/bin/psql.exe)",
+      "Read(//c/Program Files \\(x86\\)/**)",
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/16/bin/psql.exe\" -h localhost -U postgres -d a365shift_tracker -c \"INSERT INTO \"\"__EFMigrationsHistory\"\" \\(\"\"MigrationId\"\", \"\"ProductVersion\"\"\\) VALUES \\(''20260326101534_AddPasswordResetAndNewFeatures'', ''8.0.25''\\), \\(''20260330104213_AddTaskColumns'', ''8.0.25''\\) ON CONFLICT DO NOTHING;\")",
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/16/bin/psql.exe\" -h localhost -U postgres -d a365shift_tracker -c \"SELECT column_name, data_type, column_default FROM information_schema.columns WHERE table_name IN \\(''incomes'', ''expenses''\\) AND column_name = ''status'';\")"
     ]
   }
 }
