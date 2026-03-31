@@ -111,35 +111,40 @@ const Finance = () => {
   // Calculate overall statistics
   const overallStats = useMemo(() => {
     const isPaid = (item) => (item?.status || '').toString().trim().toLowerCase() === 'paid'
+    const toAmount = (value) => {
+      const parsed = Number(value)
+      return Number.isFinite(parsed) ? parsed : 0
+    }
 
-    const expenseTotal = expenses.reduce((sum, exp) => sum + (exp.amount || 0), 0)
-    const incomeTotal = incomes
+    const expenseTotal = expenses.reduce((sum, exp) => sum + toAmount(exp.amount), 0)
+    const incomeTotal = incomes.reduce((sum, inc) => sum + toAmount(inc.amount), 0)
+    const paidIncomeTotal = incomes
       .filter(isPaid)
-      .reduce((sum, inc) => sum + (inc.amount || 0), 0)
+      .reduce((sum, inc) => sum + toAmount(inc.amount), 0)
     const netProfit = incomeTotal - expenseTotal
 
     const expenseAverage = expenses.length > 0 ? expenseTotal / expenses.length : 0
-    const paidIncomeCount = incomes.filter(isPaid).length
-    const incomeAverage = paidIncomeCount > 0 ? incomeTotal / paidIncomeCount : 0
+    const incomeAverage = incomes.length > 0 ? incomeTotal / incomes.length : 0
 
     const now = new Date()
     const expenseThisMonth = expenses.filter(exp => {
       const expDate = new Date(exp.date)
       return expDate.getMonth() === now.getMonth() && expDate.getFullYear() === now.getFullYear()
-    }).reduce((sum, exp) => sum + (exp.amount || 0), 0)
+    }).reduce((sum, exp) => sum + toAmount(exp.amount), 0)
 
     const incomeThisMonth = incomes
       .filter(inc => {
         const incDate = new Date(inc.date)
-        return isPaid(inc) && incDate.getMonth() === now.getMonth() && incDate.getFullYear() === now.getFullYear()
+        return incDate.getMonth() === now.getMonth() && incDate.getFullYear() === now.getFullYear()
       })
-      .reduce((sum, inc) => sum + (inc.amount || 0), 0)
+      .reduce((sum, inc) => sum + toAmount(inc.amount), 0)
 
     const netThisMonth = incomeThisMonth - expenseThisMonth
 
     return {
       expenseTotal,
       incomeTotal,
+      paidIncomeTotal,
       netProfit,
       expenseAverage,
       incomeAverage,

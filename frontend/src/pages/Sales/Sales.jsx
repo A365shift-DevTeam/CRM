@@ -497,8 +497,21 @@ function Sales() {
                     );
 
                     if (existing?.id) {
+                        const mergedPayload = {
+                            projectId: projectFinancePayload.projectId,
+                            clientName: projectFinancePayload.clientName || existing.clientName || 'Unknown Client',
+                            clientAddress: projectFinancePayload.clientAddress || existing.clientAddress || '',
+                            clientGstin: projectFinancePayload.clientGstin || existing.clientGstin || '',
+                            dealValue: projectFinancePayload.dealValue || existing.dealValue || 0,
+                            currency: projectFinancePayload.currency || existing.currency || 'INR',
+                            location: projectFinancePayload.location || existing.location || '',
+                            status: projectFinancePayload.status || existing.status || 'Active',
+                            type: projectFinancePayload.type || existing.type || 'Product',
+                            delivery: existing.delivery || ''
+                        };
+
                         return projectFinanceService.update(existing.id, {
-                            ...projectFinancePayload,
+                            ...mergedPayload,
                             milestones: existing.milestones || [],
                             stakeholders: existing.stakeholders || [],
                             charges: existing.charges || []
