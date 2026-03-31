@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { FaChartColumn, FaUserGroup, FaClock, FaRightFromBracket, FaHouse, FaMoneyBillWave, FaListCheck, FaFileInvoice, FaBars, FaXmark, FaBrain, FaShieldHalved, FaArrowUpFromBracket } from 'react-icons/fa6';
 import NotificationBell from '../components/NotificationBell';
 import GlobalSearch from '../components/GlobalSearch';
+import { exportPageToExcel } from '../utils/exportPageToExcel';
 
 function useIsMobile(breakpoint = 768) {
     const [isMobile, setIsMobile] = React.useState(window.innerWidth <= breakpoint);
@@ -16,10 +17,11 @@ function useIsMobile(breakpoint = 768) {
 }
 
 export default function MainLayout() {
-    const { logout, hasPermission, isAdmin, currentUser } = useAuth();
+    const { logout, hasPermission, currentUser } = useAuth();
     const location = useLocation();
     const [sidebarOpen, setSidebarOpen] = React.useState(false);
     const isMobile = useIsMobile();
+    const contentRef = React.useRef(null);
 
     // Close sidebar when navigating
     React.useEffect(() => {
@@ -52,13 +54,10 @@ export default function MainLayout() {
     const currentPageLabel = allNavItems.find(item => item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path))?.label || 'A365 Tracker';
 
     const handleExportCurrentPage = () => {
-        const originalTitle = document.title;
-        const timestamp = new Date().toISOString().slice(0, 10);
-        document.title = `${currentPageLabel.replace(/\s+/g, '_')}_${timestamp}`;
-        window.print();
-        window.setTimeout(() => {
-            document.title = originalTitle;
-        }, 300);
+        exportPageToExcel({
+            pageName: currentPageLabel,
+            rootElement: contentRef.current || document.body
+        });
     };
 
     /* ───── MOBILE LAYOUT ───── */
@@ -90,6 +89,7 @@ export default function MainLayout() {
                         </button>
                     </div>
                     <div
+                        ref={contentRef}
                         className="w-100 overflow-auto"
                         style={{
                             minHeight: 'calc(100vh - 132px)',
@@ -448,7 +448,7 @@ export default function MainLayout() {
                         </div>
                     </div>
                     {/* Scrollable Content */}
-                    <div className="flex-grow-1 overflow-auto">
+                    <div ref={contentRef} className="flex-grow-1 overflow-auto">
                         <Outlet />
                     </div>
                 </div>

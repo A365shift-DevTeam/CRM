@@ -1492,11 +1492,11 @@ const InvoiceMain = ({ details, updateDetails, stakeholders, addStakeholder, rem
                                             <td>
                                                 <select
                                                     className="stage-select p-1"
-                                                    value={s.status || 'Pending'}
-                                                    onChange={(e) => updateStakeholder(s.id, 'status', e.target.value)}
+                                                    value={s.status || s.payoutStatus || 'Pending'}
+                                                    onChange={(e) => updateStakeholder(s.id, { status: e.target.value, payoutStatus: e.target.value })}
                                                     style={{
-                                                        borderColor: s.status === 'Paid' ? '#198754' : '#ccc',
-                                                        color: s.status === 'Paid' ? '#198754' : '#000'
+                                                        borderColor: (s.status || s.payoutStatus) === 'Paid' ? '#198754' : '#ccc',
+                                                        color: (s.status || s.payoutStatus) === 'Paid' ? '#198754' : '#000'
                                                     }}
                                                 >
                                                     <option value="Pending">Pending</option>
@@ -1554,6 +1554,15 @@ const detectTaxFromAddress = (address) => {
 const normalizeId = (value) => (value === null || value === undefined ? '' : String(value));
 const idsEqual = (a, b) => normalizeId(a) === normalizeId(b);
 const normalizeProjectKey = (value) => String(value || '').trim().toLowerCase();
+const toDateInputValue = (value) => {
+    if (!value) return '';
+    if (typeof value === 'string') return value.length >= 10 ? value.slice(0, 10) : value;
+    try {
+        return new Date(value).toISOString().slice(0, 10);
+    } catch {
+        return '';
+    }
+};
 
 const inferDealValue = (projectLike) => {
     const direct = parseFloat(projectLike?.dealValue);
@@ -1568,7 +1577,61 @@ const inferDealValue = (projectLike) => {
     return 0;
 };
 
+const normalizeProjectFinance = (projectLike) => {
+    if (!projectLike) return projectLike;
+
+    return {
+        ...projectLike,
+        milestones: (projectLike.milestones || []).map((m) => ({
+            ...m,
+            invoiceDate: toDateInputValue(m.invoiceDate),
+            paidDate: toDateInputValue(m.paidDate),
+            status: m.status || 'Pending'
+        })),
+        stakeholders: (projectLike.stakeholders || []).map((s) => ({
+            ...s,
+            status: s.status || s.payoutStatus || 'Pending',
+            payoutStatus: s.payoutStatus || s.status || 'Pending',
+            paidDate: toDateInputValue(s.paidDate)
+        }))
+    };
+};
+
+const completenessScore = (projectLike) => {
+    if (!projectLike) return 0;
+
+    let score = 0;
+    if (projectLike.clientAddress) score += 2;
+    if (projectLike.clientGstin) score += 1;
+    if (projectLike.location) score += 1;
+    if (projectLike.delivery) score += 1;
+    if (parseFloat(projectLike.dealValue) > 0) score += 2;
+    if ((projectLike.charges || []).length > 0) score += 2;
+
+    score += (projectLike.milestones || []).reduce((sum, m) => {
+        let s = 1;
+        if (m.invoiceDate) s += 2;
+        if (m.paidDate) s += 2;
+        if (m.status && m.status !== 'Pending') s += 2;
+        return sum + s;
+    }, 0);
+
+    score += (projectLike.stakeholders || []).reduce((sum, s) => {
+        let v = 1;
+        const status = s.status || s.payoutStatus;
+        if (s.paidDate) v += 2;
+        if (status && status !== 'Pending') v += 2;
+        return sum + v;
+    }, 0);
+
+    return score;
+};
+
 const pickBetterProject = (left, right) => {
+    const leftScore = completenessScore(left);
+    const rightScore = completenessScore(right);
+    if (leftScore !== rightScore) return leftScore > rightScore ? left : right;
+
     const leftDeal = parseFloat(left?.dealValue) || 0;
     const rightDeal = parseFloat(right?.dealValue) || 0;
     if (leftDeal !== rightDeal) return leftDeal > rightDeal ? left : right;
@@ -1589,7 +1652,8 @@ const pickBetterProject = (left, right) => {
 const dedupeProjects = (items = []) => {
     const map = new Map();
 
-    for (const item of items) {
+    for (const rawItem of items) {
+        const item = normalizeProjectFinance(rawItem);
         const key = normalizeProjectKey(item?.projectId) || `id:${normalizeId(item?.id ?? item?._id)}`;
         const prev = map.get(key);
         map.set(key, prev ? pickBetterProject(prev, item) : item);
@@ -1737,7 +1801,7 @@ const ProjectTrackerComplete = () => {
                     // Persist to backend and use the returned ID (which may differ from receivedProject.id)
                     const savedProject = await projectFinanceService.create(newProject);
                     const savedId = savedProject.id || savedProject._id;
-                    const projectWithId = { ...newProject, id: savedId, _id: savedId };
+                    const projectWithId = normalizeProjectFinance({ ...newProject, id: savedId, _id: savedId });
                     setProjects(dedupeProjects([...fetchedProjects, projectWithId]));
                     setActiveProjectId(savedId);
                     setView('invoice');
@@ -1745,7 +1809,7 @@ const ProjectTrackerComplete = () => {
                     console.error("Error creating project finance:", err);
                     // Fallback: add to local state with a generated ID so the page still works
                     const fallbackId = receivedProject.id || Date.now();
-                    const projectWithId = { ...newProject, id: fallbackId };
+                    const projectWithId = normalizeProjectFinance({ ...newProject, id: fallbackId });
                     setProjects(dedupeProjects([...fetchedProjects, projectWithId]));
                     setActiveProjectId(fallbackId);
                     setView('invoice');
@@ -1816,7 +1880,7 @@ const ProjectTrackerComplete = () => {
                     name: s.name || '',
                     percentage: parseFloat(s.percentage) || 0,
                     payoutTax: parseFloat(s.payoutTax) || 0,
-                    payoutStatus: s.payoutStatus || 'Pending',
+                    payoutStatus: s.payoutStatus || s.status || 'Pending',
                     paidDate: s.paidDate || null
                 })),
                 charges: (activeProject.charges || []).map(c => ({
@@ -1832,11 +1896,11 @@ const ProjectTrackerComplete = () => {
             try {
                 const updated = await projectFinanceService.update(id, payload);
                 // Update local state with server response
-                setProjects(prev => dedupeProjects(prev.map(p => (idsEqual(p.id, id) || idsEqual(p._id, id)) ? { ...p, ...updated, id: updated.id || p.id, _id: updated._id || p._id } : p)));
+                setProjects(prev => dedupeProjects(prev.map(p => (idsEqual(p.id, id) || idsEqual(p._id, id)) ? normalizeProjectFinance({ ...p, ...updated, id: updated.id || p.id, _id: updated._id || p._id }) : p)));
             } catch {
                 const created = await projectFinanceService.create(payload);
                 const savedId = created.id || created._id;
-                setProjects(prev => dedupeProjects(prev.map(p => (idsEqual(p.id, id) || idsEqual(p._id, id)) ? { ...p, ...created, id: savedId, _id: savedId } : p)));
+                setProjects(prev => dedupeProjects(prev.map(p => (idsEqual(p.id, id) || idsEqual(p._id, id)) ? normalizeProjectFinance({ ...p, ...created, id: savedId, _id: savedId }) : p)));
                 setActiveProjectId(savedId);
             }
             toast.success('Project finance details saved successfully!');
@@ -1874,10 +1938,14 @@ const ProjectTrackerComplete = () => {
     const addStakeholder = () => updateProject(p => ({ ...p, stakeholders: [...p.stakeholders, { id: Date.now(), name: 'New', percentage: 0, payoutTax: 18, payoutStatus: 'Pending', paidDate: '' }] }));
     const removeStakeholder = (id) => updateProject(p => ({ ...p, stakeholders: p.stakeholders.filter(s => s.id !== id) }));
     const updateStakeholder = async (id, f, v) => {
-        updateProject(p => ({ ...p, stakeholders: p.stakeholders.map(s => s.id === id ? { ...s, [f]: v } : s) }));
+        updateProject(p => ({ ...p, stakeholders: p.stakeholders.map(s => s.id === id ? { ...s, ...(typeof f === 'object' ? f : { [f]: v }) } : s) }));
+
+        const changedStatus = typeof f === 'object'
+            ? (f.status || f.payoutStatus || null)
+            : ((f === 'status' || f === 'payoutStatus') ? v : null);
 
         // Auto-log Expense when status becomes 'Paid'
-        if (f === 'status' && v === 'Paid' && activeProject) {
+        if (changedStatus === 'Paid' && activeProject) {
             const stakeholder = activeProject.stakeholders.find(s => s.id === id);
             if (stakeholder) {
                 // Calculate Payout Amount safely converting strings to floats
