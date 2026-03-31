@@ -6,6 +6,8 @@ public interface IAdminService
 {
     // Users
     Task<IEnumerable<UserDto>> GetAllUsersAsync();
+    Task<UserDto> CreateUserAsync(CreateUserRequest request);
+    Task<UserDto> UpdateUserAsync(int userId, UpdateUserRequest request);
     Task<UserDto> UpdateUserRolesAsync(int userId, UpdateUserRolesRequest request);
     Task<UserDto> UpdateUserStatusAsync(int userId, UpdateUserStatusRequest request);
     Task DeleteUserAsync(int userId);

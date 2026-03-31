@@ -24,6 +24,20 @@ public class AdminController : ControllerBase
         return Ok(ApiResponse<IEnumerable<UserDto>>.Ok(users));
     }
 
+    [HttpPost("users")]
+    public async Task<ActionResult<ApiResponse<UserDto>>> CreateUser(CreateUserRequest request)
+    {
+        var user = await _adminService.CreateUserAsync(request);
+        return Ok(ApiResponse<UserDto>.Ok(user, "User created."));
+    }
+
+    [HttpPut("users/{userId}")]
+    public async Task<ActionResult<ApiResponse<UserDto>>> UpdateUser(int userId, UpdateUserRequest request)
+    {
+        var user = await _adminService.UpdateUserAsync(userId, request);
+        return Ok(ApiResponse<UserDto>.Ok(user, "User updated."));
+    }
+
     [HttpPut("users/{userId}/roles")]
     public async Task<ActionResult<ApiResponse<UserDto>>> UpdateUserRoles(int userId, UpdateUserRolesRequest request)
     {

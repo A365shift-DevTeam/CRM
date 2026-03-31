@@ -26,6 +26,102 @@ public class AdminService : IAdminService
         return users.Select(MapUserToDto);
     }
 
+    public async Task<UserDto> CreateUserAsync(CreateUserRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Email))
+            throw new InvalidOperationException("Email is required.");
+        if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 6)
+            throw new InvalidOperationException("Password must be at least 6 characters.");
+
+        var existing = await _uow.Users.FindAsync(u => u.Email == request.Email);
+        if (existing.Any())
+            throw new InvalidOperationException("A user with this email already exists.");
+
+        var user = new User
+        {
+            Email = request.Email.Trim(),
+            DisplayName = request.DisplayName?.Trim(),
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+            IsActive = request.IsActive
+        };
+
+        await _uow.Users.AddAsync(user);
+        await _uow.SaveChangesAsync();
+
+        // Assign roles
+        foreach (var roleId in request.RoleIds)
+        {
+            await _uow.UserRoles.AddAsync(new UserRole
+            {
+                UserId = user.Id,
+                RoleId = roleId
+            });
+        }
+        await _uow.SaveChangesAsync();
+
+        var created = await _uow.Users.Query()
+            .Where(u => u.Id == user.Id)
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
+            .ThenInclude(r => r.RolePermissions)
+            .ThenInclude(rp => rp.Permission)
+            .FirstAsync();
+
+        return MapUserToDto(created);
+    }
+
+    public async Task<UserDto> UpdateUserAsync(int userId, UpdateUserRequest request)
+    {
+        var user = await _uow.Users.GetByIdAsync(userId)
+            ?? throw new KeyNotFoundException("User not found.");
+
+        if (request.Email != null)
+        {
+            var emailTrimmed = request.Email.Trim();
+            var existing = await _uow.Users.FindAsync(u => u.Email == emailTrimmed && u.Id != userId);
+            if (existing.Any())
+                throw new InvalidOperationException("A user with this email already exists.");
+            user.Email = emailTrimmed;
+        }
+
+        if (request.DisplayName != null)
+            user.DisplayName = request.DisplayName.Trim();
+
+        if (request.IsActive.HasValue)
+            user.IsActive = request.IsActive.Value;
+
+        await _uow.Users.UpdateAsync(user);
+
+        // Update roles if provided
+        if (request.RoleIds != null)
+        {
+            var existingRoles = await _uow.UserRoles.FindAsync(ur => ur.UserId == userId);
+            foreach (var ur in existingRoles)
+                await _uow.UserRoles.DeleteAsync(ur);
+
+            foreach (var roleId in request.RoleIds)
+            {
+                await _uow.UserRoles.AddAsync(new UserRole
+                {
+                    UserId = userId,
+                    RoleId = roleId
+                });
+            }
+        }
+
+        await _uow.SaveChangesAsync();
+
+        var updated = await _uow.Users.Query()
+            .Where(u => u.Id == userId)
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
+            .ThenInclude(r => r.RolePermissions)
+            .ThenInclude(rp => rp.Permission)
+            .FirstAsync();
+
+        return MapUserToDto(updated);
+    }
+
     public async Task<UserDto> UpdateUserRolesAsync(int userId, UpdateUserRolesRequest request)
     {
         var user = await _uow.Users.GetByIdAsync(userId)

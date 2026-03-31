@@ -61,3 +61,20 @@ public class AdminResetPasswordRequest
 {
     public string NewPassword { get; set; } = string.Empty;
 }
+
+public class CreateUserRequest
+{
+    public string Email { get; set; } = string.Empty;
+    public string? DisplayName { get; set; }
+    public string Password { get; set; } = string.Empty;
+    public List<int> RoleIds { get; set; } = new();
+    public bool IsActive { get; set; } = true;
+}
+
+public class UpdateUserRequest
+{
+    public string? Email { get; set; }
+    public string? DisplayName { get; set; }
+    public List<int>? RoleIds { get; set; }
+    public bool? IsActive { get; set; }
+}

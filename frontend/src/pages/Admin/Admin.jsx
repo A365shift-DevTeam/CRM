@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaShieldHalved, FaUsers, FaUserGear, FaKey, FaToggleOn, FaToggleOff, FaPen, FaPlus, FaTrash, FaLock } from 'react-icons/fa6';
+import { FaShieldHalved, FaUsers, FaUserGear, FaKey, FaToggleOn, FaToggleOff, FaPen, FaPlus, FaTrash, FaLock, FaUserPlus } from 'react-icons/fa6';
 import { adminService } from '../../services/adminService';
 import { useAuth } from '../../context/AuthContext';
 import './Admin.css';
@@ -66,6 +66,26 @@ export default function Admin() {
         try {
             await adminService.deleteUser(user.id);
             setUsers(prev => prev.filter(u => u.id !== user.id));
+        } catch (err) {
+            alert(err.message);
+        }
+    };
+
+    const handleCreateUser = async (data) => {
+        try {
+            const created = await adminService.createUser(data);
+            setUsers(prev => [...prev, created]);
+            setModalType(null);
+        } catch (err) {
+            alert(err.message);
+        }
+    };
+
+    const handleUpdateUser = async (userId, data) => {
+        try {
+            const updated = await adminService.updateUser(userId, data);
+            setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
+            setModalType(null);
         } catch (err) {
             alert(err.message);
         }
@@ -165,6 +185,12 @@ export default function Admin() {
                     </button>
                 </div>
 
+                {activeTab === 'users' && (
+                    <button className="admin-add-btn" onClick={() => { setModalType('createUser'); setModalData(null); }}>
+                        <FaUserPlus size={12} /> New User
+                    </button>
+                )}
+
                 {activeTab === 'roles' && (
                     <button className="admin-add-btn" onClick={() => { setModalType('createRole'); setModalData(null); }}>
                         <FaPlus size={12} /> New Role
@@ -212,8 +238,8 @@ export default function Admin() {
                                         <div className="admin-actions">
                                             <div
                                                 className="admin-action-icon edit"
-                                                title="Edit Roles"
-                                                onClick={() => { setModalType('editUserRoles'); setModalData(user); }}
+                                                title="Edit User"
+                                                onClick={() => { setModalType('editUser'); setModalData(user); }}
                                             >
                                                 <FaPen size={14} />
                                             </div>
@@ -335,6 +361,16 @@ export default function Admin() {
 
             {/* ─── Modals ──────────────────────────────────────────── */}
 
+            {(modalType === 'createUser' || modalType === 'editUser') && (
+                <CreateEditUserModal
+                    user={modalType === 'editUser' ? modalData : null}
+                    roles={roles}
+                    onCreate={handleCreateUser}
+                    onUpdate={handleUpdateUser}
+                    onClose={() => setModalType(null)}
+                />
+            )}
+
             {modalType === 'editUserRoles' && modalData && (
                 <EditUserRolesModal
                     user={modalData}
@@ -360,6 +396,142 @@ export default function Admin() {
                     onClose={() => setModalType(null)}
                 />
             )}
+        </div>
+    );
+}
+
+// ─── Create / Edit User Modal ──────────────────────────────────
+
+function CreateEditUserModal({ user, roles, onCreate, onUpdate, onClose }) {
+    const isEdit = !!user;
+    const [email, setEmail] = useState(user?.email || '');
+    const [displayName, setDisplayName] = useState(user?.displayName || '');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [isActive, setIsActive] = useState(user?.isActive ?? true);
+    const [selectedRoleIds, setSelectedRoleIds] = useState(
+        user ? roles.filter(r => user.roles.includes(r.name)).map(r => r.id) : []
+    );
+
+    const toggleRole = (id) => {
+        setSelectedRoleIds(prev =>
+            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+        );
+    };
+
+    const handleSubmit = () => {
+        if (!email.trim()) return alert('Email is required.');
+        if (!isEdit) {
+            if (!password.trim()) return alert('Password is required.');
+            if (password.length < 6) return alert('Password must be at least 6 characters.');
+            if (password !== confirmPassword) return alert('Passwords do not match.');
+            onCreate({
+                email: email.trim(),
+                displayName: displayName.trim() || null,
+                password,
+                roleIds: selectedRoleIds,
+                isActive
+            });
+        } else {
+            onUpdate(user.id, {
+                email: email.trim(),
+                displayName: displayName.trim() || null,
+                roleIds: selectedRoleIds,
+                isActive
+            });
+        }
+    };
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-box" onClick={e => e.stopPropagation()}>
+                <div className="modal-box-header">
+                    <h3>{isEdit ? `Edit User — ${user.displayName || user.email}` : 'Create New User'}</h3>
+                </div>
+                <div className="modal-box-body">
+                    <div className="mb-3">
+                        <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>Display Name</label>
+                        <input
+                            className="form-control form-control-sm"
+                            value={displayName}
+                            onChange={e => setDisplayName(e.target.value)}
+                            placeholder="Enter display name"
+                        />
+                    </div>
+
+                    <div className="mb-3">
+                        <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>Email</label>
+                        <input
+                            type="email"
+                            className="form-control form-control-sm"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                            placeholder="Enter email address"
+                        />
+                    </div>
+
+                    {!isEdit && (
+                        <>
+                            <div className="mb-3">
+                                <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>Password</label>
+                                <input
+                                    type="password"
+                                    className="form-control form-control-sm"
+                                    value={password}
+                                    onChange={e => setPassword(e.target.value)}
+                                    placeholder="Enter password (min 6 characters)"
+                                />
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>Confirm Password</label>
+                                <input
+                                    type="password"
+                                    className="form-control form-control-sm"
+                                    value={confirmPassword}
+                                    onChange={e => setConfirmPassword(e.target.value)}
+                                    placeholder="Confirm password"
+                                />
+                            </div>
+                        </>
+                    )}
+
+                    <div className="mb-3">
+                        <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>Roles</label>
+                        <div className="d-flex flex-column gap-2">
+                            {roles.map(role => (
+                                <label key={role.id} className={`perm-check ${selectedRoleIds.includes(role.id) ? 'checked' : ''}`}>
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedRoleIds.includes(role.id)}
+                                        onChange={() => toggleRole(role.id)}
+                                    />
+                                    <span style={{ fontWeight: 600 }}>{role.name}</span>
+                                    <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>— {role.description}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="mb-3">
+                        <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>Status</label>
+                        <div
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+                            onClick={() => setIsActive(prev => !prev)}
+                        >
+                            {isActive ? <FaToggleOn size={22} color="#22c55e" /> : <FaToggleOff size={22} color="#94a3b8" />}
+                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: isActive ? '#22c55e' : '#94a3b8' }}>
+                                {isActive ? 'Active' : 'Inactive'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div className="modal-box-footer">
+                    <button className="modal-btn cancel" onClick={onClose}>Cancel</button>
+                    <button className="modal-btn primary" onClick={handleSubmit}>
+                        {isEdit ? 'Update User' : 'Create User'}
+                    </button>
+                </div>
+            </div>
         </div>
     );
 }
