@@ -59,3 +59,19 @@ export const taskService = {
         return await apiClient.post('/tasks/columns/reorder', { orderedColIds });
     },
 };
+
+export const documentService = {
+    getAll: async () => {
+        return await apiClient.get('/documents');
+    },
+    getById: async (id) => {
+        return await apiClient.get(`/documents/${id}`);
+    },
+    create: async (docData) => {
+        return await apiClient.post('/documents', docData);
+    },
+    delete: async (id) => {
+        await apiClient.delete(`/documents/${id}`);
+        return id;
+    }
+};

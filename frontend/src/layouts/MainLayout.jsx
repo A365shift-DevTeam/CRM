@@ -1,30 +1,43 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaChartColumn, FaUserGroup, FaClock, FaRightFromBracket, FaHouse, FaMoneyBillWave, FaListCheck, FaFileInvoice, FaBars, FaXmark, FaBrain, FaShieldHalved, FaArrowUpFromBracket } from 'react-icons/fa6';
+import { useTheme } from '../context/ThemeContext';
+import { 
+  FaChartColumn, FaUserGroup, FaClock, FaRightFromBracket, FaHouse, 
+  FaMoneyBillWave, FaListCheck, FaFileInvoice, FaBars, FaXmark, 
+  FaBrain, FaShieldHalved, FaArrowUpFromBracket, FaChevronDown, FaChevronUp,
+  FaGear, FaCircleInfo
+} from 'react-icons/fa6';
 import NotificationBell from '../components/NotificationBell';
 import GlobalSearch from '../components/GlobalSearch';
 import { exportPageToExcel } from '../utils/exportPageToExcel';
 
-function useIsMobile(breakpoint = 768) {
-    const [isMobile, setIsMobile] = React.useState(window.innerWidth <= breakpoint);
-    React.useEffect(() => {
-        const onResize = () => setIsMobile(window.innerWidth <= breakpoint);
-        window.addEventListener('resize', onResize);
-        return () => window.removeEventListener('resize', onResize);
-    }, [breakpoint]);
-    return isMobile;
-}
+const hexToRgba = (hex, alpha) => {
+    let r = 0, g = 0, b = 0;
+    if (hex && hex.length === 4) {
+        r = parseInt(hex[1] + hex[1], 16);
+        g = parseInt(hex[2] + hex[2], 16);
+        b = parseInt(hex[3] + hex[3], 16);
+    } else if (hex && hex.length === 7) {
+        r = parseInt(hex.substring(1, 3), 16);
+        g = parseInt(hex.substring(3, 5), 16);
+        b = parseInt(hex.substring(5, 7), 16);
+    }
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 
 export default function MainLayout() {
     const { logout, hasPermission, currentUser } = useAuth();
+    const { themeColor } = useTheme();
     const location = useLocation();
-    const [sidebarOpen, setSidebarOpen] = React.useState(false);
-    const isMobile = useIsMobile();
-    const contentRef = React.useRef(null);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const contentRef = useRef(null);
 
-    // Close sidebar when navigating
-    React.useEffect(() => {
+    // Expand categories state
+    const [expandedCategories, setExpandedCategories] = useState({});
+
+    // Close sidebar when navigating on smaller screens mostly handled by useEffect
+    useEffect(() => {
         setSidebarOpen(false);
     }, [location.pathname]);
 
@@ -36,22 +49,67 @@ export default function MainLayout() {
         }
     };
 
-    // All nav items with their required permission
-    const allNavItems = [
-        { path: '/', icon: <FaHouse size={20} />, label: 'Dashboard', permission: 'dashboard.view' },
-        { path: '/sales', icon: <FaChartColumn size={20} />, label: 'Sales', permission: 'sales.view' },
-        { path: '/todolist', icon: <FaListCheck size={20} />, label: 'Todo', permission: 'todolist.view' },
-        { path: '/contact', icon: <FaUserGroup size={20} />, label: 'Contacts', permission: 'contacts.view' },
-        { path: '/timesheet', icon: <FaClock size={20} />, label: 'Time', permission: 'timesheet.view' },
-        { path: '/finance', icon: <FaMoneyBillWave size={20} />, label: 'Finance', permission: 'finance.view' },
-        { path: '/invoice', icon: <FaFileInvoice size={20} />, label: 'Invoice', permission: 'invoice.view' },
-        { path: '/ai-agents', icon: <FaBrain size={20} />, label: 'AI Agents', permission: 'aiagents.view' },
-        { path: '/admin', icon: <FaShieldHalved size={20} />, label: 'Admin', permission: 'admin.view' },
+    const toggleCategory = (catTitle) => {
+        setExpandedCategories(prev => ({
+            ...prev,
+            [catTitle]: !prev[catTitle]
+        }));
+    };
+
+    // Submenu structure based on User specifications
+    const navCategories = [
+        {
+            title: 'CRM',
+            items: [
+                { path: '/company', icon: <FaUserGroup size={16} />, label: 'Company', permission: 'contacts.view' },
+                { path: '/contact', icon: <FaUserGroup size={16} />, label: 'Contacts', permission: 'contacts.view' },
+                { path: '/leads', icon: <FaUserGroup size={16} />, label: 'Leads', permission: 'sales.view' },
+                { path: '/sales', icon: <FaChartColumn size={16} />, label: 'Sales', permission: 'sales.view' },
+            ]
+        },
+        {
+            title: 'Execution',
+            items: [
+                { path: '/projects', icon: <FaChartColumn size={16} />, label: 'Projects', permission: 'timesheet.view' },
+                { path: '/timesheet', icon: <FaClock size={16} />, label: 'Timesheet', permission: 'timesheet.view' },
+                { path: '/todolist', icon: <FaListCheck size={16} />, label: 'To-Do', permission: 'todolist.view' },
+            ]
+        },
+        {
+            title: 'Operations',
+            items: [
+                { path: '/finance', icon: <FaMoneyBillWave size={16} />, label: 'Finance', permission: 'finance.view' },
+                { path: '/legal', icon: <FaFileInvoice size={16} />, label: 'Legal', permission: 'invoice.view' },
+                { path: '/documents', icon: <FaFileInvoice size={16} />, label: 'Documents', permission: 'dashboard.view' },
+                { path: '/links', icon: <FaHouse size={16} />, label: 'Links', permission: 'dashboard.view' },
+            ]
+        },
+        {
+            title: 'People',
+            items: [
+                { path: '/hr', icon: <FaUserGroup size={16} />, label: 'HR', permission: 'dashboard.view' },
+            ]
+        },
+        {
+            title: 'AI',
+            items: [
+                { path: '/ai-agents', icon: <FaBrain size={16} />, label: 'Agent AI', permission: 'aiagents.view' },
+            ]
+        }
     ];
 
-    // Filter nav items based on permissions
-    const navItems = allNavItems.filter(item => hasPermission(item.permission));
-    const currentPageLabel = allNavItems.find(item => item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path))?.label || 'A365 Tracker';
+    // Find current page label for export button
+    let currentPageLabel = 'A365 Tracker';
+    if (location.pathname === '/') currentPageLabel = 'Dashboard';
+    if (location.pathname === '/settings') currentPageLabel = 'Settings';
+    if (location.pathname === '/about') currentPageLabel = 'About';
+    navCategories.forEach(cat => {
+        cat.items.forEach(item => {
+            if (location.pathname.startsWith(item.path)) {
+                currentPageLabel = item.label;
+            }
+        });
+    });
 
     const handleExportCurrentPage = () => {
         exportPageToExcel({
@@ -60,146 +118,6 @@ export default function MainLayout() {
         });
     };
 
-    /* ───── MOBILE LAYOUT ───── */
-    if (isMobile) {
-        return (
-            <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', paddingBottom: '72px' }}>
-                {/* Main Content */}
-                <div style={{ padding: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 4px 8px 4px' }}>
-                        <button
-                            onClick={handleExportCurrentPage}
-                            style={{
-                                background: 'rgba(16, 185, 129, 0.1)',
-                                border: '1px solid rgba(16, 185, 129, 0.24)',
-                                color: '#059669',
-                                borderRadius: '10px',
-                                padding: '6px 10px',
-                                fontSize: '0.8rem',
-                                fontWeight: 600,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                cursor: 'pointer'
-                            }}
-                            title="Export current page"
-                        >
-                            <FaArrowUpFromBracket size={12} />
-                            Export
-                        </button>
-                    </div>
-                    <div
-                        ref={contentRef}
-                        className="w-100 overflow-auto"
-                        style={{
-                            minHeight: 'calc(100vh - 132px)',
-                            background: 'rgba(255, 255, 255, 0.85)',
-                            backdropFilter: 'blur(16px)',
-                            WebkitBackdropFilter: 'blur(16px)',
-                            border: '1px solid rgba(255, 255, 255, 0.6)',
-                            borderRadius: '16px',
-                            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9)'
-                        }}
-                    >
-                        <Outlet />
-                    </div>
-                </div>
-
-                {/* Bottom Navigation */}
-                <nav style={{
-                    position: 'fixed',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    height: '64px',
-                    background: 'rgba(255, 255, 255, 0.95)',
-                    backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)',
-                    borderTop: '1px solid rgba(0, 0, 0, 0.06)',
-                    boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.06)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-around',
-                    padding: '0 4px',
-                    zIndex: 1000
-                }}>
-                    {navItems.map((item) => {
-                        const isActive = location.pathname === item.path;
-                        return (
-                            <Link
-                                key={item.path}
-                                to={item.path}
-                                style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '2px',
-                                    textDecoration: 'none',
-                                    color: isActive ? '#3b82f6' : '#94a3b8',
-                                    fontSize: '0.6rem',
-                                    fontWeight: isActive ? 700 : 500,
-                                    padding: '6px 4px',
-                                    borderRadius: '8px',
-                                    transition: 'all 0.2s ease',
-                                    flex: 1,
-                                    maxWidth: '64px',
-                                    position: 'relative'
-                                }}
-                            >
-                                <div style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: '36px',
-                                    height: '28px',
-                                    borderRadius: '14px',
-                                    background: isActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                                    transition: 'all 0.2s ease'
-                                }}>
-                                    {React.cloneElement(item.icon, { size: 18 })}
-                                </div>
-                                <span>{item.label}</span>
-                            </Link>
-                        );
-                    })}
-                    <button
-                        onClick={handleLogout}
-                        style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '2px',
-                            background: 'none',
-                            border: 'none',
-                            color: '#ef4444',
-                            fontSize: '0.6rem',
-                            fontWeight: 500,
-                            padding: '6px 4px',
-                            cursor: 'pointer',
-                            flex: 1,
-                            maxWidth: '64px'
-                        }}
-                    >
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: '36px',
-                            height: '28px',
-                            borderRadius: '14px'
-                        }}>
-                            <FaRightFromBracket size={18} />
-                        </div>
-                        <span>Logout</span>
-                    </button>
-                </nav>
-            </div>
-        );
-    }
-
-    /* ───── DESKTOP LAYOUT ───── */
     return (
         <div className="d-flex" style={{ height: '100vh', overflow: 'hidden', background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)' }}>
             {/* Overlay (visible when sidebar is open) */}
@@ -235,17 +153,15 @@ export default function MainLayout() {
                     WebkitBackdropFilter: 'blur(16px)',
                     borderRight: '1px solid rgba(0, 0, 0, 0.06)',
                     zIndex: 999,
-                    boxShadow: sidebarOpen ? '4px 0 24px rgba(0, 0, 0, 0.08)' : 'none'
+                    boxShadow: sidebarOpen ? '4px 0 24px rgba(0, 0, 0, 0.08)' : 'none',
+                    overflowY: 'auto'
                 }}
             >
                 {/* Sidebar Header */}
-                <div className="d-flex align-items-center justify-content-between mb-3 px-2" style={{ height: '40px' }}>
+                <div className="d-flex align-items-center justify-content-between mb-3 px-2" style={{ height: '40px', flexShrink: 0 }}>
                     <Link to="/" className="d-flex align-items-center text-decoration-none">
                         <span className="fs-5 fw-bold text-nowrap" style={{
-                            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                            backgroundClip: 'text',
+                            color: themeColor,
                             letterSpacing: '-0.3px'
                         }}>
                             A365 Tracker
@@ -268,115 +184,199 @@ export default function MainLayout() {
                         <FaXmark size={20} />
                     </button>
                 </div>
-                <hr style={{ borderColor: 'rgba(0,0,0,0.08)', opacity: 0.5 }} />
-                <ul className="nav nav-pills flex-column mb-auto gap-1">
-                    {navItems.map((item) => {
-                        const isActive = location.pathname === item.path;
+                
+                <hr style={{ borderColor: 'rgba(0,0,0,0.08)', opacity: 0.5, margin: '0 0 10px 0', flexShrink: 0 }} />
+
+                <ul className="nav nav-pills flex-column mb-auto gap-2">
+                    {/* Dashboard explicitly separated if wanted, but using categories instead */}
+                    <li className="nav-item">
+                        <Link
+                            to="/"
+                            className="nav-link d-flex align-items-center gap-3 px-3 py-2"
+                            style={{
+                                color: location.pathname === '/' ? themeColor : '#64748b',
+                                background: location.pathname === '/' ? hexToRgba(themeColor, 0.08) : 'transparent',
+                                border: location.pathname === '/' ? `1px solid ${hexToRgba(themeColor, 0.12)}` : '1px solid transparent',
+                                borderRadius: '10px',
+                                fontWeight: location.pathname === '/' ? 600 : 500,
+                                fontSize: '0.9rem',
+                            }}
+                        >
+                            <div style={{ minWidth: '20px', display: 'flex', justifyContent: 'center' }}>
+                                <FaHouse size={16} />
+                            </div>
+                            <span>Dashboard</span>
+                        </Link>
+                    </li>
+
+                    {navCategories.map((category) => {
+                        const hasPerm = category.items.some(item => hasPermission(item.permission));
+                        if (!hasPerm) return null;
+                        
+                        const isExpanded = expandedCategories[category.title] !== false; // Default expanded if undefined
+
                         return (
-                            <li className="nav-item" key={item.path}>
-                                <Link
-                                    to={item.path}
-                                    className="nav-link d-flex align-items-center gap-3 px-3 py-2"
+                            <li className="nav-item d-flex flex-column" key={category.title}>
+                                <button
+                                    onClick={() => toggleCategory(category.title)}
+                                    className="d-flex align-items-center justify-content-between px-3 py-2 text-decoration-none"
                                     style={{
-                                        color: isActive ? '#3b82f6' : '#64748b',
-                                        background: isActive ? 'rgba(59, 130, 246, 0.08)' : 'transparent',
-                                        border: isActive ? '1px solid rgba(59, 130, 246, 0.12)' : '1px solid transparent',
-                                        borderRadius: '10px',
-                                        fontWeight: isActive ? 600 : 500,
-                                        fontSize: '0.9rem',
-                                        whiteSpace: 'nowrap',
-                                        overflow: 'hidden'
+                                        background: 'none',
+                                        border: 'none',
+                                        color: '#475569',
+                                        fontWeight: 600,
+                                        fontSize: '0.85rem',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.5px',
+                                        cursor: 'pointer',
+                                        width: '100%',
+                                        textAlign: 'left',
+                                        marginTop: '10px'
                                     }}
                                 >
-                                    <div style={{ minWidth: '20px', display: 'flex', justifyContent: 'center' }}>
-                                        {item.icon}
-                                    </div>
-                                    <span>{item.label}</span>
-                                </Link>
+                                    <span>{category.title}</span>
+                                    {isExpanded ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
+                                </button>
+                                
+                                {isExpanded && (
+                                    <ul className="nav nav-pills flex-column gap-1 mt-1 pl-2" style={{ marginLeft: '10px', borderLeft: '1px solid rgba(0,0,0,0.05)' }}>
+                                        {category.items.filter(i => hasPermission(i.permission)).map((item) => {
+                                            const isActive = location.pathname.startsWith(item.path);
+                                            return (
+                                                <li className="nav-item ml-2" key={item.path}>
+                                                    <Link
+                                                        to={item.path}
+                                                        className="nav-link d-flex align-items-center gap-3 px-3 py-1.5"
+                                                        style={{
+                                                            color: isActive ? themeColor : '#64748b',
+                                                            background: isActive ? hexToRgba(themeColor, 0.08) : 'transparent',
+                                                            border: 'none',
+                                                            borderRadius: '8px',
+                                                            fontWeight: isActive ? 600 : 500,
+                                                            fontSize: '0.85rem',
+                                                            whiteSpace: 'nowrap',
+                                                            overflow: 'hidden'
+                                                        }}
+                                                    >
+                                                        <div style={{ minWidth: '18px', display: 'flex', justifyContent: 'center' }}>
+                                                            {item.icon}
+                                                        </div>
+                                                        <span>{item.label}</span>
+                                                    </Link>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                )}
                             </li>
                         );
                     })}
-                </ul>
-                <hr style={{ borderColor: 'rgba(0,0,0,0.08)', opacity: 0.5 }} />
 
-                {/* Profile Section */}
-                {currentUser && (
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            padding: '12px',
-                            marginBottom: '12px',
-                            background: 'rgba(59, 130, 246, 0.04)',
-                            border: '1px solid rgba(59, 130, 246, 0.08)',
-                            borderRadius: '12px'
-                        }}
-                    >
-                        <div
+                    <li className="nav-item mt-3">
+                        <Link
+                            to="/admin"
+                            className="nav-link d-flex align-items-center gap-3 px-3 py-2"
                             style={{
-                                width: '40px',
-                                height: '40px',
-                                borderRadius: '12px',
-                                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: '#fff',
-                                fontWeight: 700,
+                                color: location.pathname === '/admin' ? themeColor : '#64748b',
+                                background: location.pathname === '/admin' ? hexToRgba(themeColor, 0.08) : 'transparent',
+                                borderRadius: '10px',
+                                fontWeight: location.pathname === '/admin' ? 600 : 500,
                                 fontSize: '0.9rem',
-                                flexShrink: 0,
-                                boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)'
                             }}
                         >
-                            {(currentUser.displayName || currentUser.email || '?')
-                                .split(' ')
-                                .map(w => w[0])
-                                .slice(0, 2)
-                                .join('')
-                                .toUpperCase()}
-                        </div>
-                        <div style={{ overflow: 'hidden', minWidth: 0 }}>
-                            <div style={{
-                                fontWeight: 600,
-                                fontSize: '0.85rem',
-                                color: '#1e293b',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis'
-                            }}>
-                                {currentUser.displayName || 'User'}
+                            <div style={{ minWidth: '20px', display: 'flex', justifyContent: 'center' }}>
+                                <FaShieldHalved size={16} />
                             </div>
-                            <div style={{
-                                fontSize: '0.7rem',
-                                color: '#94a3b8',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis'
-                            }}>
-                                {currentUser.email}
-                            </div>
-                        </div>
-                    </div>
-                )}
+                            <span>Admin</span>
+                        </Link>
+                    </li>
+                </ul>
+                <hr style={{ borderColor: 'rgba(0,0,0,0.08)', opacity: 0.5, flexShrink: 0 }} />
 
-                <button
-                    onClick={handleLogout}
-                    className="btn d-flex align-items-center w-100 py-2 gap-2 justify-content-center"
-                    style={{
-                        background: 'rgba(239, 68, 68, 0.06)',
-                        border: '1px solid rgba(239, 68, 68, 0.12)',
-                        color: '#ef4444',
-                        borderRadius: '10px',
-                        fontWeight: 500,
-                        fontSize: '0.85rem',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden'
-                    }}
-                >
-                    <FaRightFromBracket />
-                    <span>Sign out</span>
-                </button>
+                {/* Profile Section & Settings */}
+                <div style={{ flexShrink: 0 }}>
+                    {currentUser && (
+                        <Link
+                            to="/settings"
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                padding: '12px',
+                                marginBottom: '12px',
+                                background: location.pathname === '/settings' ? hexToRgba(themeColor, 0.08) : hexToRgba(themeColor, 0.04),
+                                border: location.pathname === '/settings' ? `1px solid ${hexToRgba(themeColor, 0.16)}` : `1px solid ${hexToRgba(themeColor, 0.08)}`,
+                                borderRadius: '12px',
+                                textDecoration: 'none',
+                                transition: 'all 0.2s',
+                                flexShrink: 0
+                            }}
+                        >
+                            <div
+                                style={{
+                                    width: '40px',
+                                    height: '40px',
+                                    borderRadius: '12px',
+                                    background: `linear-gradient(135deg, ${themeColor} 0%, ${themeColor} 100%)`,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: '#fff',
+                                    fontWeight: 700,
+                                    fontSize: '0.9rem',
+                                    flexShrink: 0,
+                                    boxShadow: `0 2px 8px ${hexToRgba(themeColor, 0.3)}`
+                                }}
+                            >
+                                {(currentUser.displayName || currentUser.email || '?')
+                                    .split(' ')
+                                    .map(w => w[0])
+                                    .slice(0, 2)
+                                    .join('')
+                                    .toUpperCase()}
+                            </div>
+                            <div style={{ overflow: 'hidden', minWidth: 0 }}>
+                                <div style={{
+                                    fontWeight: 600,
+                                    fontSize: '0.85rem',
+                                    color: '#1e293b',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
+                                }}>
+                                    {currentUser.displayName || 'User'}
+                                </div>
+                                <div style={{
+                                    fontSize: '0.7rem',
+                                    color: '#94a3b8',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
+                                }}>
+                                    {currentUser.email}
+                                </div>
+                            </div>
+                        </Link>
+                    )}
+
+                    <button
+                        onClick={handleLogout}
+                        className="btn d-flex align-items-center w-100 py-2 gap-2 justify-content-center"
+                        style={{
+                            background: 'rgba(239, 68, 68, 0.06)',
+                            border: '1px solid rgba(239, 68, 68, 0.12)',
+                            color: '#ef4444',
+                            borderRadius: '10px',
+                            fontWeight: 500,
+                            fontSize: '0.85rem',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden'
+                        }}
+                    >
+                        <FaRightFromBracket />
+                        <span>Sign out</span>
+                    </button>
+                </div>
             </div>
 
             {/* Main Content */}
@@ -409,7 +409,7 @@ export default function MainLayout() {
                                 borderRadius: '10px',
                                 padding: '8px 10px',
                                 cursor: 'pointer',
-                                color: '#3b82f6',
+                                color: themeColor,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
