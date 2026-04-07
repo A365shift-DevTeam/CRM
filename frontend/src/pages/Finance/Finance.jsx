@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Row, Col, Card, Button, Form, Badge, Modal, Dropdown } from 'react-bootstrap'
-import { Plus, TrendingUp, DollarSign, Calendar, TrendingDown, Search, Edit, Trash2, Eye, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Settings } from 'lucide-react'
+import { Plus, TrendingUp, DollarSign, Calendar, TrendingDown, Search, Edit, Trash2, Eye, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Settings, Users } from 'lucide-react'
 import { expenseService } from '../../services/expenseService'
 import { incomeService } from '../../services/incomeService'
+import { projectFinanceService } from '../../services/projectFinanceService'
 import { ExpenseModal } from './ExpenseModal'
 import { IncomeModal } from './IncomeModal'
 import FinanceSettingsModal, { DEFAULT_EXPENSE_FIELDS, DEFAULT_INCOME_FIELDS } from './FinanceSettingsModal'
@@ -39,6 +40,7 @@ const Finance = () => {
   const toast = useToast()
   const [expenses, setExpenses] = useState([])
   const [incomes, setIncomes] = useState([])
+  const [projectFinances, setProjectFinances] = useState([])
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [financeConfig, setFinanceConfig] = useState(() => {
     const saved = localStorage.getItem('finance_config')
@@ -76,12 +78,14 @@ const Finance = () => {
   const loadData = async () => {
     try {
       setIsLoading(true)
-      const [expensesData, incomesData] = await Promise.all([
+      const [expensesData, incomesData, financesData] = await Promise.all([
         expenseService.getExpenses(),
-        incomeService.getIncomes()
+        incomeService.getIncomes(),
+        projectFinanceService.getAll()
       ])
       setExpenses(expensesData || [])
       setIncomes(incomesData || [])
+      setProjectFinances(financesData || [])
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {
@@ -108,6 +112,18 @@ const Finance = () => {
     }
   }
 
+  // Calculate total stakeholder splits from Deal Value (excluding GST)
+  const totalSplits = useMemo(() => {
+    return projectFinances.reduce((total, pf) => {
+      const dealValue = Number(pf.dealValue) || 0
+      const projectSplits = (pf.stakeholders || []).reduce((sum, s) => {
+        const splitAmount = (dealValue * (Number(s.percentage) || 0)) / 100
+        return sum + splitAmount
+      }, 0)
+      return total + projectSplits
+    }, 0)
+  }, [projectFinances])
+
   // Calculate overall statistics
   const overallStats = useMemo(() => {
     const isPaid = (item) => (item?.status || '').toString().trim().toLowerCase() === 'paid'
@@ -121,7 +137,8 @@ const Finance = () => {
     const paidIncomeTotal = incomes
       .filter(isPaid)
       .reduce((sum, inc) => sum + toAmount(inc.amount), 0)
-    const netProfit = incomeTotal - expenseTotal
+    // Profit = Income - Expenses - Splits (splits are based on Deal Value, excluding GST)
+    const netProfit = incomeTotal - expenseTotal - totalSplits
 
     const expenseAverage = expenses.length > 0 ? expenseTotal / expenses.length : 0
     const incomeAverage = incomes.length > 0 ? incomeTotal / incomes.length : 0
@@ -146,6 +163,7 @@ const Finance = () => {
       incomeTotal,
       paidIncomeTotal,
       netProfit,
+      totalSplits,
       expenseAverage,
       incomeAverage,
       expenseThisMonth,
@@ -154,7 +172,7 @@ const Finance = () => {
       expenseCount: expenses.length,
       incomeCount: incomes.length
     }
-  }, [expenses, incomes])
+  }, [expenses, incomes, totalSplits])
 
   // Helper to check time period
   const checkTimePeriod = (dateStr) => {
@@ -387,6 +405,20 @@ const Finance = () => {
               <div className="stat-content">
                 <div className="stat-title">Total Income</div>
                 <div className="stat-value text-success">{formatCurrency(overallStats.incomeTotal)}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-header">
+              <div className="stat-icon-wrapper" style={{ background: '#fef3c7' }}>
+                <Users size={24} color="#f59e0b" />
+              </div>
+              <div className="stat-content">
+                <div className="stat-title">Total Splits</div>
+                <div className="stat-value" style={{ color: '#f59e0b' }}>
+                  {formatCurrency(overallStats.totalSplits)}
+                </div>
               </div>
             </div>
           </div>

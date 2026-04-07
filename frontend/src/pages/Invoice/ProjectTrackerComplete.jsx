@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FaFilePdf } from "react-icons/fa6";
 import { PiMicrosoftExcelLogoFill } from "react-icons/pi";
 import { useLocation, useSearchParams } from 'react-router-dom';
@@ -1670,12 +1670,25 @@ const ProjectTrackerComplete = () => {
     const [view, setView] = useState('dashboard');
     const [activeProjectId, setActiveProjectId] = useState(null);
     const [projects, setProjects] = useState([]);
+    // Track last-saved milestone statuses to detect new "Paid" transitions on save
+    const savedMilestoneStatusesRef = useRef({});
 
     useEffect(() => {
         const fetchProjects = async () => {
             try {
                 const fetchedProjects = await projectFinanceService.getAll();
-                setProjects(dedupeProjects(fetchedProjects || []));
+                const deduped = dedupeProjects(fetchedProjects || []);
+                setProjects(deduped);
+                // Snapshot saved milestone statuses for each project
+                const statusMap = {};
+                deduped.forEach(p => {
+                    const pid = p.id || p._id;
+                    statusMap[pid] = {};
+                    (p.milestones || []).forEach((m, idx) => {
+                        statusMap[pid][m.name || `milestone-${idx}`] = m.status;
+                    });
+                });
+                savedMilestoneStatusesRef.current = statusMap;
             } catch (err) {
                 console.error("Error fetching project finances:", err);
             }
@@ -1893,16 +1906,58 @@ const ProjectTrackerComplete = () => {
             };
 
             const id = activeProject.id;
+            let savedProject = null;
             try {
                 const updated = await projectFinanceService.update(id, payload);
-                // Update local state with server response
+                savedProject = updated;
                 setProjects(prev => dedupeProjects(prev.map(p => (idsEqual(p.id, id) || idsEqual(p._id, id)) ? normalizeProjectFinance({ ...p, ...updated, id: updated.id || p.id, _id: updated._id || p._id }) : p)));
             } catch {
                 const created = await projectFinanceService.create(payload);
+                savedProject = created;
                 const savedId = created.id || created._id;
                 setProjects(prev => dedupeProjects(prev.map(p => (idsEqual(p.id, id) || idsEqual(p._id, id)) ? normalizeProjectFinance({ ...p, ...created, id: savedId, _id: savedId }) : p)));
                 setActiveProjectId(savedId);
             }
+
+            // Auto-create income for milestones that just became "Paid" (compared to last saved state)
+            if (savedProject) {
+                const projectId = savedProject.id || savedProject._id || id;
+                const prevStatuses = savedMilestoneStatusesRef.current[id] || {};
+                const dealValue = parseFloat(activeProject.dealValue) || 0;
+                const totalTaxRate = (activeProject.charges || []).reduce((sum, c) => sum + (parseFloat(c.percentage) || 0), 0);
+
+                for (const milestone of (activeProject.milestones || [])) {
+                    const mKey = milestone.name || `milestone-${milestone.order}`;
+                    const wasStatus = prevStatuses[mKey];
+                    if (milestone.status === 'Paid' && wasStatus !== 'Paid') {
+                        const raisedAmount = (dealValue * (parseFloat(milestone.percentage) || 0)) / 100;
+                        const taxAmount = (raisedAmount * totalTaxRate) / 100;
+                        const totalAmount = raisedAmount + taxAmount;
+                        try {
+                            await incomeService.createIncome({
+                                description: `${activeProject.clientName} - ${milestone.name}`,
+                                amount: totalAmount,
+                                date: new Date().toISOString(),
+                                category: 'sales',
+                                status: 'Paid',
+                                projectDepartment: `ProjectFinance-${projectId}`
+                            });
+                        } catch (err) {
+                            console.error("Error creating auto-income for milestone:", err);
+                        }
+                    }
+                }
+
+                // Update saved statuses ref so next save won't create duplicates
+                const newStatuses = {};
+                (activeProject.milestones || []).forEach((m, idx) => {
+                    newStatuses[m.name || `milestone-${idx}`] = m.status;
+                });
+                savedMilestoneStatusesRef.current[projectId] = newStatuses;
+                // Also update for old id in case it changed (create vs update)
+                if (projectId !== id) savedMilestoneStatusesRef.current[projectId] = newStatuses;
+            }
+
             toast.success('Project finance details saved successfully!');
         } catch (error) {
             console.error("Error saving project:", error);
@@ -1990,30 +2045,8 @@ const ProjectTrackerComplete = () => {
         updateProject(p => ({ ...p, milestones: [...p.milestones, { id: Date.now(), name: defaultName, percentage: 0, status: 'Pending', invoiceDate: '', paidDate: '' }] }));
     };
     const removeMilestone = (id) => updateProject(p => ({ ...p, milestones: p.milestones.filter(m => m.id !== id) }));
-    const updateMilestone = async (id, f, v) => {
+    const updateMilestone = (id, f, v) => {
         updateProject(p => ({ ...p, milestones: p.milestones.map(m => m.id === id ? { ...m, ...(typeof f === 'object' ? f : { [f]: v }) } : m) }));
-
-        if (f === 'status' && v === 'Paid' && activeProject) {
-            const milestone = activeProject.milestones.find(m => m.id === id);
-            if (milestone) {
-                const raisedAmount = (activeProject.dealValue * milestone.percentage) / 100;
-                const totalTaxRate = activeProject.charges ? activeProject.charges.reduce((sum, c) => sum + (parseFloat(c.percentage) || 0), 0) : 0;
-                const taxAmount = (raisedAmount * totalTaxRate) / 100;
-                const totalAmount = raisedAmount + taxAmount;
-                const incomeData = {
-                    description: `${activeProject.clientName} - ${milestone.name}`,
-                    amount: totalAmount,
-                    date: new Date().toISOString(),
-                    category: 'sales',
-                    notes: `Auto-generated from Project ${activeProject.projectId}`
-                };
-                try {
-                    await incomeService.createIncome(incomeData);
-                } catch (err) {
-                    console.error("Error creating income:", err);
-                }
-            }
-        }
     };
 
     // Charges logic
