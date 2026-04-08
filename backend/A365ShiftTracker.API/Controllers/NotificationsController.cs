@@ -54,4 +54,12 @@ public class NotificationsController : BaseApiController
         await _service.DeleteAsync(id, userId);
         return Ok(ApiResponse<bool>.Ok(true, "Notification deleted."));
     }
+
+    [HttpGet("alerts")]
+    public async Task<ActionResult<ApiResponse<IEnumerable<AlertDto>>>> GetAlerts()
+    {
+        var userId = GetCurrentUserId();
+        var result = await _service.GenerateAlertsAsync(userId);
+        return Ok(ApiResponse<IEnumerable<AlertDto>>.Ok(result));
+    }
 }

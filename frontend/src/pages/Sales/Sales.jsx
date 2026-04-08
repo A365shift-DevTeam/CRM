@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User, Mail, Contact, Settings, Plus, CheckCircle, Trash2, Briefcase, DollarSign, Timer, Flag, AlertTriangle, ArrowUpRight, Search, Monitor, Phone, FileText, MessageSquare, Edit, Clock } from 'lucide-react'
+import { User, Mail, Contact, Settings, Plus, CheckCircle, Trash2, Briefcase, DollarSign, Timer, Flag, AlertTriangle, ArrowUpRight, Search, Monitor, Phone, FileText, MessageSquare, Edit, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
 import { FaWhatsapp } from 'react-icons/fa6'
 import { Button, Modal, Form, Dropdown } from 'react-bootstrap'
 import './Sales.css'
@@ -51,6 +51,7 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
     const toast = useToast()
     const [showNotification, setShowNotification] = useState(false)
     const [stageTransition, setStageTransition] = useState({ from: '', to: '' })
+    const [iconsExpanded, setIconsExpanded] = useState(false)
 
     const getClientData = (id) => {
         const clients = [
@@ -137,7 +138,7 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
                     </div>
                 </div>
 
-                <div className="card-icons-row">
+                <div className="card-icons-row d-flex align-items-center" style={{ gap: '8px' }}>
                     <Edit
                         size={16}
                         className="icon-outline icon-edit"
@@ -160,43 +161,58 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
                         title="Add Timesheet Entry"
                         style={{ cursor: 'pointer' }}
                     />
-                    <FileText
-                        size={18}
-                        className="icon-outline"
-                        strokeWidth={1.5}
-                        style={{ cursor: 'pointer' }}
+                    {iconsExpanded && (
+                        <>
+                            <FileText
+                                size={18}
+                                className="icon-outline"
+                                strokeWidth={1.5}
+                                style={{ cursor: 'pointer' }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onInvoice();
+                                }}
+                                title="Create Invoice"
+                            />
+                            <FaWhatsapp
+                                size={17}
+                                className="icon-outline icon-whatsapp"
+                                style={{ cursor: 'pointer', color: "rgb(35, 144, 154)" }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const phone = project.phone || '';
+                                    if (phone) {
+                                        window.open(`https://wa.me/${phone.replace(/\D/g, '')}`, '_blank');
+                                    } else {
+                                        toast.warning('No phone number available for this client.');
+                                    }
+                                }}
+                                title="WhatsApp Client"
+                            />
+                            <Trash2
+                                size={16}
+                                className="icon-outline icon-delete"
+                                strokeWidth={1.5}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm('Are you sure you want to delete this project?')) {
+                                        onDelete()
+                                    }
+                                }}
+                            />
+                        </>
+                    )}
+                    <div
                         onClick={(e) => {
                             e.stopPropagation();
-                            onInvoice();
+                            setIconsExpanded(!iconsExpanded);
                         }}
-                        title="Create Invoice"
-                    />
-                    <FaWhatsapp
-                        size={17}
-                        className="icon-outline icon-whatsapp"
-                        style={{ cursor: 'pointer', color: "rgb(35, 144, 154)" }}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            const phone = project.phone || '';
-                            if (phone) {
-                                window.open(`https://wa.me/${phone.replace(/\D/g, '')}`, '_blank');
-                            } else {
-                                toast.warning('No phone number available for this client.');
-                            }
-                        }}
-                        title="WhatsApp Client"
-                    />
-                    <Trash2
-                        size={16}
-                        className="icon-outline icon-delete"
-                        strokeWidth={1.5}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (window.confirm('Are you sure you want to delete this project?')) {
-                                onDelete()
-                            }
-                        }}
-                    />
+                        className="icon-outline d-flex align-items-center justify-content-center"
+                        style={{ cursor: 'pointer', padding: '4px' }}
+                        title={iconsExpanded ? "Show Less" : "Show More"}
+                    >
+                        {iconsExpanded ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+                    </div>
                 </div>
             </div>
 

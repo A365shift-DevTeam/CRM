@@ -10,4 +10,5 @@ public interface INotificationService
     Task MarkAllAsReadAsync(int userId);
     Task<NotificationDto> CreateAsync(CreateNotificationRequest request);
     Task DeleteAsync(int id, int userId);
+    Task<IEnumerable<AlertDto>> GenerateAlertsAsync(int userId);
 }
