@@ -1,444 +1,375 @@
-/* Sales.css — Apple-Inspired Light Theme */
+/* Sales.css — Enterprise Pipeline Design */
 
 .sales-page {
-    padding: 24px;
-    background-color: #F5F7FA;
-    color: #0F172A;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  padding: 24px;
+  background: var(--bg-primary, #EEF2F8);
+  font-family: var(--font-family, 'DM Sans', sans-serif);
+  min-height: 100vh;
 }
 
-/* --- Stats Grid --- */
+/* ── Stats Grid ── */
 .sales-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 24px;
-    margin-bottom: 32px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .sales-page .stat-card {
-    background: #FFFFFF;
-    border-radius: 20px;
-    padding: 22px;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    border: 1px solid #E2E8F0;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-    transition: 0.25s ease;
+  background: #FFFFFF;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid #E1E8F4;
+  box-shadow: 0 2px 16px rgba(15, 23, 42, 0.06), 0 1px 4px rgba(15, 23, 42, 0.04);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.sales-page .stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 16px 16px 0 0;
 }
 
 .sales-page .stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.1);
 }
 
 .stat-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
 }
 
 .stat-icon-wrapper {
-    width: 56px;
-    height: 56px;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-/* Icon Colors (Soft Backgrounds) */
-.stat-icon-wrapper.blue {
-    background: #eff6ff;
-    color: #3b82f6;
-}
+.stat-icon-wrapper.blue   { background: rgba(67,97,238,0.1);   color: #4361EE; }
+.stat-icon-wrapper.green  { background: rgba(16,185,129,0.1);  color: #10B981; }
+.stat-icon-wrapper.orange { background: rgba(249,115,22,0.1);  color: #F97316; }
+.stat-icon-wrapper.teal   { background: rgba(6,182,212,0.1);   color: #06B6D4; }
+.stat-icon-wrapper.purple { background: rgba(139,92,246,0.1);  color: #8B5CF6; }
+.stat-icon-wrapper.amber  { background: rgba(245,158,11,0.1);  color: #F59E0B; }
 
-.stat-icon-wrapper.green {
-    background: #f0fdf4;
-    color: #10b981;
-}
-
-.stat-icon-wrapper.orange {
-    background: #fff7ed;
-    color: #f97316;
-}
-
-.stat-icon-wrapper.teal {
-    background: #ecfeff;
-    color: #06b6d4;
-}
-
-.stat-icon-wrapper.purple {
-    background: #f5f3ff;
-    color: #8b5cf6;
-}
-
-.stat-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
+.stat-content { flex: 1; display: flex; flex-direction: column; }
 
 .stat-title {
-    font-size: 13px;
-    font-weight: 500;
-    color: #64748b;
-    margin-bottom: 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #94A3B8;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-family: var(--font-family, 'DM Sans', sans-serif);
 }
 
 .stat-value {
-    font-size: 28px;
-    font-weight: 700;
-    color: #0f172a;
-    line-height: 1.2;
+  font-size: 26px;
+  font-weight: 800;
+  color: #0F172A;
+  line-height: 1.1;
+  font-family: var(--font-display, 'Outfit', sans-serif);
+  letter-spacing: -0.02em;
 }
 
-/* --- Toolbar --- */
-.sales-toolbar {
-    background: #FFFFFF;
-    border-radius: 20px;
-    padding: 16px 24px;
-    border: 1px solid #E2E8F0;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-    margin-bottom: 24px;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+/* ── Sales Card (Pipeline Row) ── */
+.sales-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.sales-toolbar input.form-control {
-    border: 1px solid #e2e8f0;
-    background: #fff;
-    padding: 10px 16px 10px 40px;
-    /* Space for icon */
-    border-radius: 12px;
-    font-size: 14px;
-    transition: all 0.2s;
-}
-
-.sales-toolbar input.form-control:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.sales-toolbar .icon-btn {
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    background: transparent;
-    color: #64748b;
-    border-radius: 8px;
-    transition: all 0.2s;
-}
-
-.sales-toolbar .icon-btn:hover {
-    background: #f1f5f9;
-    color: #0f172a;
-}
-
-/* View Toggle (Segmented Control look) */
-.view-mode-toggle {
-    background: #f1f5f9;
-    padding: 4px;
-    border-radius: 10px;
-    display: flex;
-    gap: 4px;
-}
-
-.view-mode-toggle .btn {
-    border: none;
-    background: transparent;
-    color: #64748b;
-    font-size: 13px;
-    font-weight: 500;
-    padding: 6px 16px;
-    border-radius: 8px;
-    transition: all 0.2s;
-}
-
-.view-mode-toggle .btn:hover {
-    color: #0f172a;
-}
-
-.view-mode-toggle .btn.btn-primary {
-    background: var(--dynamic-theme-color, #10b981) !important;
-    border-color: var(--dynamic-theme-color, #10b981) !important;
-    color: white !important;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.view-mode-toggle .btn.btn-primary:first-child,
-.view-mode-toggle .btn.btn-outline-secondary:first-child {
-    border-radius: 8px;
-    /* Override Bootstrap group radius */
-}
-
-/* Add Project Button */
-.sales-toolbar .btn-primary,
-.sales-toolbar .btn-success {
-    background: var(--dynamic-theme-color, #10b981) !important;
-    border-color: var(--dynamic-theme-color, #10b981) !important;
-    color: #FFFFFF !important;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 10px;
-    font-weight: 600;
-    box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.15);
-    transition: all 0.2s;
-}
-
-.sales-toolbar .btn-primary:hover,
-.sales-toolbar .btn-success:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
-}
-
-/* --- Sales Card (Apple Layout) --- */
 .sales-card {
-    background: #FFFFFF;
-    border-radius: 20px;
-    padding: 8px 16px;
-    position: relative;
-    border: 1px solid #E2E8F0;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-    transition: 0.25s ease;
-    margin-bottom: 10px;
-    overflow: hidden;
+  background: #FFFFFF;
+  border-radius: 14px;
+  padding: 12px 18px;
+  position: relative;
+  border: 1px solid #E1E8F4;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: box-shadow 0.2s ease, transform 0.18s ease;
+  overflow: hidden;
 }
 
 .sales-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 5px;
-    height: 100%;
-    background: linear-gradient(180deg, #2980b9, #27ae60);
-    border-radius: 16px 0 0 16px;
-    z-index: 1;
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 4px; height: 100%;
+  background: var(--dynamic-theme-color, #4361EE);
+  border-radius: 14px 0 0 14px;
+  opacity: 0.7;
 }
 
 .sales-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
-    border-color: #E2E8F0;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.09);
+  border-color: #D0DAEA;
 }
 
-/* Project ID & Info (Left) */
+.sales-card:hover::before {
+  opacity: 1;
+}
+
+/* Card Title */
+.sales-card-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #334155;
+  text-align: center;
+  letter-spacing: 0.01em;
+  font-family: var(--font-display, 'Outfit', sans-serif);
+  margin-bottom: 6px;
+}
+
+/* Project ID & Meta */
 .project-id {
-    font-weight: 700;
-    font-size: 15px;
-    color: #0f172a;
-    letter-spacing: -0.01em;
+  font-weight: 800;
+  font-size: 13px;
+  color: #0F172A;
+  font-family: var(--font-display, 'Outfit', sans-serif);
+  letter-spacing: -0.01em;
 }
 
-/* Icons Row (Right) */
+.project-meta {
+  font-size: 12px;
+  color: #94A3B8;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.project-progress {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--dynamic-theme-color, #4361EE);
+  font-family: var(--font-display, 'Outfit', sans-serif);
+}
+
+/* ── Action Icons ── */
 .card-icons-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
+  display: flex;
+  gap: 4px;
+  align-items: center;
 }
 
 .icon-outline {
-    color: #94a3b8;
-    padding: 4px;
-    border-radius: 6px;
-    box-sizing: content-box;
-    cursor: pointer;
-    transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px; height: 28px;
+  border-radius: 7px;
+  color: #94A3B8;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: transparent;
+  flex-shrink: 0;
 }
 
 .icon-outline:hover {
-    background: #f1f5f9;
-    color: #3b82f6;
+  background: #F0F5FF;
+  color: var(--accent-primary, #4361EE);
 }
 
-.icon-delete:hover {
-    background: #fef2f2;
-    color: #ef4444;
+.icon-outline.icon-delete:hover {
+  background: rgba(244,63,94,0.1);
+  color: #F43F5E;
 }
 
-/* --- Pipeline Styles --- */
+.icon-outline.icon-whatsapp:hover {
+  background: rgba(37,211,102,0.1);
+  color: #25D366;
+}
+
+/* ── Pipeline ── */
+.pipeline-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 0;
+}
+
+/* Stage box */
 .stage-card {
-    transition: all 0.2s;
-    font-weight: 500;
+  transition: all 0.18s;
+  font-weight: 600;
+  font-family: var(--font-family, 'DM Sans', sans-serif);
+  font-size: 11.5px;
+  border-radius: 10px !important;
+  min-width: 80px !important;
+  height: 28px !important;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
-.stage-card:hover {
-    transform: translateY(-1px);
+.stage-card.past {
+  background: var(--dynamic-theme-color, #4361EE) !important;
+  color: #FFFFFF !important;
+  border: 1px solid var(--dynamic-theme-color, #4361EE) !important;
+  box-shadow: 0 2px 6px rgba(67,97,238,0.25);
 }
 
-/* Modal styles (keep mostly duplicate/similar to BusinessProcessModal if needed, 
-   but referencing BusinessProcessModal.css which exists) */
-
-.sales-list {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+.stage-card.active {
+  background: #FFFBEB !important;
+  color: #92400E !important;
+  border: 2px solid #F59E0B !important;
+  box-shadow: 0 0 0 3px rgba(245,158,11,0.15);
+  font-weight: 800 !important;
 }
 
-/* Responsive */
+.stage-card.future {
+  background: #FFFFFF !important;
+  color: #94A3B8 !important;
+  border: 1px solid #E1E8F4 !important;
+}
+
+/* Stage connector */
+.stage-connector {
+  display: flex;
+  align-items: center;
+  width: 44px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.connector-line {
+  flex: 1;
+  height: 2px;
+  background: #E1E8F4;
+}
+
+.connector-line.filled {
+  background: var(--dynamic-theme-color, #4361EE);
+  opacity: 0.5;
+}
+
+/* Ageing badge */
+.ageing-badge {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  flex-shrink: 0;
+  z-index: 2;
+  font-family: var(--font-display, 'Outfit', sans-serif);
+}
+
+.ageing-badge.past-badge {
+  background: var(--dynamic-theme-color, #4361EE);
+  color: #FFFFFF;
+  opacity: 0.7;
+}
+
+.ageing-badge.active-badge {
+  background: #F59E0B;
+  color: #0F172A;
+}
+
+.ageing-badge.active-badge.overdue {
+  background: #F43F5E;
+  color: #FFFFFF;
+}
+
+.ageing-badge.future-badge {
+  background: #F1F5F9;
+  color: #94A3B8;
+}
+
+/* Branding section */
+.branding-section {
+  flex-shrink: 0;
+}
+
+.branding-name {
+  font-family: var(--font-display, 'Outfit', sans-serif);
+  font-weight: 800;
+  font-size: 15px;
+  color: #0F172A;
+  letter-spacing: -0.01em;
+}
+
+/* Client section */
+.client-section {
+  flex-shrink: 0;
+}
+
+.client-name {
+  font-family: var(--font-display, 'Outfit', sans-serif);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* Running man position */
+.running-man-icon {
+  position: absolute;
+  top: -26px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  cursor: grab;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.15));
+}
+
+/* ── View Mode Toggle ── */
+.view-mode-toggle {
+  background: #F1F5F9;
+  padding: 4px;
+  border-radius: 10px;
+  display: flex;
+  gap: 4px;
+}
+
+.view-mode-toggle .btn {
+  border: none;
+  background: transparent;
+  color: #64748B;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 7px;
+  transition: all 0.18s;
+  font-family: var(--font-family, 'DM Sans', sans-serif);
+}
+
+.view-mode-toggle .btn:hover { color: #0F172A; }
+
+.view-mode-toggle .btn.btn-primary {
+  background: var(--accent-primary, #4361EE) !important;
+  border-color: var(--accent-primary, #4361EE) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(67,97,238,0.25);
+}
+
+/* ── Responsive ── */
 @media (max-width: 1024px) {
-    .sales-stats-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .sales-toolbar {
-        flex-wrap: wrap;
-    }
+  .sales-stats-grid { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 768px) {
-    .sales-page {
-        padding: 12px;
-        overflow-x: hidden;
-    }
-
-    .sales-stats-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-    }
-
-    .sales-page .stat-card {
-        padding: 16px;
-        gap: 12px;
-    }
-
-    .sales-card {
-        padding: 12px;
-    }
-
-    .sales-toolbar {
-        padding: 12px;
-        border-radius: 12px;
-    }
-
-    .sales-toolbar .d-flex {
-        flex-wrap: wrap;
-        gap: 8px;
-        width: 100%;
-    }
-
-    .sales-toolbar input.form-control {
-        width: 100% !important;
-        min-width: 0;
-    }
-
-    .view-mode-toggle {
-        width: 100%;
-        justify-content: center;
-    }
-
-    .d-flex.align-items-center.justify-content-center {
-        flex-direction: column;
-        gap: 12px;
-        align-items: flex-start !important;
-    }
-
-    .branding-section,
-    .client-section {
-        width: 100%;
-        justify-content: flex-start !important;
-    }
-
-    .pipeline-wrapper {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: 10px;
-        justify-content: flex-start !important;
-        width: 100%;
-    }
-
-    .card-icons-row {
-        flex-wrap: wrap;
-    }
-
-    .stat-icon-wrapper {
-        width: 44px;
-        height: 44px;
-        border-radius: 12px;
-    }
-
-    .stat-value {
-        font-size: 22px;
-    }
-
-    .sales-toolbar .btn-primary {
-        width: 100%;
-        justify-content: center;
-    }
+  .sales-page { padding: 14px; }
+  .sales-stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .pipeline-wrapper { overflow-x: auto; justify-content: flex-start; }
+  .sales-card { padding: 10px 12px; }
 }
 
 @media (max-width: 480px) {
-    .sales-page {
-        padding: 8px;
-    }
-
-    .sales-stats-grid {
-        grid-template-columns: 1fr;
-        gap: 10px;
-    }
-
-    .sales-card {
-        padding: 10px;
-        border-radius: 12px;
-    }
-
-    .project-id {
-        font-size: 13px;
-    }
-
-    .stat-value {
-        font-size: 20px;
-    }
-
-    .stat-title {
-        font-size: 11px;
-    }
-
-    .stat-icon-wrapper {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-    }
-}
-
-/* ─── Edit Project Modal — Stage Editor ─── */
-.edit-project-modal .modal-dialog {
-    max-width: 720px;
-}
-
-.stage-editor-section {
-    background: #f8fafc;
-    border-radius: 12px;
-    padding: 16px;
-    border: 1px solid #e2e8f0;
-}
-
-.stage-editor-item {
-    background: #fff;
-    border: 1px solid #e2e8f0 !important;
-    border-radius: 10px !important;
-    transition: box-shadow 0.15s ease, border-color 0.15s ease;
-}
-
-.stage-editor-item:hover {
-    border-color: #10b981 !important;
-    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.08);
-}
-
-.stage-editor-item .form-control,
-.stage-editor-item .form-select {
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
-    font-size: 0.85rem;
-}
-
-.stage-editor-item .form-control:focus,
-.stage-editor-item .form-select:focus {
-    border-color: #10b981;
-    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+  .sales-stats-grid { grid-template-columns: 1fr; }
 }

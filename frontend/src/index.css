@@ -1,48 +1,52 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@400;500;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* Modern Light Glassmorphism Palette — matching Timesheet & Apple Theme */
-  --bg-primary: #F5F7FA;
-  --bg-primary-flat: #F5F7FA;
+  /* Enterprise Design System — A365 CRM */
+  --bg-primary: #EEF2F8;
+  --bg-primary-flat: #EEF2F8;
   --bg-secondary: #FFFFFF;
   --bg-card: #FFFFFF;
   --bg-card-hover: #FAFCFF;
-  --bg-glass: rgba(255, 255, 255, 0.85);
+  --bg-glass: rgba(255, 255, 255, 0.88);
   --bg-input: #FFFFFF;
 
-  --text-primary: #1D1D1F;
-  --text-secondary: #64748B;
-  --text-muted: #667085;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
   --text-dark: #0F172A;
 
-  --accent-primary: #0071E3;
-  --accent-secondary: #8b5cf6;
-  --accent-success: #12B76A;
-  --accent-danger: #EF4444;
+  --accent-primary: #4361EE;
+  --accent-secondary: #8B5CF6;
+  --accent-success: #10B981;
+  --accent-danger: #F43F5E;
   --accent-warning: #F59E0B;
-  --accent-cyan: #06b6d4;
+  --accent-cyan: #06B6D4;
 
-  --border-color: #E2E8F0;
-  --border-light: #EEF2F7;
-  --border-active: rgba(0, 113, 227, 0.4);
+  --border-color: #E1E8F4;
+  --border-light: #EDF2FB;
+  --border-active: rgba(67, 97, 238, 0.35);
 
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
-  --shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.06);
-  --shadow-glass: 0 4px 24px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  --shadow-glass-hover: 0 8px 32px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.95);
-  --shadow-glow: 0 0 15px rgba(0, 113, 227, 0.15);
+  --shadow-sm: 0 1px 4px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 8px 28px rgba(15, 23, 42, 0.08);
+  --shadow-card: 0 2px 12px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+  --shadow-card-hover: 0 8px 32px rgba(67, 97, 238, 0.1), 0 2px 8px rgba(15, 23, 42, 0.06);
+  --shadow-glass: 0 4px 24px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --shadow-glass-hover: 0 8px 32px rgba(0, 0, 0, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  --shadow-glow: 0 0 20px rgba(67, 97, 238, 0.18);
 
-  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --radius-sm: 8px;
   --radius-md: 12px;
-  --radius-lg: 20px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
   --radius-pill: 999px;
-  --card-left-accent: #10b981;
-  --card-left-accent-gradient: linear-gradient(180deg, #0ea5e9 0%, #10b981 100%);
+  --card-left-accent: #4361EE;
+  --card-left-accent-gradient: linear-gradient(180deg, #4361EE 0%, #10B981 100%);
 }
 
 * {
@@ -52,13 +56,14 @@
 html, body {
   margin: 0;
   padding: 0;
-  background: #F5F7FA;
+  background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-family);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
   height: 100vh;
+  letter-spacing: -0.01em;
 }
 
 #root {
@@ -191,53 +196,54 @@ html, body {
 /* Modals */
 .modal-content {
   background: #FFFFFF !important;
-  border: 1px solid #E2E8F0 !important;
-  border-radius: 20px !important;
-  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12) !important;
-  color: #0F172A !important;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  border: 1px solid var(--border-light) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: 0 16px 48px rgba(15, 23, 42, 0.14) !important;
+  color: var(--text-primary) !important;
+  font-family: var(--font-family) !important;
 }
 
 .modal-header {
-  border-bottom: 1px solid #E2E8F0 !important;
-  color: #0F172A !important;
+  border-bottom: 1px solid var(--border-light) !important;
+  color: var(--text-primary) !important;
   padding: 20px 24px !important;
   background: #FFFFFF !important;
-  border-top-left-radius: 20px !important;
-  border-top-right-radius: 20px !important;
+  border-top-left-radius: var(--radius-xl) !important;
+  border-top-right-radius: var(--radius-xl) !important;
 }
 
 .modal-title {
-  color: #0F172A !important;
-  font-weight: 700 !important;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  color: var(--text-primary) !important;
+  font-weight: 800 !important;
+  font-family: var(--font-display) !important;
+  letter-spacing: -0.02em !important;
 }
 
 .modal-footer {
-  border-top: 1px solid #E2E8F0 !important;
+  border-top: 1px solid var(--border-light) !important;
   background: #F8FAFC !important;
   padding: 16px 24px !important;
-  border-bottom-left-radius: 20px !important;
-  border-bottom-right-radius: 20px !important;
+  border-bottom-left-radius: var(--radius-xl) !important;
+  border-bottom-right-radius: var(--radius-xl) !important;
 }
 
 .modal-body {
   color: var(--text-secondary);
 }
 
-/* Cards — Apple Pipeline Style */
+/* Cards — Enterprise Design */
 .card {
   background: #FFFFFF !important;
-  border: 1px solid #E2E8F0 !important;
-  border-radius: 20px !important;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06) !important;
-  color: #0F172A;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  transition: 0.25s ease;
+  border: 1px solid var(--border-light) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-card) !important;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
 }
 
 .card:hover {
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1) !important;
+  box-shadow: var(--shadow-card-hover) !important;
 }
 
 /* Global card left accent line */
@@ -306,49 +312,50 @@ html, body {
 
 .card-header {
   background: #F8FAFC !important;
-  border-bottom: 1px solid #E2E8F0 !important;
-  color: #0F172A;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  border-bottom: 1px solid var(--border-light) !important;
+  color: var(--text-primary);
+  font-family: var(--font-family);
 }
 
 .card-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-family);
 }
 
-/* Section Title — Apple Style */
+/* Section Title */
 .section-title {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 700;
   margin: 0 0 18px;
-  color: #0F172A;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
 }
 
-/* Tables — Apple-inspired Pipeline Style */
+/* Tables — Enterprise Style */
 .table {
-  color: #0F172A !important;
+  color: var(--text-primary) !important;
   --bs-table-bg: transparent;
-  --bs-table-hover-bg: #FAFCFF;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --bs-table-hover-bg: #F8FAFC;
+  font-family: var(--font-family);
   border-collapse: collapse;
   width: 100%;
   overflow: hidden;
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
 }
 
 .table thead th {
   background: #F8FAFC !important;
-  color: #64748B !important;
-  border-bottom: 1px solid #E2E8F0 !important;
+  color: var(--text-muted) !important;
+  border-bottom: 1px solid var(--border-light) !important;
   border-top: none !important;
-  font-size: 13px;
-  text-transform: none;
-  letter-spacing: normal;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   font-weight: 700;
   vertical-align: middle;
   text-align: left;
-  padding: 16px;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  padding: 14px 16px;
+  font-family: var(--font-family);
 }
 
 .table thead th:first-child {

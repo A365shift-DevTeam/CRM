@@ -427,10 +427,9 @@ const Finance = () => {
       {/* Unified List View */}
       <Row>
         <Col xs={12}>
-          <div className="finance-board bg-white h-100 p-0 border overflow-hidden">
-            <div className="finance-board-header p-3 d-flex justify-content-between align-items-center bg-transparent border-bottom">
-              <h3 className="board-title mb-0 fs-5 fw-bold">Transactions</h3>
-              {/* Buttons moved to toolbar */}
+          <div className="finance-board">
+            <div className="finance-board-header d-flex justify-content-between align-items-center">
+              <span className="board-title">Transactions</span>
             </div>
 
             <div className="table-responsive">
@@ -462,33 +461,29 @@ const Finance = () => {
                       return (
                         <tr key={item.uniqueId} className="finance-table-row">
                           <td>
-                            <div className="d-flex flex-column">
-                              <span className="fw-medium text-dark text-truncate" style={{ maxWidth: '250px' }} title={item.description}>
-                                {item.description}
-                              </span>
-                              {/* Meta info like receipts/details */}
-                              <div className="d-flex align-items-center gap-2 mt-1">
-                                {/* Add icons or small text for receipts/details here if needed */}
-                              </div>
+                            <div style={{ fontWeight: 600, color: '#0F172A', fontSize: '13.5px', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.description}>
+                              {item.description}
                             </div>
                           </td>
                           <td>
                             <span className={`type-badge ${isExpense ? 'expense' : 'income'}`}>
-                              {isExpense ? 'EXPENSE' : 'INCOME'}
+                              {isExpense ? 'Expense' : 'Income'}
                             </span>
                           </td>
-                          <td className="text-secondary">
+                          <td style={{ color: '#64748B', fontSize: '13px' }}>
                             {new Date(item.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                           </td>
                           <td>
                             <span
-                              className="badge px-3 py-2 rounded-pill text-uppercase"
+                              className="badge-enterprise"
                               style={{
-                                fontSize: '0.75rem',
-                                backgroundColor: category?.color || '#6b7280',
-                                color: 'white',
-                                fontWeight: '600',
-                                letterSpacing: '0.05em'
+                                display: 'inline-flex', alignItems: 'center',
+                                padding: '3px 10px', borderRadius: '999px',
+                                fontSize: '11px', fontWeight: 700,
+                                letterSpacing: '0.02em',
+                                background: (category?.color || '#6b7280') + '22',
+                                color: category?.color || '#6b7280',
+                                border: `1px solid ${(category?.color || '#6b7280')}44`,
                               }}
                             >
                               {category?.label || item.category}
@@ -497,71 +492,45 @@ const Finance = () => {
                           <td>
                             {(() => {
                               const status = item.status || 'Pending';
-                              const statusColors = {
-                                Pending: { bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
-                                Raised: { bg: '#dbeafe', color: '#1e40af', border: '#93c5fd' },
-                                Paid: { bg: '#d1fae5', color: '#065f46', border: '#6ee7b7' }
-                              };
-                              const colors = statusColors[status] || statusColors.Pending;
                               return (
-                                <span
-                                  className="badge px-3 py-2 rounded-pill text-uppercase"
-                                  style={{
-                                    fontSize: '0.7rem',
-                                    backgroundColor: colors.bg,
-                                    color: colors.color,
-                                    border: `1px solid ${colors.border}`,
-                                    fontWeight: '700',
-                                    letterSpacing: '0.05em'
-                                  }}
-                                >
+                                <span className={`fin-status-badge ${status.toLowerCase()}`}>
                                   {status}
                                 </span>
                               );
                             })()}
                           </td>
                           <td>
-                            <span className={isExpense ? "text-danger fw-bold" : "text-success fw-bold"}>
-                              {isExpense ? '-' : '+'}{formatCurrency(item.amount)}
+                            <span style={{ fontWeight: 700, fontSize: '14px', color: isExpense ? '#F43F5E' : '#10B981', fontFamily: 'var(--font-display, Outfit)' }}>
+                              {isExpense ? '−' : '+'}{formatCurrency(item.amount)}
                             </span>
                           </td>
                           <td>
-                            <div className="d-flex gap-2">
-                              <Button
-                                variant="link"
-                                size="sm"
-                                onClick={() => {
-                                  setViewingItem(item)
-                                  setViewingType(item.type)
-                                  setShowDetailModal(true)
-                                }}
+                            <div className="d-flex align-items-center gap-1">
+                              <button
+                                className="fin-action-btn view"
+                                onClick={() => { setViewingItem(item); setViewingType(item.type); setShowDetailModal(true); }}
                                 title="View Details"
-                                className="p-0 text-secondary hover-text-primary"
                               >
-                                <Eye size={16} />
-                              </Button>
-                              <Button
-                                variant="link"
-                                size="sm"
+                                <Eye size={15} />
+                              </button>
+                              <button
+                                className="fin-action-btn edit"
                                 onClick={() => isExpense ? handleEditExpense(item) : handleEditIncome(item)}
                                 title="Edit"
-                                className="p-0 text-secondary hover-text-primary"
                               >
-                                <Edit size={16} />
-                              </Button>
-                              <Button
-                                variant="link"
-                                size="sm"
+                                <Edit size={15} />
+                              </button>
+                              <button
+                                className="fin-action-btn del"
                                 onClick={() => {
-                                  if (window.confirm(`Are you sure you want to delete this ${item.type}?`)) {
+                                  if (window.confirm(`Delete this ${item.type}?`)) {
                                     isExpense ? handleDeleteExpense(item.id) : handleDeleteIncome(item.id)
                                   }
                                 }}
                                 title="Delete"
-                                className="p-0 text-secondary hover-text-danger"
                               >
-                                <Trash2 size={16} />
-                              </Button>
+                                <Trash2 size={15} />
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -574,7 +543,7 @@ const Finance = () => {
 
             {/* Pagination */}
             {totalEntries > 0 && (
-              <div className="finance-pagination d-flex align-items-center justify-content-between mt-3">
+              <div className="finance-pagination d-flex align-items-center justify-content-between">
                 <div className="d-flex align-items-center gap-2">
                   <Dropdown>
                     <Dropdown.Toggle

@@ -123,221 +123,115 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
     }
 
     return (
-        <div className="sales-card d-block">
-            {/* Title Row - Top */}
-            <div className="text-dark fw-semibold mb-1 text-center" style={{ fontSize: '13px' }}>
-                {title || 'Untitled Project'}
-            </div>
+        <div className="sales-card">
+            {/* Title Row */}
+            <div className="sales-card-title">{title || 'Untitled Project'}</div>
 
-            {/* Header Row: ID and Icons */}
-            <div className="d-flex justify-content-between align-items-start mb-0">
-                <div>
-                    <div className="project-id">Project ID: #{project.customId || String(projectId).slice(-6).toUpperCase()}</div>
-                    <div className="d-flex flex-column">
-                        <span className="text-secondary" style={{ fontSize: '13px', fontWeight: '500' }}>
-                            {delay > 0 ? `Delay ${delay} Days` : 'On Track'}
-                        </span>
-                        <span className="fw-bold fs-6">{progressPercentage}%</span>
+            {/* Header Row: ID + Meta + Icons */}
+            <div className="d-flex justify-content-between align-items-center mb-2">
+                <div className="d-flex align-items-center gap-3">
+                    <div>
+                        <div className="project-id">#{project.customId || String(projectId).slice(-6).toUpperCase()}</div>
+                        <div className="project-meta">
+                            {delay > 0
+                                ? <span style={{ color: '#F43F5E' }}>⚠ {delay}d delay</span>
+                                : <span style={{ color: '#10B981' }}>● On Track</span>
+                            }
+                        </div>
                     </div>
+                    <div className="project-progress">{progressPercentage}%</div>
                 </div>
 
-                <div className="card-icons-row d-flex align-items-center" style={{ gap: '8px' }}>
-                    <Edit
-                        size={16}
-                        className="icon-outline icon-edit"
-                        strokeWidth={1.5}
-                        style={{ cursor: 'pointer' }}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onEdit();
-                        }}
-                        title="Edit Project"
-                    />
-                    <Clock
-                        size={16}
-                        className="icon-outline icon-edit"
-                        strokeWidth={1.5}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onTimesheet();
-                        }}
-                        title="Add Timesheet Entry"
-                        style={{ cursor: 'pointer' }}
-                    />
+                <div className="card-icons-row">
+                    <div className="icon-outline icon-edit" onClick={(e) => { e.stopPropagation(); onEdit(); }} title="Edit">
+                        <Edit size={15} strokeWidth={1.5} />
+                    </div>
+                    <div className="icon-outline" onClick={(e) => { e.stopPropagation(); onTimesheet(); }} title="Timesheet">
+                        <Clock size={15} strokeWidth={1.5} />
+                    </div>
                     {iconsExpanded && (
                         <>
-                            <FileText
-                                size={18}
-                                className="icon-outline"
-                                strokeWidth={1.5}
-                                style={{ cursor: 'pointer' }}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onInvoice();
-                                }}
-                                title="Create Invoice"
-                            />
-                            <FaWhatsapp
-                                size={17}
-                                className="icon-outline icon-whatsapp"
-                                style={{ cursor: 'pointer', color: "rgb(35, 144, 154)" }}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    const phone = project.phone || '';
-                                    if (phone) {
-                                        window.open(`https://wa.me/${phone.replace(/\D/g, '')}`, '_blank');
-                                    } else {
-                                        toast.warning('No phone number available for this client.');
-                                    }
-                                }}
-                                title="WhatsApp Client"
-                            />
-                            <Trash2
-                                size={16}
-                                className="icon-outline icon-delete"
-                                strokeWidth={1.5}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (window.confirm('Are you sure you want to delete this project?')) {
-                                        onDelete()
-                                    }
-                                }}
-                            />
+                            <div className="icon-outline" onClick={(e) => { e.stopPropagation(); onInvoice(); }} title="Invoice">
+                                <FileText size={15} strokeWidth={1.5} />
+                            </div>
+                            <div className="icon-outline icon-whatsapp" onClick={(e) => {
+                                e.stopPropagation();
+                                const phone = project.phone || '';
+                                if (phone) window.open(`https://wa.me/${phone.replace(/\D/g, '')}`, '_blank');
+                                else toast.warning('No phone number for this client.');
+                            }} title="WhatsApp">
+                                <FaWhatsapp size={15} />
+                            </div>
+                            <div className="icon-outline icon-delete" onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm('Delete this project?')) onDelete();
+                            }} title="Delete">
+                                <Trash2 size={15} strokeWidth={1.5} />
+                            </div>
                         </>
                     )}
-                    <div
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setIconsExpanded(!iconsExpanded);
-                        }}
-                        className="icon-outline d-flex align-items-center justify-content-center"
-                        style={{ cursor: 'pointer', padding: '4px' }}
-                        title={iconsExpanded ? "Show Less" : "Show More"}
-                    >
-                        {iconsExpanded ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+                    <div className="icon-outline" onClick={(e) => { e.stopPropagation(); setIconsExpanded(!iconsExpanded); }}
+                        title={iconsExpanded ? 'Show Less' : 'More Actions'}>
+                        {iconsExpanded ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
                     </div>
                 </div>
             </div>
 
-            {/* Main Row: Branding - Pipeline - Client */}
-            <div className="d-flex align-items-center justify-content-center position-relative" style={{ minHeight: '50px' }}>
+            {/* Main Row: Branding — Pipeline — Client */}
+            <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '52px', gap: '8px' }}>
 
                 {/* Left: Branding */}
-                <div className="branding-section d-flex align-items-center" style={{ zIndex: 2 }}>
-                    <h4 className="fw-bold mb-0">
-                        {brandingName && brandingName !== 'A365Shift' ? (
-                            <span style={{ color: '#003366' }}>{brandingName}</span>
-                        ) : (
-                            <>
-                                <span style={{ color: '#003366' }}>A365</span>
-                                <span style={{ color: '#ef4444' }}>Shift</span>
-                            </>
+                <div className="branding-section d-flex align-items-center gap-2">
+                    <span className="branding-name">
+                        {brandingName && brandingName !== 'A365Shift' ? brandingName : (
+                            <><span style={{ color: '#0F172A' }}>A365</span><span style={{ color: '#F43F5E' }}>Shift</span></>
                         )}
-                    </h4>
-                    {/* Connecting Line to start of pipeline */}
-                    <div style={{ width: '20px', height: '2px', background: '#e5e7eb', marginLeft: '5px' }}></div>
+                    </span>
+                    <div style={{ width: 16, height: 2, background: '#E1E8F4', borderRadius: 1 }} />
                 </div>
 
-                {/* Center: Pipeline Container */}
-                <div className="px-3 d-flex flex-column align-items-center" style={{ minWidth: 0 }}>
-
-                    {/* Stages Row */}
-                    <div className="pipeline-wrapper w-100 d-flex align-items-center justify-content-center">
+                {/* Center: Pipeline */}
+                <div className="d-flex align-items-center" style={{ overflowX: 'auto', padding: '28px 4px 4px' }}>
+                    <div className="pipeline-wrapper">
                         {stages.map((stage, index) => {
                             const isLast = index === stages.length - 1;
                             const isActive = index === activeStage;
                             const isPast = index < activeStage;
 
-                            // Colors based on status
-                            // Past = Theme Color
-                            // Active = Gold/Yellowish border & circle
-                            // Future = Gray
-                            const activeColor = '#eab308'; // Gold/Yellow
-                            const pastColor = themeColor || '#2563EB'; // Dynamic Theme Color
-                            const futureColor = '#e5e7eb'; // Light Gray
-
-                            // Calculate days in current stage for Ageing color
                             let isOverdue = false;
-                            if (isActive) {
-                                // Find the latest entry in history that matches this stage start
-                                // Since we use arrayUnion, history might not be strictly newest-first. Find by timestamp.
-                                const sortedHistory = history && history.length > 0 ? [...history].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)) : [];
-                                const lastUpdate = sortedHistory.length > 0 ? new Date(sortedHistory[0].timestamp) : new Date(); // Fallback to now if no history
-                                const diffTime = Math.abs(new Date() - lastUpdate);
-                                const daysInStage = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-                                if (daysInStage > (stage.ageing || 0)) {
-                                    isOverdue = true;
-                                }
+                            if (isActive && history && history.length > 0) {
+                                const sorted = [...history].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                                const lastUpdate = new Date(sorted[0].timestamp);
+                                const daysInStage = Math.ceil(Math.abs(new Date() - lastUpdate) / 86400000);
+                                isOverdue = daysInStage > (stage.ageing || 0);
                             }
-                            const ageingColor = isOverdue ? '#ef4444' : '#0f172a'; // Red if overdue, else dark blue
+
+                            const stageClass = isPast ? 'past' : isActive ? 'active' : 'future';
+                            const ageingClass = isPast ? 'past-badge' : isActive ? `active-badge${isOverdue ? ' overdue' : ''}` : 'future-badge';
 
                             return (
                                 <div key={index} className="d-flex align-items-center">
-                                    {/* Stage Card */}
                                     <div className="position-relative">
-                                        {/* Running Man Icon (Absolute above active) */}
                                         {isActive && (
-                                            <div
-                                                className="position-absolute start-50 translate-middle-x"
-                                                style={{ top: '-28px', zIndex: 10, cursor: 'grab' }}
-                                                draggable="true"
-                                                onDragStart={handleDragStart}
-                                            >
-                                                <i className="fa-solid fa-person-running" style={{ color: themeColor || '#2563EB', fontSize: '22px' }}></i>
+                                            <div className="running-man-icon" draggable onDragStart={handleDragStart}>
+                                                <i className="fa-solid fa-person-running" style={{ color: themeColor || '#4361EE', fontSize: '20px' }} />
                                             </div>
                                         )}
-
-                                        {/* The Card Itself */}
                                         <div
-                                            className={`stage-card d-flex align-items-center justify-content-center px-3 py-2`}
+                                            className={`stage-card d-flex align-items-center justify-content-center px-3 ${stageClass}`}
                                             onClick={() => handleStageClick(index)}
                                             onDragOver={handleDragOver}
                                             onDrop={(e) => handleDrop(e, index)}
-                                            style={{
-                                                background: isPast ? (themeColor || '#2563EB') : 'white',
-                                                border: isActive ? `2px solid ${activeColor}` : (isPast ? `1px solid ${themeColor || '#2563EB'}` : '1px solid #e5e7eb'),
-                                                borderRadius: '12px',
-                                                minWidth: '90px',
-                                                height: '30px',
-                                                boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                                                cursor: 'pointer',
-                                                color: isPast ? '#ffffff' : (index > activeStage ? '#9ca3af' : '#1f2937'),
-                                                fontWeight: isActive ? '600' : '400',
-                                                fontSize: '12px',
-                                                zIndex: 2,
-                                                position: 'relative'
-                                            }}
                                         >
                                             {stage.label}
                                         </div>
                                     </div>
 
-                                    {/* Connector (if not last) */}
                                     {!isLast && (
-                                        <div className="d-flex align-items-center" style={{ width: '40px', position: 'relative' }}>
-                                            {/* Line Part 1 */}
-                                            <div style={{ flex: 1, height: '2px', background: '#e5e7eb' }}></div>
-
-                                            {/* Ageing Circle */}
-                                            <div
-                                                className="rounded-circle d-flex align-items-center justify-content-center"
-                                                style={{
-                                                    width: '24px',
-                                                    height: '24px',
-                                                    background: isPast ? pastColor : (isActive ? activeColor : futureColor),
-                                                    color: isActive ? ageingColor : (isPast ? '#ffffff' : '#0f172a'),
-                                                    fontSize: '11px',
-                                                    fontWeight: '800',
-                                                    zIndex: 3,
-                                                    flexShrink: 0
-                                                }}
-                                            >
-                                                {stage.ageing || 0}
-                                            </div>
-
-                                            {/* Line Part 2 */}
-                                            <div style={{ flex: 1, height: '2px', background: '#e5e7eb' }}></div>
+                                        <div className="stage-connector">
+                                            <div className={`connector-line${isPast ? ' filled' : ''}`} />
+                                            <div className={`ageing-badge ${ageingClass}`}>{stage.ageing || 0}</div>
+                                            <div className={`connector-line${isPast ? ' filled' : ''}`} />
                                         </div>
                                     )}
                                 </div>
@@ -347,12 +241,9 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
                 </div>
 
                 {/* Right: Client */}
-                <div className="client-section d-flex align-items-center text-end" style={{ zIndex: 2 }}>
-                    {/* Connecting Line from pipeline end */}
-                    <div style={{ width: '20px', height: '2px', background: '#e5e7eb', marginRight: '5px' }}></div>
-                    <h5 className="fw-bold mb-0" style={{ color: client.color }}>
-                        {client.name}
-                    </h5>
+                <div className="client-section d-flex align-items-center gap-2">
+                    <div style={{ width: 16, height: 2, background: '#E1E8F4', borderRadius: 1 }} />
+                    <span className="client-name" style={{ color: client.color }}>{client.name}</span>
                 </div>
             </div>
 

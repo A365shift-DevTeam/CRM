@@ -1,4 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  AreaChart, Area, BarChart, Bar,
+  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
+} from 'recharts';
 import { projectService, taskService } from '../../services/api';
 import { contactService } from '../../services/contactService';
 import { timesheetService } from '../../services/timesheetService';
@@ -8,413 +13,538 @@ import { notificationService } from '../../services/notificationService';
 import { useAuth } from '../../context/AuthContext';
 import { formatGlobalCurrency } from '../../utils/currencyUtils';
 import {
-  BarChart2,
-  TrendingUp,
-  Banknote,
-  Hourglass,
-  TrendingDown,
-  Landmark,
-  Filter,
-  FileText,
-  UserPlus,
-  AlertTriangle,
-  Lightbulb,
-  Search,
-  Bell,
-  CheckCircle2,
-  Clock,
-  Sparkles,
-  X
+  TrendingUp, TrendingDown, Banknote, Hourglass, Landmark,
+  FileText, UserPlus, AlertTriangle, Lightbulb,
+  CheckCircle2, Clock, X, ArrowUpRight, ArrowDownRight,
+  Activity, Target, Briefcase, Users, ChevronRight, Filter,
 } from 'lucide-react';
 import './Dashboard.css';
 
-function KPISection({
-  activeProjects,
-  totalBilling,
-  pendingPayments,
-  conversionRate,
-  currency,
-  revenueTrend,
-  pendingTrend
-}) {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-      <div className="bg-white p-6 rounded-2xl shadow-sm relative overflow-hidden border border-slate-100">
-        <div className="flex justify-between items-start mb-4">
-          <div className="p-2 bg-emerald-50 rounded-xl">
-            <BarChart2 className="w-5 h-5 text-emerald-600" />
-          </div>
-          <span className="text-xs font-bold text-emerald-600 flex items-center">
-            <TrendingUp className="w-3 h-3 mr-1" /> Live
-          </span>
-        </div>
-        <p className="text-sm text-slate-500 font-medium">Total Projects</p>
-        <h3 className="text-3xl font-extrabold text-slate-900 mt-1">{activeProjects} Active</h3>
-      </div>
+/* ─────────────────────────────────────────
+   Animated Counter
+───────────────────────────────────────── */
+function AnimatedCounter({ to = 0, from = 0, duration = 1100, decimals = 0, prefix = '', suffix = '', formatFn = null }) {
+  const [value, setValue] = useState(from);
+  const rafRef = useRef(null);
 
-      <div className="bg-white p-6 rounded-2xl shadow-sm relative overflow-hidden border border-slate-100">
-        <div className="flex justify-between items-start mb-4">
-          <div className="p-2 bg-emerald-50 rounded-xl">
-            <Banknote className="w-5 h-5 text-emerald-600" />
-          </div>
-          <span className="text-xs font-bold text-emerald-600 flex items-center">
-            <TrendingUp className="w-3 h-3 mr-1" /> {revenueTrend >= 0 ? '+' : ''}{revenueTrend.toFixed(1)}%
-          </span>
-        </div>
-        <p className="text-sm text-slate-500 font-medium">Total Revenue</p>
-        <h3 className="text-3xl font-extrabold text-slate-900 mt-1">
-          {formatGlobalCurrency(totalBilling, currency, { maximumFractionDigits: 0 })}
-        </h3>
-      </div>
-
-      <div className="bg-white p-6 rounded-2xl shadow-sm relative overflow-hidden border border-slate-100">
-        <div className="flex justify-between items-start mb-4">
-          <div className="p-2 bg-rose-50 rounded-xl">
-            <Hourglass className="w-5 h-5 text-rose-600" />
-          </div>
-          <span className="text-xs font-bold text-rose-600 flex items-center">
-            <TrendingDown className="w-3 h-3 mr-1" /> {pendingTrend >= 0 ? '+' : ''}{pendingTrend.toFixed(1)}%
-          </span>
-        </div>
-        <p className="text-sm text-slate-500 font-medium">Pending Payments</p>
-        <h3 className="text-3xl font-extrabold text-slate-900 mt-1">
-          {formatGlobalCurrency(pendingPayments, currency, { maximumFractionDigits: 0 })}
-        </h3>
-      </div>
-
-      <div className="bg-white p-6 rounded-2xl shadow-sm relative overflow-hidden border border-slate-100">
-        <div className="flex justify-between items-start mb-4">
-          <div className="p-2 bg-emerald-50 rounded-xl">
-            <Landmark className="w-5 h-5 text-emerald-600" />
-          </div>
-          <span className="text-xs font-bold text-slate-500">WIN RATE</span>
-        </div>
-        <p className="text-sm text-slate-500 font-medium">Conversion Rate</p>
-        <h3 className="text-3xl font-extrabold text-slate-900 mt-1">{conversionRate}%</h3>
-      </div>
-    </div>
-  );
-}
-
-function TimelineSection({ projects }) {
-  const [timelineView, setTimelineView] = useState('week');
-
-  const STAGES = [
-    { label: 'Demo', color: 'text-emerald-600', barClass: 'bg-emerald-500', status: 'On Track' },
-    { label: 'Proposal', color: 'text-amber-600', barClass: 'bg-amber-500', status: 'On Track' },
-    { label: 'Negotiation', color: 'text-orange-600', barClass: 'bg-orange-500', status: 'At Risk' },
-    { label: 'Approval', color: 'text-violet-600', barClass: 'bg-violet-500', status: 'On Track' },
-    { label: 'Won', color: 'text-emerald-600', barClass: 'bg-emerald-600', status: 'Completed' },
-    { label: 'Closed', color: 'text-slate-600', barClass: 'bg-slate-500', status: 'Completed' },
-    { label: 'Lost', color: 'text-rose-600', barClass: 'bg-rose-500', status: 'Delayed' }
-  ];
-
-  const timelineProjects = projects.slice(0, 5).map((project, index) => {
-    const stage = STAGES[project.activeStage ?? 0] || STAGES[0];
-    const progress = Math.min(100, Math.max(15, Math.round(((project.activeStage ?? 0) + 1) / STAGES.length * 100)));
-
-    return {
-      ...project,
-      stage,
-      progress,
-      title: project.title || project.clientName || `Project ${index + 1}`
+  useEffect(() => {
+    const start = performance.now();
+    const tick = (now) => {
+      const elapsed = now - start;
+      const p = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setValue(from + (to - from) * eased);
+      if (p < 1) rafRef.current = requestAnimationFrame(tick);
     };
-  });
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [to, from, duration]);
 
-  const dayLabels = useMemo(() => {
-    const now = new Date();
-    if (timelineView === 'week') {
-      return Array.from({ length: 10 }, (_, i) => {
-        const d = new Date(now);
-        d.setDate(now.getDate() + i);
-        return d.toLocaleDateString('en-US', { weekday: 'short', day: '2-digit' }).toUpperCase();
-      });
-    }
-
-    if (timelineView === 'month') {
-      return Array.from({ length: 30 }, (_, i) => {
-        const d = new Date(now.getFullYear(), now.getMonth(), i + 1);
-        return d.toLocaleDateString('en-US', { day: '2-digit' });
-      });
-    }
-
-    return Array.from({ length: 12 }, (_, i) => {
-      const d = new Date(now.getFullYear(), i, 1);
-      return d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
-    });
-  }, [timelineView]);
-
-  const unitWidth = timelineView === 'year' ? 88 : 80;
-  const timelineMinWidth = Math.max(800, dayLabels.length * unitWidth);
-  const markerIndex = timelineView === 'year' ? new Date().getMonth() : Math.floor(dayLabels.length / 2);
-  const markerLeft = (markerIndex * unitWidth) + (unitWidth / 2);
-
-  const getBarLayout = (project, index) => {
-    const labelCount = dayLabels.length;
-    const maxStart = Math.max(0, labelCount - 2);
-    const startStep = timelineView === 'week' ? 1.5 : timelineView === 'month' ? 3 : 1;
-    const startUnit = Math.min(maxStart, Math.round(index * startStep));
-
-    const durationUnits = timelineView === 'week'
-      ? Math.max(2, Math.round(project.progress / 14))
-      : timelineView === 'month'
-        ? Math.max(3, Math.round(project.progress / 8))
-        : Math.max(2, Math.round(project.progress / 10));
-
-    const widthPx = Math.max(120, (durationUnits * unitWidth) - 12);
-    const marginLeftPx = (startUnit * unitWidth) + 8;
-
-    return { widthPx, marginLeftPx };
-  };
-
-  return (
-    <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100">
-      <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
-        <h2 className="text-lg font-bold text-slate-900">Execution Timeline</h2>
-        <div className="flex items-center gap-4">
-          <div className="flex bg-slate-50 p-1 rounded-lg border border-slate-100">
-            <button
-              type="button"
-              onClick={() => setTimelineView('week')}
-              className={`px-4 py-1.5 text-xs rounded-md transition-colors ${
-                timelineView === 'week'
-                  ? 'font-semibold bg-white shadow-sm text-slate-800'
-                  : 'font-medium text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              Week
-            </button>
-            <button
-              type="button"
-              onClick={() => setTimelineView('month')}
-              className={`px-4 py-1.5 text-xs rounded-md transition-colors ${
-                timelineView === 'month'
-                  ? 'font-semibold bg-white shadow-sm text-slate-800'
-                  : 'font-medium text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              Month
-            </button>
-            <button
-              type="button"
-              onClick={() => setTimelineView('year')}
-              className={`px-4 py-1.5 text-xs rounded-md transition-colors ${
-                timelineView === 'year'
-                  ? 'font-semibold bg-white shadow-sm text-slate-800'
-                  : 'font-medium text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              Year
-            </button>
-          </div>
-          <button className="flex items-center gap-2 text-xs font-bold text-emerald-600 px-3 py-2 hover:bg-emerald-50 rounded-lg transition-colors">
-            <Filter className="w-4 h-4" /> Filter
-          </button>
-        </div>
-      </div>
-
-      <div className="flex overflow-x-auto no-scrollbar">
-        <div className="w-72 flex-shrink-0 border-r border-slate-100">
-          <div className="h-12 flex items-center px-6 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-            Project Name
-          </div>
-          <div className="divide-y divide-slate-100">
-            {timelineProjects.length === 0 && (
-              <div className="h-16 flex items-center px-6 text-sm text-slate-400">No projects found</div>
-            )}
-            {timelineProjects.map((project, index) => (
-              <div key={project.id || index} className="h-16 flex flex-col justify-center px-6">
-                <span className="text-sm font-bold text-slate-900 truncate">{project.title}</span>
-                <span className={`text-[10px] font-bold uppercase ${project.stage.color}`}>
-                  {project.stage.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex-1 relative" style={{ minWidth: `${timelineMinWidth}px` }}>
-          <div className="h-12 flex bg-white border-b border-slate-100">
-            {dayLabels.map((label) => (
-              <div
-                key={label}
-                className="flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-slate-500"
-                style={{ width: `${unitWidth}px` }}
-              >
-                {label}
-              </div>
-            ))}
-          </div>
-
-          <div className="divide-y divide-slate-100 relative">
-            <div className="absolute top-0 bottom-0 w-px bg-emerald-500 z-10" style={{ left: `${markerLeft}px` }}>
-              <div className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white" />
-            </div>
-
-            {timelineProjects.map((project, index) => {
-              const { widthPx, marginLeftPx } = getBarLayout(project, index);
-              return (
-                <div key={project.id || index} className="h-16 flex items-center px-2">
-                  <div
-                    className={`h-8 ${project.stage.barClass} rounded-full flex items-center px-4 min-w-[120px]`}
-                    style={{ width: `${widthPx}px`, marginLeft: `${marginLeftPx}px` }}
-                  >
-                    <span className="text-[10px] font-bold text-white uppercase tracking-wider truncate">
-                      {project.stage.label} {project.progress}%
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  if (formatFn) return <>{formatFn(value)}</>;
+  const display = decimals > 0 ? value.toFixed(decimals) : Math.round(value);
+  return <>{prefix}{display}{suffix}</>;
 }
 
-function RecentIntelligence({ alerts, tasks }) {
-  const items = useMemo(() => {
-    const alertItems = (alerts || []).slice(0, 2).map((alert) => ({
-      id: `a-${alert.id || alert.title}`,
-      icon: alert.severity === 'critical' ? AlertTriangle : FileText,
-      bg: alert.severity === 'critical' ? 'bg-rose-50' : 'bg-emerald-50',
-      color: alert.severity === 'critical' ? 'text-rose-600' : 'text-emerald-600',
-      title: alert.title || alert.message || 'Alert generated',
-      description: alert.clientName || 'AI monitoring update',
-      time: alert.daysOverdue > 0 ? `${alert.daysOverdue}d overdue` : 'Live'
-    }));
+/* ─────────────────────────────────────────
+   SVG Sparkline
+───────────────────────────────────────── */
+let _sparkId = 0;
+function SparkLine({ data = [], color = '#4361EE', height = 42 }) {
+  const id = useRef(`sk${++_sparkId}`).current;
 
-    const taskItems = (tasks || []).slice(0, 1).map((task) => ({
-      id: `t-${task.id}`,
-      icon: UserPlus,
-      bg: 'bg-blue-50',
-      color: 'text-blue-600',
-      title: task.values?.title || task.title || 'Task update',
-      description: (task.values?.status || task.status || 'Pending') + ' task in queue',
-      time: task.values?.dueDate
-        ? new Date(task.values.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        : 'Queued'
-    }));
-
-    return [...alertItems, ...taskItems].slice(0, 3);
-  }, [alerts, tasks]);
-
-  return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-bold text-slate-900">Recent Intelligence</h2>
-        <button className="text-xs font-bold text-emerald-600 hover:underline">View All</button>
-      </div>
-
-      <div className="space-y-6">
-        {items.length === 0 && <p className="text-sm text-slate-400">No intelligence events yet.</p>}
-        {items.map((item) => {
-          const Icon = item.icon;
-          return (
-            <div key={item.id} className="flex items-start gap-4">
-              <div className={`w-10 h-10 rounded-full ${item.bg} flex items-center justify-center flex-shrink-0`}>
-                <Icon className={`w-5 h-5 ${item.color}`} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-900 truncate">{item.title}</p>
-                <p className="text-xs text-slate-500 truncate">{item.description}</p>
-              </div>
-              <span className="text-[10px] font-medium text-slate-400">{item.time}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function PendingInvoices({ invoices, currency }) {
-  const pendingInvoices = useMemo(() => {
-    const rows = (invoices || []).filter((invoice) => {
-      const status = invoice.status || (invoice.paidDate ? 'Paid' : 'Pending');
-      return status === 'Pending' || status === 'Raised' || status === 'Overdue';
-    });
-    return rows.slice(0, 5);
-  }, [invoices]);
-
-  const getStatusChip = (invoice) => {
-    const status = invoice.status || (invoice.paidDate ? 'Paid' : 'Pending');
-    if (status === 'Overdue') return <span className="text-[10px] font-bold text-rose-600 px-3 py-1 bg-rose-50 rounded-full">Overdue</span>;
+  if (!data || data.length < 2) {
     return (
-      <button className="text-xs font-bold text-emerald-600 px-3 py-1 bg-emerald-50 rounded-full hover:bg-emerald-100">
-        Remind
-      </button>
+      <svg viewBox="0 0 100 42" preserveAspectRatio="none" style={{ width: '100%', height: `${height}px`, display: 'block' }}>
+        <line x1="0" y1="21" x2="100" y2="21" stroke={color} strokeWidth="1.5" strokeOpacity="0.35" strokeDasharray="4 3" />
+      </svg>
+    );
+  }
+
+  const max = Math.max(...data, 0.001);
+  const min = Math.min(...data, 0);
+  const range = max - min || 1;
+  const W = 100; const H = height; const pad = 5;
+
+  const pts = data.map((v, i) => ({
+    x: (i / (data.length - 1)) * W,
+    y: H - pad - ((v - min) / range) * (H - 2 * pad),
+  }));
+
+  const path = pts.reduce((acc, p, i) => {
+    if (i === 0) return `M${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+    const prev = pts[i - 1];
+    const cpx = (prev.x + p.x) / 2;
+    return `${acc} C${cpx.toFixed(1)},${prev.y.toFixed(1)} ${cpx.toFixed(1)},${p.y.toFixed(1)} ${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+  }, '');
+
+  const last = pts[pts.length - 1];
+  const first = pts[0];
+  const area = `${path} L${last.x},${H} L${first.x},${H} Z`;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: '100%', height: `${height}px`, display: 'block' }}>
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill={`url(#${id})`} />
+      <path d={path} stroke={color} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={last.x} cy={last.y} r="2.5" fill={color} />
+    </svg>
+  );
+}
+
+/* ─────────────────────────────────────────
+   KPI Card
+───────────────────────────────────────── */
+const KPI_THEMES = {
+  blue:   { color: '#4361EE', bg: 'rgba(67,97,238,0.09)' },
+  emerald:{ color: '#10B981', bg: 'rgba(16,185,129,0.09)' },
+  amber:  { color: '#F59E0B', bg: 'rgba(245,158,11,0.09)' },
+  violet: { color: '#8B5CF6', bg: 'rgba(139,92,246,0.09)' },
+};
+
+function KPICard({ title, value, prefix = '', suffix = '', decimals = 0, formatFn, trend = 0, icon: Icon, colorKey = 'blue', sparkData = [], delay = 0 }) {
+  const { color, bg } = KPI_THEMES[colorKey] || KPI_THEMES.blue;
+  const isUp = trend >= 0;
+
+  return (
+    <motion.div
+      className="kpi-card"
+      style={{ '--kpi-accent': color, '--kpi-bg': bg }}
+      initial={{ opacity: 0, y: 28 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, delay, ease: [0.25, 0.1, 0.25, 1] }}
+    >
+      <div className="kpi-card-top">
+        <div className="kpi-icon-wrap" style={{ background: bg }}>
+          <Icon size={18} style={{ color }} />
+        </div>
+        <div className={`kpi-trend-badge ${isUp ? 'kpi-trend-up' : 'kpi-trend-down'}`}>
+          {isUp ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />}
+          {Math.abs(trend).toFixed(1)}%
+        </div>
+      </div>
+      <div className="kpi-label">{title}</div>
+      <div className="kpi-number">
+        <AnimatedCounter to={value} decimals={decimals} prefix={prefix} suffix={suffix} formatFn={formatFn} />
+      </div>
+      <div className="kpi-spark">
+        <SparkLine data={sparkData} color={color} height={42} />
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─────────────────────────────────────────
+   Custom Chart Tooltip
+───────────────────────────────────────── */
+function ChartTooltip({ active, payload, label, currency = 'INR' }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="dash-chart-tooltip">
+      <div className="tooltip-label">{label}</div>
+      {payload.map((entry, i) => (
+        <div key={i} className="tooltip-row">
+          <span className="tooltip-dot" style={{ background: entry.color }} />
+          <span>{entry.name}: {formatGlobalCurrency(entry.value, currency, { maximumFractionDigits: 0 })}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────
+   Revenue Analytics Chart
+───────────────────────────────────────── */
+function RevenueChart({ data }) {
+  return (
+    <motion.div
+      className="chart-card"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.28 }}
+    >
+      <div className="chart-card-header">
+        <div>
+          <h3 className="chart-card-title">Revenue Analytics</h3>
+          <p className="chart-card-sub">6-month income vs. expense comparison</p>
+        </div>
+        <div className="chart-legend">
+          <span className="legend-item"><span className="legend-dot" style={{ background: '#4361EE' }} /> Income</span>
+          <span className="legend-item"><span className="legend-dot" style={{ background: '#F43F5E' }} /> Expense</span>
+        </div>
+      </div>
+      <ResponsiveContainer width="100%" height={220}>
+        <AreaChart data={data} margin={{ top: 8, right: 6, left: -12, bottom: 0 }}>
+          <defs>
+            <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#4361EE" stopOpacity={0.22} />
+              <stop offset="95%" stopColor="#4361EE" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#F43F5E" stopOpacity={0.18} />
+              <stop offset="95%" stopColor="#F43F5E" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(226,232,240,0.7)" vertical={false} />
+          <XAxis
+            dataKey="label"
+            tick={{ fontSize: 11, fill: '#94A3B8', fontFamily: 'DM Sans, sans-serif', fontWeight: 500 }}
+            axisLine={false} tickLine={false}
+          />
+          <YAxis
+            tick={{ fontSize: 11, fill: '#94A3B8', fontFamily: 'DM Sans, sans-serif' }}
+            axisLine={false} tickLine={false}
+            tickFormatter={(v) => v >= 100000 ? `${(v / 100000).toFixed(1)}L` : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}
+          />
+          <Tooltip content={<ChartTooltip />} />
+          <Area type="monotone" dataKey="income" name="Income" stroke="#4361EE" strokeWidth={2.5}
+            fill="url(#incomeGrad)" dot={false} activeDot={{ r: 5, fill: '#4361EE', strokeWidth: 2, stroke: '#fff' }} />
+          <Area type="monotone" dataKey="expense" name="Expense" stroke="#F43F5E" strokeWidth={2.5}
+            fill="url(#expenseGrad)" dot={false} activeDot={{ r: 5, fill: '#F43F5E', strokeWidth: 2, stroke: '#fff' }} />
+        </AreaChart>
+      </ResponsiveContainer>
+    </motion.div>
+  );
+}
+
+/* ─────────────────────────────────────────
+   Pipeline Stages Bar Chart
+───────────────────────────────────────── */
+const PIPELINE_STAGES = [
+  { name: 'Demo',        color: '#06B6D4', index: 0 },
+  { name: 'Proposal',   color: '#F59E0B', index: 1 },
+  { name: 'Negotiation',color: '#F97316', index: 2 },
+  { name: 'Approval',   color: '#8B5CF6', index: 3 },
+  { name: 'Won',        color: '#10B981', index: 4 },
+  { name: 'Lost',       color: '#F43F5E', index: 6 },
+];
+
+function PipelineChart({ projects }) {
+  const data = useMemo(() => PIPELINE_STAGES.map((stage) => ({
+    name: stage.name,
+    count: projects.filter((p) =>
+      p.status === stage.name || p.activeStage === stage.index
+    ).length,
+    color: stage.color,
+  })), [projects]);
+
+  const CustomBarTooltip = ({ active, payload }) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div className="dash-chart-tooltip">
+        <div className="tooltip-row">
+          <span className="tooltip-dot" style={{ background: payload[0]?.payload?.color }} />
+          <span>{payload[0]?.payload?.name}: <b>{payload[0]?.value} deals</b></span>
+        </div>
+      </div>
     );
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-bold text-slate-900">Pending Invoices</h2>
-        <button className="text-xs font-bold text-emerald-600 hover:underline">Manage Billing</button>
+    <motion.div
+      className="chart-card"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.36 }}
+    >
+      <div className="chart-card-header">
+        <div>
+          <h3 className="chart-card-title">Sales Pipeline</h3>
+          <p className="chart-card-sub">Deal distribution by stage</p>
+        </div>
+        <div className="chart-total-badge">{projects.length} Total</div>
       </div>
-
-      <div className="overflow-x-auto no-scrollbar">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="border-b border-slate-100">
-              <th className="pb-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Client</th>
-              <th className="pb-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Amount</th>
-              <th className="pb-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Due Date</th>
-              <th className="pb-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Action</th>
-            </tr>
-          </thead>
-
-          <tbody className="divide-y divide-slate-100">
-            {pendingInvoices.length === 0 && (
-              <tr>
-                <td colSpan={4} className="py-6 text-sm text-slate-400 text-center">No pending invoices found</td>
-              </tr>
-            )}
-            {pendingInvoices.map((invoice, index) => {
-              const amount = invoice.amount || invoice.dealValue || 0;
-              const dueDate = invoice.invoiceDate
-                ? new Date(invoice.invoiceDate).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric'
-                })
-                : 'N/A';
-
-              const client = invoice.clientName || invoice.projectName || 'Unknown Client';
-              const initials = client
-                .split(' ')
-                .map((word) => word[0])
-                .join('')
-                .slice(0, 2)
-                .toUpperCase();
-
-              return (
-                <tr key={invoice.id || `${client}-${index}`}>
-                  <td className="py-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600">
-                        {initials}
-                      </div>
-                      <span className="text-sm font-medium text-slate-900">{client}</span>
-                    </div>
-                  </td>
-                  <td className="py-4 text-sm font-bold text-slate-900">
-                    {formatGlobalCurrency(amount, invoice.currency || currency, { maximumFractionDigits: 2 })}
-                  </td>
-                  <td className="py-4 text-xs text-slate-500">{dueDate}</td>
-                  <td className="py-4 text-right">{getStatusChip(invoice)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+      <ResponsiveContainer width="100%" height={220}>
+        <BarChart data={data} layout="vertical" margin={{ top: 2, right: 12, left: 0, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(226,232,240,0.7)" horizontal={false} />
+          <XAxis type="number" tick={{ fontSize: 11, fill: '#94A3B8', fontFamily: 'DM Sans, sans-serif' }}
+            axisLine={false} tickLine={false} allowDecimals={false} />
+          <YAxis type="category" dataKey="name"
+            tick={{ fontSize: 11, fill: '#64748B', fontWeight: 500, fontFamily: 'DM Sans, sans-serif' }}
+            axisLine={false} tickLine={false} width={78} />
+          <Tooltip content={<CustomBarTooltip />} cursor={{ fill: 'rgba(67,97,238,0.04)' }} />
+          <Bar dataKey="count" name="Deals" radius={[0, 6, 6, 0]} maxBarSize={22}>
+            {data.map((entry, idx) => (
+              <Cell key={`cell-${idx}`} fill={entry.color} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </motion.div>
   );
 }
 
+/* ─────────────────────────────────────────
+   Intelligence Feed (Activity)
+───────────────────────────────────────── */
+const FEED_STYLES = {
+  danger: { bg: '#FFF1F2', color: '#F43F5E', border: '#FECDD3' },
+  warning:{ bg: '#FFFBEB', color: '#D97706', border: '#FDE68A' },
+  info:   { bg: '#EFF6FF', color: '#4361EE', border: '#BFDBFE' },
+  task:   { bg: '#F0FDF4', color: '#10B981', border: '#A7F3D0' },
+};
+
+function IntelligenceFeed({ alerts, tasks }) {
+  const items = useMemo(() => {
+    const alertItems = (alerts || []).slice(0, 3).map((alert) => ({
+      id: `a-${alert.id || alert.title}`,
+      type: alert.severity === 'critical' ? 'danger' : alert.severity === 'warning' ? 'warning' : 'info',
+      icon: alert.severity === 'critical' ? AlertTriangle : Lightbulb,
+      title: alert.title || alert.message || 'AI alert',
+      desc: alert.clientName || 'AI monitoring system',
+      time: alert.daysOverdue > 0 ? `${alert.daysOverdue}d overdue` : 'Live',
+    }));
+    const taskItems = (tasks || []).slice(0, 2).map((task) => ({
+      id: `t-${task.id}`,
+      type: 'task',
+      icon: CheckCircle2,
+      title: task.values?.title || task.title || 'Task update',
+      desc: (task.values?.status || task.status || 'Pending'),
+      time: task.values?.dueDate
+        ? new Date(task.values.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        : 'Queued',
+    }));
+    return [...alertItems, ...taskItems].slice(0, 5);
+  }, [alerts, tasks]);
+
+  return (
+    <motion.div
+      className="chart-card"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.42 }}
+    >
+      <div className="chart-card-header">
+        <div>
+          <h3 className="chart-card-title">Intelligence Feed</h3>
+          <p className="chart-card-sub">Alerts & task updates</p>
+        </div>
+        <div className="chart-total-badge live-badge">
+          <span className="live-dot" /> Live
+        </div>
+      </div>
+      <div className="activity-list">
+        {items.length === 0 && (
+          <div className="activity-empty">
+            <CheckCircle2 size={22} style={{ color: '#10B981' }} />
+            <p>All systems nominal</p>
+          </div>
+        )}
+        {items.map((item, i) => {
+          const style = FEED_STYLES[item.type] || FEED_STYLES.info;
+          const Icon = item.icon;
+          return (
+            <motion.div
+              key={item.id}
+              className="activity-item"
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.48 + i * 0.06 }}
+            >
+              <div className="activity-icon" style={{ background: style.bg, border: `1px solid ${style.border}` }}>
+                <Icon size={14} style={{ color: style.color }} />
+              </div>
+              <div className="activity-content">
+                <p className="activity-title">{item.title}</p>
+                <p className="activity-desc">{item.desc}</p>
+              </div>
+              <span className="activity-time">{item.time}</span>
+            </motion.div>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─────────────────────────────────────────
+   Pending Invoices
+───────────────────────────────────────── */
+function PendingInvoices({ invoices, currency }) {
+  const pendingInvoices = useMemo(() => (invoices || []).filter((inv) => {
+    const status = inv.status || (inv.paidDate ? 'Paid' : 'Pending');
+    return status === 'Pending' || status === 'Raised' || status === 'Overdue';
+  }).slice(0, 5), [invoices]);
+
+  return (
+    <motion.div
+      className="chart-card"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.48 }}
+    >
+      <div className="chart-card-header">
+        <div>
+          <h3 className="chart-card-title">Pending Invoices</h3>
+          <p className="chart-card-sub">{pendingInvoices.length} awaiting payment</p>
+        </div>
+        <button className="chart-action-link">Manage Billing</button>
+      </div>
+      <div className="invoice-list">
+        {pendingInvoices.length === 0 && (
+          <div className="activity-empty">
+            <CheckCircle2 size={22} style={{ color: '#10B981' }} />
+            <p>No pending invoices</p>
+          </div>
+        )}
+        {pendingInvoices.map((inv, idx) => {
+          const amount = inv.amount || inv.dealValue || 0;
+          const status = inv.status || (inv.paidDate ? 'Paid' : 'Pending');
+          const isOverdue = status === 'Overdue';
+          const client = inv.clientName || inv.projectName || 'Unknown Client';
+          const initials = client.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+          const dueDate = inv.invoiceDate
+            ? new Date(inv.invoiceDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            : 'N/A';
+
+          return (
+            <div key={inv.id || `${client}-${idx}`} className="invoice-row">
+              <div className="invoice-client">
+                <div className={`invoice-avatar ${isOverdue ? 'overdue' : ''}`}>{initials}</div>
+                <div>
+                  <p className="invoice-name">{client}</p>
+                  <p className="invoice-date">{dueDate}</p>
+                </div>
+              </div>
+              <div className="invoice-amount">
+                {formatGlobalCurrency(amount, inv.currency || currency, { maximumFractionDigits: 0 })}
+              </div>
+              {isOverdue
+                ? <span className="invoice-status overdue">Overdue</span>
+                : <button className="invoice-remind-btn">Remind</button>}
+            </div>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─────────────────────────────────────────
+   Quick Stats
+───────────────────────────────────────── */
+function QuickStats({ contacts, tasks, timesheetEntries }) {
+  const completedTasks = (tasks || []).filter((t) => (t.values?.status || t.status) === 'Completed').length;
+  const totalTasks = (tasks || []).length;
+  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  const totalHours = (timesheetEntries || []).reduce((s, e) => s + (Number(e.hours) || Number(e.duration) || 0), 0);
+
+  const stats = [
+    { label: 'Total Contacts', value: contacts.length, icon: Users, color: '#4361EE' },
+    { label: 'Hours Tracked', value: `${Math.round(totalHours)}h`, icon: Clock, color: '#F59E0B' },
+    { label: 'Task Completion', value: `${completionRate}%`, icon: CheckCircle2, color: '#10B981' },
+    { label: 'Pending Tasks', value: totalTasks - completedTasks, icon: Activity, color: '#F43F5E' },
+  ];
+
+  return (
+    <motion.div
+      className="chart-card"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.54 }}
+    >
+      <div className="chart-card-header">
+        <div>
+          <h3 className="chart-card-title">Performance Snapshot</h3>
+          <p className="chart-card-sub">Team activity at a glance</p>
+        </div>
+      </div>
+      <div className="quick-stats-grid">
+        {stats.map((stat, i) => {
+          const Icon = stat.icon;
+          return (
+            <motion.div
+              key={stat.label}
+              className="quick-stat-item"
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.6 + i * 0.06 }}
+            >
+              <div className="qs-icon" style={{ background: `${stat.color}14` }}>
+                <Icon size={16} style={{ color: stat.color }} />
+              </div>
+              <div className="qs-value" style={{ color: stat.color }}>{stat.value}</div>
+              <div className="qs-label">{stat.label}</div>
+            </motion.div>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─────────────────────────────────────────
+   Alert Sidebar
+───────────────────────────────────────── */
+function AlertSidebar({ alerts, onClose, getAlertCategory }) {
+  return (
+    <AnimatePresence>
+      <>
+        <motion.div
+          className="dash-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+        />
+        <motion.aside
+          className="dash-alert-sidebar"
+          initial={{ x: '100%' }}
+          animate={{ x: 0 }}
+          exit={{ x: '100%' }}
+          transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+        >
+          <div className="dash-sidebar-header">
+            <div>
+              <h3>AI Alerts</h3>
+              <p>{alerts.length} total alert{alerts.length !== 1 ? 's' : ''}</p>
+            </div>
+            <button className="dash-sidebar-close" onClick={onClose}>
+              <X size={16} />
+            </button>
+          </div>
+          <div className="dash-sidebar-content no-scrollbar">
+            {alerts.length === 0 && (
+              <div className="activity-empty">
+                <CheckCircle2 size={24} style={{ color: '#10B981' }} />
+                <p>No alerts — all systems nominal.</p>
+              </div>
+            )}
+            {alerts.map((alert, i) => {
+              const isCritical = alert.severity === 'critical';
+              const isWarning = alert.severity === 'warning';
+              const level = isCritical ? 'critical' : isWarning ? 'warning' : 'info';
+              const category = getAlertCategory(alert);
+              return (
+                <div key={alert.id || `${alert.title}-${i}`} className={`dash-alert-card ${level}`}>
+                  <div className="dash-alert-card-head">
+                    <span className={`dash-alert-badge ${level}`}>
+                      {isCritical ? 'Critical' : isWarning ? 'Warning' : 'Info'}
+                    </span>
+                    <span className={`dash-alert-card-cat ${category.className}`}>{category.label}</span>
+                    {alert.daysOverdue > 0 && (
+                      <span className="dash-alert-overdue">{alert.daysOverdue}d overdue</span>
+                    )}
+                  </div>
+                  <p className="dash-alert-card-title">{alert.title || alert.message || 'AI alert'}</p>
+                  {alert.clientName && <p className="dash-alert-card-client">{alert.clientName}</p>}
+                </div>
+              );
+            })}
+          </div>
+        </motion.aside>
+      </>
+    </AnimatePresence>
+  );
+}
+
+/* ─────────────────────────────────────────
+   Main Dashboard
+───────────────────────────────────────── */
 export default function Dashboard() {
   const { currentUser } = useAuth();
 
@@ -438,418 +568,291 @@ export default function Dashboard() {
     if (!currentUser) return;
 
     const fetchProjects = async () => {
-      try {
-        setLoadingProjects(true);
-        const data = await projectService.getAll();
-        setProjects(data || []);
-      } catch (error) {
-        console.error('Dashboard projects error:', error);
-      } finally {
-        setLoadingProjects(false);
-      }
+      try { setLoadingProjects(true); setProjects((await projectService.getAll()) || []); }
+      catch (e) { console.error('Dashboard projects:', e); } finally { setLoadingProjects(false); }
     };
-
     const fetchContacts = async () => {
-      try {
-        setLoadingContacts(true);
-        const data = await contactService.getContacts();
-        setContacts(data || []);
-      } catch (error) {
-        console.error('Dashboard contacts error:', error);
-      } finally {
-        setLoadingContacts(false);
-      }
+      try { setLoadingContacts(true); setContacts((await contactService.getContacts()) || []); }
+      catch (e) { console.error('Dashboard contacts:', e); } finally { setLoadingContacts(false); }
     };
-
     const fetchTimesheet = async () => {
-      try {
-        setLoadingTimesheet(true);
-        const data = await timesheetService.getEntries();
-        setTimesheetEntries(data || []);
-      } catch (error) {
-        console.error('Dashboard timesheet error:', error);
-      } finally {
-        setLoadingTimesheet(false);
-      }
+      try { setLoadingTimesheet(true); setTimesheetEntries((await timesheetService.getEntries()) || []); }
+      catch (e) { console.error('Dashboard timesheet:', e); } finally { setLoadingTimesheet(false); }
     };
-
     const fetchFinance = async () => {
       try {
         setLoadingFinance(true);
-        const [expenseData, incomeData] = await Promise.all([
-          expenseService.getExpenses(),
-          incomeService.getIncomes()
-        ]);
-        setExpenses(expenseData || []);
-        setIncomes(incomeData || []);
-      } catch (error) {
-        console.error('Dashboard finance error:', error);
-      } finally {
-        setLoadingFinance(false);
-      }
+        const [exp, inc] = await Promise.all([expenseService.getExpenses(), incomeService.getIncomes()]);
+        setExpenses(exp || []); setIncomes(inc || []);
+      } catch (e) { console.error('Dashboard finance:', e); } finally { setLoadingFinance(false); }
     };
-
     const fetchTasks = async () => {
-      try {
-        setLoadingTasks(true);
-        const data = await taskService.getAll();
-        setTasks(data || []);
-      } catch (error) {
-        console.error('Dashboard tasks error:', error);
-      } finally {
-        setLoadingTasks(false);
-      }
+      try { setLoadingTasks(true); setTasks((await taskService.getAll()) || []); }
+      catch (e) { console.error('Dashboard tasks:', e); } finally { setLoadingTasks(false); }
     };
-
     const fetchAlerts = async () => {
-      try {
-        const data = await notificationService.getAlerts();
-        setAlerts(data || []);
-      } catch (error) {
-        console.error('Dashboard alerts error:', error);
-      }
+      try { setAlerts((await notificationService.getAlerts()) || []); }
+      catch (e) { console.error('Dashboard alerts:', e); }
     };
 
-    fetchProjects();
-    fetchContacts();
-    fetchTimesheet();
-    fetchFinance();
-    fetchTasks();
-    fetchAlerts();
+    fetchProjects(); fetchContacts(); fetchTimesheet();
+    fetchFinance(); fetchTasks(); fetchAlerts();
   }, [currentUser]);
 
+  /* ── KPI Stats ── */
   const kpiStats = useMemo(() => {
-    const activeProjects = projects.filter((project) => project.status !== 'Closed' && project.status !== 'Lost').length;
-    const wonProjects = projects.filter((project) => project.status === 'Won' || project.activeStage === 4).length;
-
-    const totalBilling = incomes.reduce((sum, income) => sum + (Number(income.amount) || 0), 0);
-    const pendingIncomes = incomes.filter((income) => income.status === 'Pending' || income.status === 'Raised');
-    const pendingPayments = pendingIncomes.reduce((sum, income) => sum + (Number(income.amount) || 0), 0);
-
-    const conversionRate = projects.length > 0
-      ? Number(((wonProjects / projects.length) * 100).toFixed(1))
-      : 0;
-
-    return {
-      activeProjects,
-      totalBilling,
-      pendingPayments,
-      conversionRate,
-      pendingCount: pendingIncomes.length
-    };
+    const activeProjects = projects.filter((p) => p.status !== 'Closed' && p.status !== 'Lost').length;
+    const wonProjects = projects.filter((p) => p.status === 'Won' || p.activeStage === 4).length;
+    const totalBilling = incomes.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    const pendingIncomes = incomes.filter((i) => i.status === 'Pending' || i.status === 'Raised');
+    const pendingPayments = pendingIncomes.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    const conversionRate = projects.length > 0 ? Number(((wonProjects / projects.length) * 100).toFixed(1)) : 0;
+    return { activeProjects, totalBilling, pendingPayments, conversionRate };
   }, [projects, incomes]);
 
+  /* ── Monthly Chart Data ── */
   const monthlyData = useMemo(() => {
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const now = new Date();
-    const months = [];
-
-    for (let i = 5; i >= 0; i -= 1) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      months.push({ label: monthNames[date.getMonth()], key, income: 0, expense: 0 });
-    }
-
-    incomes.forEach((income) => {
-      if (!income.date) return;
-      const date = new Date(income.date);
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const month = months.find((row) => row.key === key);
-      if (month) month.income += Number(income.amount) || 0;
+    const months = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      return { label: names[d.getMonth()], key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}`, income: 0, expense: 0 };
     });
-
-    expenses.forEach((expense) => {
-      if (!expense.date) return;
-      const date = new Date(expense.date);
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const month = months.find((row) => row.key === key);
-      if (month) month.expense += Number(expense.amount) || 0;
+    incomes.forEach((inc) => {
+      if (!inc.date) return;
+      const d = new Date(inc.date);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}`;
+      const m = months.find((x) => x.key === key);
+      if (m) m.income += Number(inc.amount) || 0;
     });
-
+    expenses.forEach((exp) => {
+      if (!exp.date) return;
+      const d = new Date(exp.date);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}`;
+      const m = months.find((x) => x.key === key);
+      if (m) m.expense += Number(exp.amount) || 0;
+    });
     return months;
   }, [incomes, expenses]);
 
+  /* ── Trends ── */
   const trends = useMemo(() => {
-    const current = monthlyData[monthlyData.length - 1] || { income: 0, expense: 0 };
-    const previous = monthlyData[monthlyData.length - 2] || { income: 0, expense: 0 };
-
-    const revenueTrend = previous.income > 0
-      ? ((current.income - previous.income) / previous.income) * 100
-      : 0;
-
-    const pendingTrend = previous.expense > 0
-      ? ((current.expense - previous.expense) / previous.expense) * 100
-      : 0;
-
+    const cur = monthlyData[monthlyData.length - 1] || { income: 0, expense: 0 };
+    const prev = monthlyData[monthlyData.length - 2] || { income: 0, expense: 0 };
+    const revenueTrend = prev.income > 0 ? ((cur.income - prev.income) / prev.income) * 100 : 0;
+    const pendingTrend = prev.expense > 0 ? ((cur.expense - prev.expense) / prev.expense) * 100 : 0;
     return { revenueTrend, pendingTrend };
   }, [monthlyData]);
 
+  /* ── Spark data ── */
+  const sparkRevenue = useMemo(() => monthlyData.map((m) => m.income), [monthlyData]);
+  const sparkExpense = useMemo(() => monthlyData.map((m) => m.expense), [monthlyData]);
+  const sparkProjects = useMemo(() =>
+    Array.from({ length: 6 }, (_, i) => Math.max(0, kpiStats.activeProjects - (5 - i))),
+  [kpiStats.activeProjects]);
+  const sparkConversion = useMemo(() =>
+    [35, 42, 38, 55, 48, kpiStats.conversionRate].map((v) => Math.max(0, v)),
+  [kpiStats.conversionRate]);
+
+  /* ── Recent Invoices ── */
   const recentInvoices = useMemo(() => {
-    const milestones = [];
-
-    projects.forEach((project) => {
-      if (!Array.isArray(project.milestones)) return;
-      project.milestones.forEach((milestone) => {
-        milestones.push({
-          ...milestone,
-          projectName: project.title || project.name || 'Untitled Project',
-          projectId: project.id,
-          clientName: project.clientName || 'Unknown Client',
-          currency: project.currency || 'INR',
-          dealValue: project.dealValue || 0
-        });
-      });
+    const ms = [];
+    projects.forEach((p) => {
+      if (!Array.isArray(p.milestones)) return;
+      p.milestones.forEach((m) => ms.push({
+        ...m,
+        projectName: p.title || p.name || 'Untitled',
+        clientName: p.clientName || 'Unknown Client',
+        currency: p.currency || 'INR',
+        dealValue: p.dealValue || 0,
+      }));
     });
-
-    return milestones
-      .sort((a, b) => {
-        const dateA = a.invoiceDate ? new Date(a.invoiceDate).getTime() : 0;
-        const dateB = b.invoiceDate ? new Date(b.invoiceDate).getTime() : 0;
-        return dateB - dateA;
-      })
-      .slice(0, 10);
+    return ms.sort((a, b) => {
+      const dA = a.invoiceDate ? new Date(a.invoiceDate).getTime() : 0;
+      const dB = b.invoiceDate ? new Date(b.invoiceDate).getTime() : 0;
+      return dB - dA;
+    }).slice(0, 10);
   }, [projects]);
 
-  const pendingTasks = useMemo(() => {
-    return tasks
-      .filter((task) => (task.values?.status || task.status || '') !== 'Completed')
-      .sort((a, b) => (b.id || 0) - (a.id || 0))
-      .slice(0, 5);
-  }, [tasks]);
+  /* ── Pending Tasks ── */
+  const pendingTasks = useMemo(() =>
+    tasks.filter((t) => (t.values?.status || t.status || '') !== 'Completed')
+      .sort((a, b) => (b.id || 0) - (a.id || 0)).slice(0, 5),
+  [tasks]);
 
+  /* ── Alert rotation ── */
   useEffect(() => {
     if (alerts.length <= 1) return undefined;
-
-    const interval = setInterval(() => {
-      setActiveAlertIndex((prev) => (prev + 1) % alerts.length);
-    }, 3500);
-
+    const interval = setInterval(() => setActiveAlertIndex((p) => (p + 1) % alerts.length), 3500);
     return () => clearInterval(interval);
   }, [alerts]);
+
+  /* ── Alert category helper ── */
+  const getAlertCategory = (alert) => {
+    if (!alert) return { label: 'General', className: 'bg-slate-100 text-slate-700' };
+    const raw = String(alert.category || '').toLowerCase();
+    const txt = `${alert.title || ''} ${alert.message || ''}`.toLowerCase();
+    if (raw.includes('sale') || txt.includes('sale') || txt.includes('deal'))
+      return { label: 'Sales', className: 'bg-blue-50 text-blue-700' };
+    if (raw.includes('finance') || txt.includes('payment') || txt.includes('invoice'))
+      return { label: 'Finance', className: 'bg-emerald-50 text-emerald-700' };
+    if (raw.includes('task') || txt.includes('task'))
+      return { label: 'Execution', className: 'bg-amber-50 text-amber-700' };
+    if (raw.includes('contact') || txt.includes('lead'))
+      return { label: 'CRM', className: 'bg-violet-50 text-violet-700' };
+    return { label: 'General', className: 'bg-slate-100 text-slate-700' };
+  };
 
   const isLoading = loadingProjects || loadingContacts || loadingTimesheet || loadingFinance || loadingTasks;
 
   if (isLoading) {
     return (
-      <div className="dashboard-loading">
-        <div className="loading-spinner" />
-        <p>Loading your dashboard...</p>
+      <div className="dash-loading">
+        <div className="dash-loading-ring" />
+        <p>Loading workspace...</p>
       </div>
     );
   }
 
-  const criticalAlerts = alerts.filter((alert) => alert.severity === 'critical').length;
+  const criticalAlerts = alerts.filter((a) => a.severity === 'critical').length;
   const activeAlert = alerts[activeAlertIndex];
 
-  const getAlertCategory = (alert) => {
-    if (!alert) return { label: 'General', className: 'bg-slate-100 text-slate-700' };
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
+  })();
 
-    const rawCategory = String(alert.category || '').toLowerCase();
-    const combinedText = `${alert.title || ''} ${alert.message || ''}`.toLowerCase();
-
-    if (rawCategory.includes('sale') || combinedText.includes('sale') || combinedText.includes('deal') || combinedText.includes('pipeline')) {
-      return { label: 'Sales', className: 'bg-blue-50 text-blue-700' };
-    }
-
-    if (
-      rawCategory.includes('finance') ||
-      rawCategory.includes('payment') ||
-      rawCategory.includes('income') ||
-      rawCategory.includes('expense') ||
-      combinedText.includes('payment') ||
-      combinedText.includes('income') ||
-      combinedText.includes('expense') ||
-      combinedText.includes('invoice')
-    ) {
-      return { label: 'Finance', className: 'bg-emerald-50 text-emerald-700' };
-    }
-
-    if (rawCategory.includes('task') || combinedText.includes('task') || combinedText.includes('todo')) {
-      return { label: 'Execution', className: 'bg-amber-50 text-amber-700' };
-    }
-
-    if (rawCategory.includes('contact') || combinedText.includes('contact') || combinedText.includes('lead')) {
-      return { label: 'CRM', className: 'bg-violet-50 text-violet-700' };
-    }
-
-    return { label: 'General', className: 'bg-slate-100 text-slate-700' };
-  };
-
-  const activeAlertCategory = getAlertCategory(activeAlert);
+  const firstName = (currentUser?.displayName || '').split(' ')[0] || 'there';
 
   return (
-    <div className="bg-slate-50 text-slate-900 min-h-full p-6 lg:p-8">
-      <div className="max-w-[1600px] mx-auto space-y-8">
-        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
+    <div className="dash-root">
+      <div className="dash-content">
+
+        {/* ── Header ── */}
+        <div className="dash-header">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Intelligence Layer Dashboard</h1>
-            <p className="text-slate-500 text-sm mt-1">
-              {projects.length} projects, {contacts.length} contacts, and {timesheetEntries.length} timesheet entries tracked in real time.
+            <h1 className="dash-title">
+              {greeting}, {firstName}
+              <span className="dash-title-wave">👋</span>
+            </h1>
+            <p className="dash-subtitle">
+              {projects.length} projects · {contacts.length} contacts · {timesheetEntries.length} timesheet entries tracked
             </p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                className="w-72 pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-full text-sm outline-none focus:ring-2 focus:ring-emerald-500/20"
-                placeholder="Ask AI anything..."
-                type="text"
-              />
+          <div className="dash-header-actions">
+            <div className="dash-status-pill">
+              <span className="live-dot" />
+              System Online
             </div>
-
-            <button className="relative p-2.5 bg-white border border-slate-200 rounded-full text-slate-500 hover:text-slate-700">
-              <Bell className="w-4 h-4" />
-              {criticalAlerts > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border border-white" />}
-            </button>
-
-            <div className="flex items-center gap-2 text-xs font-medium bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
-              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-              <span className="text-emerald-700">System Status: Optimal</span>
-            </div>
+            {criticalAlerts > 0 && (
+              <button className="dash-alert-pill danger" onClick={() => setIsAlertSidebarOpen(true)}>
+                <AlertTriangle size={12} />
+                {criticalAlerts} Critical
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-100 px-4 py-3.5 flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-              <Lightbulb className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                AI Alerts
-              </p>
-              <div key={activeAlertIndex} className="flex items-center gap-2 mt-0.5 min-w-0 ai-insight-message">
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${activeAlertCategory.className}`}>
-                  {activeAlertCategory.label}
-                </span>
-                <p className="text-[15px] text-slate-600 truncate">
-                  {activeAlert?.title || activeAlert?.message || 'No critical intelligence right now. Pipeline and operations are stable.'}
-                </p>
-              </div>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsAlertSidebarOpen(true)}
-            className="text-xs font-bold text-emerald-600 px-2.5 py-1 bg-emerald-50 rounded-full hover:bg-emerald-100 shrink-0"
+        {/* ── AI Alert Banner ── */}
+        {activeAlert && (
+          <motion.div
+            key={activeAlertIndex}
+            className="dash-alert-banner"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
           >
-            View All
-          </button>
+            <div className="dash-alert-icon">
+              <Lightbulb size={14} />
+            </div>
+            <div className="dash-alert-content">
+              <span className="dash-alert-label">AI Insight</span>
+              <span className="dash-alert-message">
+                {activeAlert.title || activeAlert.message || 'Pipeline and operations are stable.'}
+              </span>
+            </div>
+            <button className="dash-alert-viewall" onClick={() => setIsAlertSidebarOpen(true)}>
+              View All <ChevronRight size={12} />
+            </button>
+          </motion.div>
+        )}
+
+        {/* ── KPI Grid ── */}
+        <div className="kpi-grid">
+          <KPICard
+            title="Active Projects"
+            value={kpiStats.activeProjects}
+            icon={Briefcase}
+            colorKey="blue"
+            trend={trends.revenueTrend}
+            sparkData={sparkProjects}
+            delay={0}
+          />
+          <KPICard
+            title="Total Revenue"
+            value={kpiStats.totalBilling}
+            formatFn={(v) => formatGlobalCurrency(v, 'INR', { maximumFractionDigits: 0 })}
+            icon={Banknote}
+            colorKey="emerald"
+            trend={trends.revenueTrend}
+            sparkData={sparkRevenue}
+            delay={0.07}
+          />
+          <KPICard
+            title="Pending Payments"
+            value={kpiStats.pendingPayments}
+            formatFn={(v) => formatGlobalCurrency(v, 'INR', { maximumFractionDigits: 0 })}
+            icon={Hourglass}
+            colorKey="amber"
+            trend={-Math.abs(trends.pendingTrend)}
+            sparkData={sparkExpense}
+            delay={0.14}
+          />
+          <KPICard
+            title="Conversion Rate"
+            value={kpiStats.conversionRate}
+            suffix="%"
+            decimals={1}
+            icon={Target}
+            colorKey="violet"
+            trend={trends.revenueTrend}
+            sparkData={sparkConversion}
+            delay={0.21}
+          />
         </div>
 
-        <KPISection
-          activeProjects={kpiStats.activeProjects}
-          totalBilling={kpiStats.totalBilling}
-          pendingPayments={kpiStats.pendingPayments}
-          conversionRate={kpiStats.conversionRate}
-          currency="INR"
-          revenueTrend={trends.revenueTrend}
-          pendingTrend={trends.pendingTrend}
-        />
+        {/* ── Revenue Chart ── */}
+        <RevenueChart data={monthlyData} />
 
-        <TimelineSection projects={projects} />
+        {/* ── Pipeline + Intelligence ── */}
+        <div className="dash-two-col">
+          <PipelineChart projects={projects} />
+          <IntelligenceFeed alerts={alerts} tasks={pendingTasks} />
+        </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          <RecentIntelligence alerts={alerts} tasks={pendingTasks} />
+        {/* ── Invoices + Quick Stats ── */}
+        <div className="dash-two-col">
           <PendingInvoices invoices={recentInvoices} currency="INR" />
+          <QuickStats contacts={contacts} tasks={tasks} timesheetEntries={timesheetEntries} />
         </div>
 
-        <div className="flex flex-wrap items-center justify-between text-[11px] font-semibold uppercase tracking-widest text-slate-400 pt-2">
-          <div className="flex items-center gap-2">
-            <Clock className="w-3.5 h-3.5" /> Live Operations Dashboard
-          </div>
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-3.5 h-3.5" /> Enterprise Secured
-          </div>
+        {/* ── Footer ── */}
+        <div className="dash-footer">
+          <div className="dash-footer-item"><Clock size={12} /> Live Operations Dashboard</div>
+          <div className="dash-footer-item"><CheckCircle2 size={12} /> Enterprise Secured</div>
         </div>
       </div>
 
+      {/* ── Alert Sidebar ── */}
       {isAlertSidebarOpen && (
-        <button
-          type="button"
-          aria-label="Close alerts drawer overlay"
-          onClick={() => setIsAlertSidebarOpen(false)}
-          className="fixed inset-0 bg-slate-900/20 backdrop-blur-[1px] z-40"
+        <AlertSidebar
+          alerts={alerts}
+          onClose={() => setIsAlertSidebarOpen(false)}
+          getAlertCategory={getAlertCategory}
         />
       )}
-
-      <aside
-        className={`fixed top-0 right-0 h-screen w-[360px] bg-white border-l border-slate-200 shadow-2xl z-50 transform transition-transform duration-300 ${
-          isAlertSidebarOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-      >
-        <div className="h-full flex flex-col">
-          <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-            <div>
-              <h3 className="text-base font-bold text-slate-900">AI Alerts</h3>
-              <p className="text-xs text-slate-500">{alerts.length} total alerts</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsAlertSidebarOpen(false)}
-              className="p-2 rounded-lg hover:bg-slate-100 text-slate-500"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar">
-            {alerts.length === 0 && (
-              <div className="text-sm text-slate-400 p-4">No AI alerts available.</div>
-            )}
-            {alerts.map((alert, index) => {
-              const isCritical = alert.severity === 'critical';
-              const isWarning = alert.severity === 'warning';
-              const severityLabel = isCritical ? 'Critical' : isWarning ? 'Warning' : 'Info';
-              const category = getAlertCategory(alert);
-
-              return (
-                <div
-                  key={alert.id || `${alert.title}-${index}`}
-                  className={`rounded-xl border p-4 ${
-                    isCritical
-                      ? 'border-rose-200 bg-rose-50/40'
-                      : isWarning
-                        ? 'border-amber-200 bg-amber-50/40'
-                        : 'border-slate-200 bg-slate-50/60'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                          isCritical
-                            ? 'text-rose-700 bg-rose-100'
-                            : isWarning
-                              ? 'text-amber-700 bg-amber-100'
-                              : 'text-slate-700 bg-slate-200'
-                        }`}
-                      >
-                        {severityLabel}
-                      </span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${category.className}`}>
-                        {category.label}
-                      </span>
-                    </div>
-                    {alert.daysOverdue > 0 && (
-                      <span className="text-[10px] font-bold text-rose-600">
-                        {alert.daysOverdue}d overdue
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm font-semibold text-slate-900">
-                    {alert.title || alert.message || 'AI alert'}
-                  </p>
-                  {alert.clientName && (
-                    <p className="text-xs text-slate-500 mt-1">{alert.clientName}</p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </aside>
     </div>
   );
 }
