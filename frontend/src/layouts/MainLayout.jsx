@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -11,6 +11,7 @@ import {
 import NotificationBell from '../components/NotificationBell';
 import GlobalSearch from '../components/GlobalSearch';
 import { exportPageToExcel } from '../utils/exportPageToExcel';
+import { notificationService } from '../services/notificationService';
 
 const hexToRgba = (hex, alpha) => {
     let r = 0, g = 0, b = 0;
@@ -32,6 +33,8 @@ export default function MainLayout() {
     const location = useLocation();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const contentRef = useRef(null);
+    const [alerts, setAlerts] = useState([]);
+    const [activePageAlertIndex, setActivePageAlertIndex] = useState(0);
 
     // Expand categories state
     const [expandedCategories, setExpandedCategories] = useState({});
@@ -40,6 +43,23 @@ export default function MainLayout() {
     useEffect(() => {
         setSidebarOpen(false);
     }, [location.pathname]);
+
+    useEffect(() => {
+        if (!currentUser) return;
+
+        const fetchAlerts = async () => {
+            try {
+                const data = await notificationService.getAlerts();
+                setAlerts(Array.isArray(data) ? data : []);
+            } catch (error) {
+                console.error('Main layout alerts error:', error);
+            }
+        };
+
+        fetchAlerts();
+        const interval = setInterval(fetchAlerts, 60000);
+        return () => clearInterval(interval);
+    }, [currentUser]);
 
     const handleLogout = async () => {
         try {
@@ -110,6 +130,53 @@ export default function MainLayout() {
             }
         });
     });
+
+    const getPageScope = (pathname) => {
+        if (pathname.startsWith('/finance')) return 'finance';
+        if (pathname.startsWith('/legal') || pathname.startsWith('/invoice')) return 'finance';
+        if (pathname.startsWith('/sales')) return 'sales';
+        if (pathname.startsWith('/projects') || pathname.startsWith('/timesheet') || pathname.startsWith('/todolist')) return 'execution';
+        if (pathname.startsWith('/contact') || pathname.startsWith('/leads') || pathname.startsWith('/company')) return 'crm';
+        return 'all';
+    };
+
+    const getAlertScope = (alert) => {
+        const category = String(alert?.category || '').toLowerCase();
+        const text = `${alert?.title || ''} ${alert?.message || ''}`.toLowerCase();
+
+        if (
+            category.includes('finance') || category.includes('payment') || category.includes('income') ||
+            category.includes('expense') || category.includes('invoice') ||
+            text.includes('payment') || text.includes('income') || text.includes('expense') || text.includes('invoice')
+        ) return 'finance';
+
+        if (category.includes('sale') || text.includes('sale') || text.includes('deal') || text.includes('pipeline')) return 'sales';
+        if (category.includes('task') || text.includes('task') || text.includes('todo') || text.includes('timesheet')) return 'execution';
+        if (category.includes('contact') || text.includes('contact') || text.includes('lead') || text.includes('client')) return 'crm';
+        return 'all';
+    };
+
+    const pageScope = getPageScope(location.pathname);
+    const pageAlerts = useMemo(() => {
+        if (pageScope === 'all') return [];
+        return alerts.filter((alert) => {
+            const scope = getAlertScope(alert);
+            return scope === pageScope;
+        });
+    }, [alerts, pageScope]);
+
+    useEffect(() => {
+        if (pageAlerts.length <= 1) return;
+        const interval = setInterval(() => {
+            setActivePageAlertIndex((prev) => (prev + 1) % pageAlerts.length);
+        }, 3500);
+        return () => clearInterval(interval);
+    }, [pageAlerts]);
+
+    const activePageAlert = pageAlerts.length > 0
+        ? pageAlerts[activePageAlertIndex % pageAlerts.length]
+        : null;
+    const activePageAlertMessage = activePageAlert?.title || activePageAlert?.message;
 
     const handleExportCurrentPage = () => {
         exportPageToExcel({
@@ -420,6 +487,29 @@ export default function MainLayout() {
                         <h5 className="m-0 fw-bold" style={{ color: '#475569', letterSpacing: '-0.3px' }}>
                             {currentPageLabel}
                         </h5>
+                        {activePageAlertMessage && (
+                            <div
+                                key={`${location.pathname}-${activePageAlertIndex}`}
+                                className="layout-page-alert-pop"
+                                style={{
+                                    marginLeft: '10px',
+                                    maxWidth: '460px',
+                                    background: 'rgba(16, 185, 129, 0.08)',
+                                    border: '1px solid rgba(16, 185, 129, 0.24)',
+                                    color: '#0f766e',
+                                    borderRadius: '999px',
+                                    padding: '6px 12px',
+                                    fontSize: '0.78rem',
+                                    fontWeight: 600,
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
+                                }}
+                                title={activePageAlertMessage}
+                            >
+                                {activePageAlertMessage}
+                            </div>
+                        )}
                         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <button
                                 onClick={handleExportCurrentPage}

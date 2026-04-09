@@ -111,24 +111,18 @@ const StageConfigModal = ({ show, onHide, currentStages, onSave }) => {
                         </Col>
 
                         <Col md={2}>
-                            <Form.Select
+                            <Form.Control
+                                type="number"
+                                min="1"
                                 value={stage.ageing}
                                 className="text-center"
+                                placeholder="Days"
                                 onChange={(e) => {
                                     const updated = [...stages];
-                                    updated[index].ageing = parseInt(e.target.value);
+                                    updated[index].ageing = parseInt(e.target.value) || 0;
                                     setStages(updated);
                                 }}
-                            >
-                                <option value="3">3 days</option>
-                                <option value="5">5 days</option>
-                                <option value="7">7 days</option>
-                                <option value="15">15 days</option>
-                                <option value="30">30 days</option>
-                                <option value="45">45 days</option>
-                                <option value="60">60 days</option>
-                                <option value="90">90 days</option>
-                            </Form.Select>
+                            />
                         </Col>
 
                         <Col md={3}>

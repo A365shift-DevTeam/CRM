@@ -12,4 +12,5 @@ public class Project : AuditableEntity, IOwnedByUser
     public int Delay { get; set; } = 0;
     public string? Type { get; set; }
     public string? History { get; set; } // JSON string
+    public string? Stages { get; set; } // JSON string — per-project custom stages
 }

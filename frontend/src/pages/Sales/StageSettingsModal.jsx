@@ -161,20 +161,15 @@ const StageSettingsModal = ({ show, handleClose, currentStages, onSave, productL
                                         />
                                     </td>
                                     <td className="align-middle">
-                                        <Form.Select
+                                        <Form.Control
+                                            type="number"
+                                            min="1"
                                             value={stage.ageing || 30}
                                             onChange={(e) => handleAgeingChange(index, e.target.value)}
                                             size="sm"
+                                            placeholder="Enter days"
                                             style={{ width: '100%' }}
-                                        >
-                                            <option value="3">3 days</option>
-                                            <option value="7">7 days</option>
-                                            <option value="15">15 days</option>
-                                            <option value="30">30 days</option>
-                                            <option value="45">45 days</option>
-                                            <option value="60">60 days</option>
-                                            <option value="90">90 days</option>
-                                        </Form.Select>
+                                        />
                                     </td>
                                     <td className="align-middle">
                                         <Form.Select

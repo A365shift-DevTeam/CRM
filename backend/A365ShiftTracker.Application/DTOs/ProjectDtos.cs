@@ -10,6 +10,7 @@ public class ProjectDto
     public int Delay { get; set; }
     public string? Type { get; set; }
     public object? History { get; set; }
+    public object? Stages { get; set; }
 }
 
 public class CreateProjectRequest
@@ -21,6 +22,7 @@ public class CreateProjectRequest
     public int Delay { get; set; } = 0;
     public string? Type { get; set; }
     public object? History { get; set; }
+    public object? Stages { get; set; }
 }
 
 public class UpdateProjectRequest : CreateProjectRequest

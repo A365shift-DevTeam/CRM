@@ -35,7 +35,8 @@ public class ProjectService : IProjectService
             ActiveStage = request.ActiveStage,
             Delay = request.Delay,
             Type = request.Type,
-            History = request.History is not null ? JsonSerializer.Serialize(request.History) : "[]"
+            History = request.History is not null ? JsonSerializer.Serialize(request.History) : "[]",
+            Stages = request.Stages is not null ? JsonSerializer.Serialize(request.Stages) : null
         };
 
         await _uow.Projects.AddAsync(entity);
@@ -59,6 +60,8 @@ public class ProjectService : IProjectService
         entity.Type = request.Type;
         if (request.History is not null)
             entity.History = JsonSerializer.Serialize(request.History);
+        if (request.Stages is not null)
+            entity.Stages = JsonSerializer.Serialize(request.Stages);
 
         await _uow.Projects.UpdateAsync(entity);
         await _uow.SaveChangesAsync();
@@ -86,6 +89,7 @@ public class ProjectService : IProjectService
         ActiveStage = p.ActiveStage,
         Delay = p.Delay,
         Type = p.Type,
-        History = p.History is not null ? JsonSerializer.Deserialize<object>(p.History) : null
+        History = p.History is not null ? JsonSerializer.Deserialize<object>(p.History) : null,
+        Stages = p.Stages is not null ? JsonSerializer.Deserialize<object>(p.Stages) : null
     };
 }

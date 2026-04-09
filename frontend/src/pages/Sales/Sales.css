@@ -405,3 +405,40 @@
         border-radius: 10px;
     }
 }
+
+/* ─── Edit Project Modal — Stage Editor ─── */
+.edit-project-modal .modal-dialog {
+    max-width: 720px;
+}
+
+.stage-editor-section {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+}
+
+.stage-editor-item {
+    background: #fff;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.stage-editor-item:hover {
+    border-color: #10b981 !important;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.08);
+}
+
+.stage-editor-item .form-control,
+.stage-editor-item .form-select {
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    font-size: 0.85rem;
+}
+
+.stage-editor-item .form-control:focus,
+.stage-editor-item .form-select:focus {
+    border-color: #10b981;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+}

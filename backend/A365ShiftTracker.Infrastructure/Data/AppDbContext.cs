@@ -184,6 +184,7 @@ public class AppDbContext : DbContext
         {
             e.ToTable("projects");
             e.Property(p => p.History).HasColumnType("jsonb");
+            e.Property(p => p.Stages).HasColumnType("jsonb");
             e.HasIndex(p => p.UserId);
         });
 

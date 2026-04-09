@@ -41,6 +41,8 @@
   --radius-md: 12px;
   --radius-lg: 20px;
   --radius-pill: 999px;
+  --card-left-accent: #10b981;
+  --card-left-accent-gradient: linear-gradient(180deg, #0ea5e9 0%, #10b981 100%);
 }
 
 * {
@@ -236,6 +238,70 @@ html, body {
 
 .card:hover {
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1) !important;
+}
+
+/* Global card left accent line */
+.card,
+.admin-stat-card,
+.sales-page .stat-card,
+.admin-card,
+.expense-card,
+.income-card,
+.summary-card,
+.alert-card,
+.sg-card,
+.std-kanban-card,
+.response-card,
+.kanban-card,
+.contacts-kanban-card,
+.timesheet-kanban-card,
+.timesheet-content,
+.contacts-toolbar-card,
+.contacts-table-container,
+.kanban-card-new,
+.timesheet-container .stat-card,
+.stat-card-new,
+.bg-white.rounded-2xl.shadow-sm,
+.bg-white.rounded-2xl.border.border-slate-100,
+.bg-white.rounded-xl.shadow-sm,
+.bg-white.rounded-xl.border.border-slate-100 {
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before,
+.admin-stat-card::before,
+.sales-page .stat-card::before,
+.admin-card::before,
+.expense-card::before,
+.income-card::before,
+.summary-card::before,
+.alert-card::before,
+.sg-card::before,
+.std-kanban-card::before,
+.response-card::before,
+.kanban-card::before,
+.contacts-kanban-card::before,
+.timesheet-kanban-card::before,
+.timesheet-content::before,
+.contacts-toolbar-card::before,
+.contacts-table-container::before,
+.kanban-card-new::before,
+.timesheet-container .stat-card::before,
+.stat-card-new::before,
+.bg-white.rounded-2xl.shadow-sm::before,
+.bg-white.rounded-2xl.border.border-slate-100::before,
+.bg-white.rounded-xl.shadow-sm::before,
+.bg-white.rounded-xl.border.border-slate-100::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--card-left-accent-gradient);
+  border-radius: 20px 0 0 20px;
+  pointer-events: none;
 }
 
 .card-header {
@@ -461,4 +527,23 @@ html, body {
     font-size: 0.8rem;
     padding: 0.5rem 0.75rem;
   }
+}
+
+@keyframes layout-alert-pop-fade {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+    filter: blur(1px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.layout-page-alert-pop {
+  animation: layout-alert-pop-fade 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-origin: left center;
+  will-change: transform, opacity, filter;
 }
