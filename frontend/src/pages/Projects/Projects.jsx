@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { projectService } from '../../services/api';
 import { useToast } from '../../components/Toast/ToastContext';
 import { useTheme } from '../../context/ThemeContext';
-import { FaChartColumn, FaPlus, FaTrash, FaPenToSquare } from 'react-icons/fa6';
+import { FaPlus, FaTrash, FaPenToSquare } from 'react-icons/fa6';
 import { Clock, FileText } from 'lucide-react';
-import { Modal, Form, Button } from 'react-bootstrap';
+import { Modal, Form, Button, FloatingLabel } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
+import PageToolbar from '../../components/PageToolbar/PageToolbar';
 
 export default function Projects() {
     const { themeColor } = useTheme();
@@ -85,24 +86,16 @@ export default function Projects() {
 
     return (
         <div className="p-4" style={{ maxWidth: '1400px', margin: '0 auto' }}>
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h4 className="fw-bold mb-0 text-slate-800 d-flex align-items-center gap-2">
-                    <FaChartColumn style={{ color: themeColor }} /> Active Projects Directory
-                </h4>
-                <div className="d-flex gap-3">
-                    <input 
-                        type="text" 
-                        placeholder="Search projects by name..." 
-                        className="form-control"
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        style={{ width: '250px', borderRadius: '8px' }}
-                    />
-                    <button onClick={() => handleOpenModal()} className="btn text-white fw-bold d-flex align-items-center gap-2" style={{ backgroundColor: themeColor, borderRadius: '8px' }}>
-                        <FaPlus /> New Project
-                    </button>
-                </div>
-            </div>
+            <PageToolbar
+                title="Projects"
+                itemCount={filteredProjects.length}
+                searchQuery={search}
+                onSearchChange={setSearch}
+                searchPlaceholder="Search projects..."
+                actions={[
+                    { label: 'New Project', icon: <FaPlus />, variant: 'primary', onClick: () => handleOpenModal() }
+                ]}
+            />
 
             {loading ? (
                 <div className="d-flex justify-content-center p-5">
@@ -163,33 +156,70 @@ export default function Projects() {
                 </div>
             )}
 
-            <Modal show={showModal} onHide={() => setShowModal(false)} centered>
-                <Modal.Header closeButton>
-                    <Modal.Title>{editingProject ? 'Edit Project' : 'New Project'}</Modal.Title>
+            <Modal show={showModal} onHide={() => setShowModal(false)} centered className="standard-modal">
+                <Modal.Header closeButton className="border-0 pb-0 pt-4 px-4">
+                    <Modal.Title className="fw-bold fs-4">
+                        {editingProject ? 'Edit Project' : 'New Project'}
+                    </Modal.Title>
                 </Modal.Header>
-                <Form onSubmit={handleSave}>
-                    <Modal.Body>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Project Title</Form.Label>
-                            <Form.Control required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} placeholder="e.g. Website Redesign" />
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Client Name</Form.Label>
-                            <Form.Control required type="text" value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} placeholder="e.g. Acme Corp" />
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Project Type</Form.Label>
-                            <Form.Select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
+                <Form onSubmit={handleSave} className="p-2">
+                    <Modal.Body className="px-4">
+                        <FloatingLabel controlId="projectTitle" label="Project Title" className="mb-3 text-muted">
+                            <Form.Control 
+                                required 
+                                type="text" 
+                                value={formData.title} 
+                                onChange={e => setFormData({...formData, title: e.target.value})} 
+                                placeholder="e.g. Website Redesign" 
+                                className="fw-medium text-dark shadow-sm border-0"
+                                style={{ backgroundColor: 'var(--surface-variant)', borderRadius: 'var(--radius-md)' }}
+                            />
+                        </FloatingLabel>
+
+                        <FloatingLabel controlId="clientName" label="Client Name" className="mb-3 text-muted">
+                            <Form.Control 
+                                required 
+                                type="text" 
+                                value={formData.clientName} 
+                                onChange={e => setFormData({...formData, clientName: e.target.value})} 
+                                placeholder="e.g. Acme Corp" 
+                                className="fw-medium text-dark shadow-sm border-0"
+                                style={{ backgroundColor: 'var(--surface-variant)', borderRadius: 'var(--radius-md)' }}
+                            />
+                        </FloatingLabel>
+
+                        <FloatingLabel controlId="projectType" label="Project Type" className="mb-3 text-muted">
+                            <Form.Select 
+                                value={formData.type} 
+                                onChange={e => setFormData({...formData, type: e.target.value})}
+                                className="fw-medium text-dark shadow-sm border-0"
+                                style={{ backgroundColor: 'var(--surface-variant)', borderRadius: 'var(--radius-md)' }}
+                            >
                                 <option value="Standard">Standard</option>
                                 <option value="Product">Product</option>
                                 <option value="Service">Service</option>
                                 <option value="Internal">Internal</option>
                             </Form.Select>
-                        </Form.Group>
+                        </FloatingLabel>
                     </Modal.Body>
-                    <Modal.Footer>
-                        <Button variant="light" onClick={() => setShowModal(false)}>Cancel</Button>
-                        <Button type="submit" style={{ backgroundColor: themeColor, borderColor: themeColor }}>Save Project</Button>
+                    <Modal.Footer className="border-0 pt-0 pb-4 px-4">
+                        <Button 
+                            variant="light" 
+                            onClick={() => setShowModal(false)}
+                            className="rounded-pill px-4 fw-semibold text-muted bg-transparent border-0"
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            type="submit" 
+                            className="rounded-pill px-4 fw-bold shadow-sm"
+                            style={{ 
+                                backgroundColor: themeColor || 'var(--primary)', 
+                                borderColor: themeColor || 'var(--primary)' 
+                            }}
+                        >
+                            {editingProject ? 'Save Changes' : 'Save Project'}
+                        </Button>
                     </Modal.Footer>
                 </Form>
             </Modal>

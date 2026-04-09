@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Modal, Button, Form, Table, Nav, Tab } from 'react-bootstrap'
-import { Plus, Trash2, Edit, Settings } from 'lucide-react'
+import { Modal, Button, Form, Badge, Nav, Tab } from 'react-bootstrap'
+import { Plus, Trash2, Edit2, Settings, FileText, Info, X, GripVertical } from 'lucide-react'
 
 const FIELD_TYPES = [
     { value: 'text', label: 'Text' },
@@ -29,114 +29,82 @@ export const DEFAULT_INCOME_FIELDS = [
     { id: 'projectDepartment', label: 'Project/Department', type: 'text', required: false, system: true, order: 6 },
 ]
 
-const FieldEditor = ({ field, onSave, onCancel }) => {
-    const [data, setData] = useState(field || {
-        id: '',
-        label: '',
-        type: 'text',
-        required: false,
-        optionsString: ''
-    })
-
-    const handleChange = (f, v) => setData(p => ({ ...p, [f]: v }))
-
-    const handleSubmit = () => {
-        const toSave = { ...data }
-        if (!toSave.id) {
-            toSave.id = toSave.label.toLowerCase().replace(/\s+/g, '_')
-        }
-        if (toSave.type === 'select' && typeof toSave.optionsString === 'string') {
-            toSave.options = toSave.optionsString.split(',').map(s => s.trim()).filter(Boolean)
-        }
-        onSave(toSave)
-    }
-
-    return (
-        <div className="p-3 border rounded bg-light mb-3">
-            <h6 className="mb-3">{field ? 'Edit Field' : 'Add New Field'}</h6>
-            <div className="row">
-                <Form.Group className="col-md-6 mb-2">
-                    <Form.Label>Label</Form.Label>
-                    <Form.Control
-                        type="text"
-                        value={data.label}
-                        onChange={e => handleChange('label', e.target.value)}
-                        readOnly={field?.system} // Can't rename system field keys/labels easily without breaking logic
-                    />
-                </Form.Group>
-                <Form.Group className="col-md-6 mb-2">
-                    <Form.Label>Type</Form.Label>
-                    <Form.Select
-                        value={data.type}
-                        onChange={e => handleChange('type', e.target.value)}
-                        disabled={field?.system}
-                    >
-                        {FIELD_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                    </Form.Select>
-                </Form.Group>
-                <Form.Group className="col-md-12 mb-2">
-                    <Form.Check
-                        type="checkbox"
-                        label="Required"
-                        checked={data.required}
-                        onChange={e => handleChange('required', e.target.checked)}
-                    />
-                </Form.Group>
-                {data.type === 'select' && (
-                    <Form.Group className="col-md-12 mb-2">
-                        <Form.Label>Options (comma separated)</Form.Label>
-                        <Form.Control
-                            type="text"
-                            value={data.optionsString || (data.options || []).join(', ')}
-                            onChange={e => handleChange('optionsString', e.target.value)}
-                            disabled={field?.system && field?.id === 'category'} // Lock category options if system
-                        />
-                    </Form.Group>
-                )}
-            </div>
-            <div className="d-flex justify-content-end gap-2 mt-2">
-                <Button variant="secondary" size="sm" onClick={onCancel}>Cancel</Button>
-                <Button variant="primary" size="sm" onClick={handleSubmit}>Save Field</Button>
-            </div>
-        </div>
-    )
-}
-
 const FinanceSettingsModal = ({ show, onHide, currentConfig, onSaveConfig }) => {
     const [config, setConfig] = useState(currentConfig || {
         expenseFields: DEFAULT_EXPENSE_FIELDS,
         incomeFields: DEFAULT_INCOME_FIELDS
     })
 
-    const [editingFieldData, setEditingFieldData] = useState(null) // { type: 'expense'|'income', field:Obj, index:Int }
-    const [isAdding, setIsAdding] = useState(null) // 'expense' or 'income'
+    const [showEditModal, setShowEditModal] = useState(false)
+    const [editingField, setEditingField] = useState(null)
+    const [formData, setFormData] = useState({ label: '', type: 'text', required: false })
+    const [selectOptions, setSelectOptions] = useState([])
+    const [newOptionValue, setNewOptionValue] = useState('')
+    const [errors, setErrors] = useState({})
 
     useEffect(() => {
         if (currentConfig) setConfig(currentConfig)
     }, [currentConfig])
 
-    const handleSaveField = (field, type) => {
+    const handleEdit = (field, type, index) => {
+        setEditingField({ type, field, index })
+        setFormData({ label: field.label, type: field.type, required: field.required })
+        setSelectOptions(field.options || [])
+        setNewOptionValue('')
+        setErrors({})
+        setShowEditModal(true)
+    }
+
+    const handleAddNew = (type) => {
+        setEditingField({ type, field: null, index: -1 })
+        setFormData({ label: '', type: 'text', required: false })
+        setSelectOptions([])
+        setNewOptionValue('')
+        setErrors({})
+        setShowEditModal(true)
+    }
+
+    const validate = () => {
+        const newErrors = {}
+        if (!formData.label?.trim()) newErrors.label = 'Field label is required'
+        setErrors(newErrors)
+        return Object.keys(newErrors).length === 0
+    }
+
+    const handleSaveField = () => {
+        if (!validate()) return
+
+        const { type, index } = editingField
         const listKey = type === 'expense' ? 'expenseFields' : 'incomeFields'
         const list = [...config[listKey]]
 
-        if (editingFieldData && editingFieldData.type === type) {
-            // Edit
-            list[editingFieldData.index] = { ...list[editingFieldData.index], ...field }
-            setEditingFieldData(null)
-        } else {
-            // Add
-            list.push({ ...field, system: false, order: list.length + 1 })
-            setIsAdding(null)
+        const fieldData = {
+            ...formData,
+            id: editingField.field?.id || formData.label.toLowerCase().replace(/\s+/g, '_'),
+            system: editingField.field?.system || false,
+            order: editingField.field?.order || list.length + 1,
+        }
+        if (formData.type === 'select') {
+            fieldData.options = selectOptions
         }
 
-        setConfig(p => ({ ...p, [listKey]: list }))
+        if (index >= 0) {
+            list[index] = { ...list[index], ...fieldData }
+        } else {
+            list.push(fieldData)
+        }
+
+        setConfig(prev => ({ ...prev, [listKey]: list }))
+        setShowEditModal(false)
+        setEditingField(null)
     }
 
     const handleDelete = (index, type) => {
+        if (!window.confirm('Are you sure you want to delete this field?')) return
         const listKey = type === 'expense' ? 'expenseFields' : 'incomeFields'
         const list = [...config[listKey]]
         list.splice(index, 1)
-        setConfig(p => ({ ...p, [listKey]: list }))
+        setConfig(prev => ({ ...prev, [listKey]: list }))
     }
 
     const handleFinalSave = () => {
@@ -144,105 +112,262 @@ const FinanceSettingsModal = ({ show, onHide, currentConfig, onSaveConfig }) => 
         onHide()
     }
 
-    const renderFieldList = (type) => { // 'expense' or 'income'
+    const handleAddOption = () => {
+        const trimmed = newOptionValue.trim()
+        if (trimmed && !selectOptions.includes(trimmed)) {
+            setSelectOptions([...selectOptions, trimmed])
+            setNewOptionValue('')
+        }
+    }
+
+    const handleRemoveOption = (index) => {
+        setSelectOptions(selectOptions.filter((_, i) => i !== index))
+    }
+
+    const renderFieldList = (type) => {
         const list = type === 'expense' ? config.expenseFields : config.incomeFields
-        const isEditingThisType = editingFieldData?.type === type
-        const isAddingThisType = isAdding === type
 
         return (
             <div>
-                {isAddingThisType && (
-                    <FieldEditor
-                        onSave={f => handleSaveField(f, type)}
-                        onCancel={() => setIsAdding(null)}
-                    />
-                )}
-                {isEditingThisType && (
-                    <FieldEditor
-                        field={editingFieldData.field}
-                        onSave={f => handleSaveField(f, type)}
-                        onCancel={() => setEditingFieldData(null)}
-                    />
-                )}
-
-                <div className="table-responsive">
-                    <Table hover size="sm">
-                        <thead style={{ backgroundColor: '#1a1d21' }}>
-                            <tr>
-                                <th style={{ color: '#fff' }}>Label</th>
-                                <th style={{ color: '#fff' }}>Type</th>
-                                <th style={{ color: '#fff' }}>Required</th>
-                                <th style={{ width: '100px', color: '#fff' }}>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {list.map((field, idx) => (
-                                <tr key={idx}>
-                                    <td>{field.label} {field.system && <small className="text-muted">(System)</small>}</td>
-                                    <td>{FIELD_TYPES.find(t => t.value === field.type)?.label || field.type}</td>
-                                    <td>{field.required ? 'Yes' : 'No'}</td>
-                                    <td>
-                                        <div className="d-flex gap-2">
-                                            <Button variant="link" size="sm" className="p-0 text-primary" onClick={() => {
-                                                setEditingFieldData({ type, field, index: idx })
-                                                setIsAdding(null)
-                                            }}>
-                                                <Edit size={16} />
-                                            </Button>
-                                            {!field.system && (
-                                                <Button variant="link" size="sm" className="p-0 text-danger" onClick={() => handleDelete(idx, type)}>
-                                                    <Trash2 size={16} />
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </Table>
-                </div>
-                {!isAddingThisType && !isEditingThisType && (
-                    <Button variant="outline-primary" size="sm" onClick={() => setIsAdding(type)}>
-                        <Plus size={16} /> Add Field
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                    <h6 className="mb-0 fw-semibold text-dark">
+                        {type === 'expense' ? 'Expense' : 'Income'} Fields
+                        <Badge className="ms-2" pill style={{ background: '#10b981', fontSize: '0.75rem' }}>{list.length}</Badge>
+                    </h6>
+                    <Button
+                        size="sm"
+                        onClick={() => handleAddNew(type)}
+                        className="d-flex align-items-center"
+                        style={{ background: '#10b981', borderColor: '#10b981', fontWeight: 600 }}
+                    >
+                        <Plus size={16} className="me-1" />
+                        Add Field
                     </Button>
-                )}
+                </div>
+
+                {list.map((field, idx) => (
+                    <div
+                        key={idx}
+                        className="timesheet-column-item d-flex align-items-center gap-3 p-3 border rounded mb-2 bg-white"
+                    >
+                        <div className="timesheet-column-drag-handle" style={{ cursor: 'default' }}>
+                            <GripVertical size={18} className="text-muted" />
+                        </div>
+                        <div className="flex-grow-1">
+                            <div className="d-flex align-items-center gap-2 flex-wrap">
+                                <strong className="timesheet-column-name">{field.label}</strong>
+                                <Badge bg="secondary" className="timesheet-column-badge">
+                                    {FIELD_TYPES.find(t => t.value === field.type)?.label || field.type}
+                                </Badge>
+                                {field.required && (
+                                    <Badge bg="danger" className="timesheet-column-badge">Required</Badge>
+                                )}
+                                {field.system && (
+                                    <Badge bg="info" className="timesheet-column-badge">System</Badge>
+                                )}
+                            </div>
+                            {field.type === 'select' && field.options && (
+                                <div className="d-flex gap-1 flex-wrap mt-1">
+                                    <span className="options-label">Options:</span>
+                                    <div className="options-list">
+                                        {field.options.slice(0, 4).map((opt, i) => (
+                                            <span key={i} className="option-pill" style={{ background: '#f1f5f9', color: '#475569' }}>
+                                                {opt}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    {field.options.length > 4 && (
+                                        <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>+{field.options.length - 4} more</span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                        <div className="d-flex align-items-center gap-1">
+                            <Button
+                                variant="link"
+                                size="sm"
+                                onClick={() => handleEdit(field, type, idx)}
+                                title="Edit"
+                                className="timesheet-column-action-btn"
+                            >
+                                <Edit2 size={16} />
+                            </Button>
+                            {!field.system && (
+                                <Button
+                                    variant="link"
+                                    size="sm"
+                                    onClick={() => handleDelete(idx, type)}
+                                    title="Delete"
+                                    className="timesheet-column-action-btn text-danger"
+                                >
+                                    <Trash2 size={16} />
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                ))}
             </div>
         )
     }
 
     return (
-        <Modal show={show} onHide={onHide} size="lg" centered className="timesheet-column-manager-modal">
-            <Modal.Header closeButton className="border-bottom pb-2">
-                <Modal.Title className="mb-0 d-flex align-items-center gap-2">
-                    <Settings size={20} className="text-muted" />
-                    Finance Page Settings
-                </Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-                <Tab.Container defaultActiveKey="expense">
-                    <Nav variant="tabs" className="mb-3">
-                        <Nav.Item>
-                            <Nav.Link eventKey="expense">Expense Fields</Nav.Link>
-                        </Nav.Item>
-                        <Nav.Item>
-                            <Nav.Link eventKey="income">Income Fields</Nav.Link>
-                        </Nav.Item>
-                    </Nav>
-                    <Tab.Content>
-                        <Tab.Pane eventKey="expense">
-                            {renderFieldList('expense')}
-                        </Tab.Pane>
-                        <Tab.Pane eventKey="income">
-                            {renderFieldList('income')}
-                        </Tab.Pane>
-                    </Tab.Content>
-                </Tab.Container>
-            </Modal.Body>
-            <Modal.Footer className="border-top pt-3">
-                <Button variant="secondary" onClick={onHide}>Cancel</Button>
-                <Button variant="primary" onClick={handleFinalSave}>Save Changes</Button>
-            </Modal.Footer>
-        </Modal>
+        <>
+            <Modal show={show} onHide={onHide} size="lg" centered className="timesheet-column-manager-modal finance-settings-modal">
+                <Modal.Header className="border-bottom pb-2">
+                    <Modal.Title className="mb-0 d-flex align-items-center gap-2">
+                        <Settings size={20} className="text-muted" />
+                        Manage Fields
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="pt-3 pb-3" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+                    <Tab.Container defaultActiveKey="expense">
+                        <Nav variant="pills" className="finance-field-tabs mb-3 gap-2">
+                            <Nav.Item>
+                                <Nav.Link eventKey="expense">Expense Fields</Nav.Link>
+                            </Nav.Item>
+                            <Nav.Item>
+                                <Nav.Link eventKey="income">Income Fields</Nav.Link>
+                            </Nav.Item>
+                        </Nav>
+                        <Tab.Content>
+                            <Tab.Pane eventKey="expense">
+                                {renderFieldList('expense')}
+                            </Tab.Pane>
+                            <Tab.Pane eventKey="income">
+                                {renderFieldList('income')}
+                            </Tab.Pane>
+                        </Tab.Content>
+                    </Tab.Container>
+                </Modal.Body>
+                <Modal.Footer className="border-top pt-3">
+                    <Button variant="secondary" onClick={onHide}>Close</Button>
+                    <Button onClick={handleFinalSave} style={{ background: '#10b981', borderColor: '#10b981', fontWeight: 600 }}>
+                        Save Changes
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Add/Edit Field Modal */}
+            <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered className="timesheet-column-edit-modal">
+                <Modal.Header className="border-bottom pb-2">
+                    <Modal.Title className="mb-0 d-flex align-items-center gap-2">
+                        <FileText size={18} className="text-muted" />
+                        {editingField?.field ? 'Edit Field' : 'Add New Field'}
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="pt-3">
+                    <Form.Group className="mb-3">
+                        <Form.Label className="timesheet-form-label d-flex align-items-center gap-2">
+                            <FileText size={16} className="text-muted" />
+                            <span className="fw-semibold">
+                                Field Label <span className="text-danger">*</span>
+                            </span>
+                        </Form.Label>
+                        <Form.Control
+                            type="text"
+                            value={formData.label}
+                            onChange={e => setFormData({ ...formData, label: e.target.value })}
+                            isInvalid={!!errors.label}
+                            placeholder="Enter field label"
+                            readOnly={editingField?.field?.system}
+                            className="timesheet-form-control"
+                        />
+                        <Form.Control.Feedback type="invalid">{errors.label}</Form.Control.Feedback>
+                    </Form.Group>
+
+                    <Form.Group className="mb-3">
+                        <Form.Label className="timesheet-form-label d-flex align-items-center gap-2">
+                            <Settings size={16} className="text-muted" />
+                            <span className="fw-semibold">
+                                Field Type <span className="text-danger">*</span>
+                            </span>
+                            <Info size={12} className="text-muted ms-1" />
+                        </Form.Label>
+                        <Form.Select
+                            value={formData.type}
+                            onChange={e => setFormData({ ...formData, type: e.target.value })}
+                            disabled={editingField?.field?.system}
+                            className="timesheet-form-control"
+                        >
+                            {FIELD_TYPES.map(t => (
+                                <option key={t.value} value={t.value}>{t.label}</option>
+                            ))}
+                        </Form.Select>
+                    </Form.Group>
+
+                    {formData.type === 'select' && (
+                        <Form.Group className="mb-3">
+                            <Form.Label className="timesheet-form-label d-flex align-items-center gap-2">
+                                <Settings size={16} className="text-muted" />
+                                <span className="fw-semibold">Dropdown Options</span>
+                            </Form.Label>
+                            {selectOptions.length > 0 && (
+                                <div className="d-flex flex-wrap gap-2 mb-2">
+                                    {selectOptions.map((opt, idx) => (
+                                        <Badge
+                                            key={idx}
+                                            bg="light"
+                                            text="dark"
+                                            className="d-flex align-items-center gap-1 border px-3 py-2"
+                                            style={{ fontSize: '0.85rem', borderRadius: '8px' }}
+                                        >
+                                            {opt}
+                                            <X
+                                                size={14}
+                                                className="ms-1 text-danger"
+                                                style={{ cursor: 'pointer' }}
+                                                onClick={() => handleRemoveOption(idx)}
+                                            />
+                                        </Badge>
+                                    ))}
+                                </div>
+                            )}
+                            <div className="d-flex gap-2">
+                                <Form.Control
+                                    type="text"
+                                    value={newOptionValue}
+                                    onChange={e => setNewOptionValue(e.target.value)}
+                                    placeholder="Type an option and press Add"
+                                    className="timesheet-form-control"
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault()
+                                            handleAddOption()
+                                        }
+                                    }}
+                                />
+                                <Button
+                                    variant="outline-secondary"
+                                    size="sm"
+                                    onClick={handleAddOption}
+                                    disabled={!newOptionValue.trim()}
+                                    className="d-flex align-items-center"
+                                    style={{ whiteSpace: 'nowrap' }}
+                                >
+                                    <Plus size={16} className="me-1" /> Add
+                                </Button>
+                            </div>
+                        </Form.Group>
+                    )}
+
+                    <Form.Group className="mb-3">
+                        <Form.Check
+                            type="checkbox"
+                            label="Required"
+                            checked={formData.required}
+                            onChange={e => setFormData({ ...formData, required: e.target.checked })}
+                            className="timesheet-form-check"
+                        />
+                    </Form.Group>
+                </Modal.Body>
+                <Modal.Footer className="border-top pt-3">
+                    <Button variant="secondary" onClick={() => setShowEditModal(false)}>Cancel</Button>
+                    <Button onClick={handleSaveField} style={{ background: '#10b981', borderColor: '#10b981', fontWeight: 600 }}>
+                        {editingField?.field ? 'Update' : 'Add'} Field
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+        </>
     )
 }
 

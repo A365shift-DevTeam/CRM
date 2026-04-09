@@ -20,7 +20,6 @@ function getDateRange(months) {
     return { from: from.toISOString().split('T')[0], to: to.toISOString().split('T')[0] };
 }
 
-const cardStyle = { background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.6)', borderRadius: '16px', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', padding: '20px' };
 
 export default function Reports() {
     const [preset, setPreset] = useState(1);
@@ -62,13 +61,13 @@ export default function Reports() {
             </div>
             {loading ? <div className="text-center p-5"><div className="spinner-border text-primary" /></div> : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '16px' }}>
-                    <div style={cardStyle}>
+                    <div className="card p-4 border-0">
                         <h6 className="fw-bold mb-3" style={{ color: '#475569' }}>Revenue by Month</h6>
                         <ResponsiveContainer width="100%" height={250}>
                             <BarChart data={revenue}><CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" /><XAxis dataKey="name" fontSize={12} /><YAxis fontSize={12} /><Tooltip /><Bar dataKey="amount" fill="#3b82f6" radius={[4, 4, 0, 0]} /></BarChart>
                         </ResponsiveContainer>
                     </div>
-                    <div style={cardStyle}>
+                    <div className="card p-4 border-0">
                         <h6 className="fw-bold mb-3" style={{ color: '#475569' }}>Expenses by Category</h6>
                         <ResponsiveContainer width="100%" height={250}>
                             <PieChart><Pie data={expenses} dataKey="amount" nameKey="category" cx="50%" cy="50%" outerRadius={80} label={({ category, percentage }) => `${category} ${percentage}%`}>
@@ -76,13 +75,13 @@ export default function Reports() {
                             </Pie><Tooltip /></PieChart>
                         </ResponsiveContainer>
                     </div>
-                    <div style={cardStyle}>
+                    <div className="card p-4 border-0">
                         <h6 className="fw-bold mb-3" style={{ color: '#475569' }}>Pipeline Conversion</h6>
                         <ResponsiveContainer width="100%" height={250}>
                             <BarChart data={pipeline} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" /><XAxis type="number" fontSize={12} /><YAxis type="category" dataKey="stage" fontSize={12} width={80} /><Tooltip /><Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} /></BarChart>
                         </ResponsiveContainer>
                     </div>
-                    <div style={cardStyle}>
+                    <div className="card p-4 border-0">
                         <h6 className="fw-bold mb-3" style={{ color: '#475569' }}>Contact Growth</h6>
                         <ResponsiveContainer width="100%" height={250}>
                             <LineChart data={growth}><CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" /><XAxis dataKey="name" fontSize={12} /><YAxis fontSize={12} /><Tooltip /><Line type="monotone" dataKey="totalContacts" stroke="#10b981" strokeWidth={2} dot={{ fill: '#10b981' }} /><Line type="monotone" dataKey="newContacts" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6' }} /></LineChart>

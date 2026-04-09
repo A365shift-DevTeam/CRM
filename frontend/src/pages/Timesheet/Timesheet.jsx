@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Button, Dropdown, Form, Badge, Modal } from 'react-bootstrap'
-import { Plus, Search, Settings, Calendar, Clock, FileText, User, Building2, CheckCircle, Paperclip, ListChecks, Info, MapPin } from 'lucide-react'
+import { Button, Badge, Modal } from 'react-bootstrap'
+import { Plus, Calendar, Clock, FileText, User, Building2, CheckCircle, Paperclip, ListChecks, Info, MapPin } from 'lucide-react'
+import PageToolbar from '../../components/PageToolbar/PageToolbar'
 import { timesheetService } from '../../services/timesheetService'
 import { ListView } from './ListView'
 import { KanbanView } from './KanbanView'
@@ -9,6 +10,7 @@ import { ChartView } from './ChartView'
 import { TimesheetModal } from './TimesheetModal'
 import { ColumnManager } from './ColumnManager'
 import { useToast } from '../../components/Toast/ToastContext'
+import StatsGrid from '../../components/StatsGrid/StatsGrid'
 import './Timesheet.css'
 
 const Timesheet = () => {
@@ -329,199 +331,61 @@ const Timesheet = () => {
   return (
     <div className="timesheet-container">
 
-      {/* Stats Grid — flat, no wrapper */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-header">
-            <div className="stat-icon-wrapper blue"><ListChecks size={24} /></div>
-            <div className="stat-content">
-              <div className="stat-title">Total Entries</div>
-              <div className="stat-value">{processedEntries.length}</div>
-            </div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-header">
-            <div className="stat-icon-wrapper green"><Clock size={24} /></div>
-            <div className="stat-content">
-              <div className="stat-title">Total Hours</div>
-              <div className="stat-value">
-                {(() => {
-                  const totalHours = processedEntries.reduce((total, entry) => {
-                    const startStr = entry.values?.['col-start-datetime']
-                    const endStr = entry.values?.['col-end-datetime']
-                    if (!startStr || !endStr) return total
-                    const start = new Date(startStr)
-                    const end = new Date(endStr)
-                    if (isNaN(start.getTime()) || isNaN(end.getTime())) return total
-                    const diff = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
-                    if (diff <= 0 || isNaN(diff)) return total
-                    return total + diff
-                  }, 0)
-                  const rounded = Math.round(totalHours * 10) / 10
-                  return isNaN(rounded) ? '0h' : `${rounded}h`
-                })()}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-header">
-            <div className="stat-icon-wrapper orange"><User size={24} /></div>
-            <div className="stat-content">
-              <div className="stat-title">Customers</div>
-              <div className="stat-value">
-                {new Set(processedEntries.map(e => e.values?.['col-customer']).filter(Boolean)).size}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-header">
-            <div className="stat-icon-wrapper purple"><MapPin size={24} /></div>
-            <div className="stat-content">
-              <div className="stat-title">Sites</div>
-              <div className="stat-value">
-                {new Set(processedEntries.map(e => e.values?.['col-site']).filter(Boolean)).size}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Stats Grid */}
+      <StatsGrid stats={[
+        { label: 'Total Entries', value: processedEntries.length, icon: <ListChecks size={24} />, color: 'blue' },
+        { label: 'Total Hours', value: (() => {
+          const totalHours = processedEntries.reduce((total, entry) => {
+            const startStr = entry.values?.['col-start-datetime']
+            const endStr = entry.values?.['col-end-datetime']
+            if (!startStr || !endStr) return total
+            const start = new Date(startStr)
+            const end = new Date(endStr)
+            if (isNaN(start.getTime()) || isNaN(end.getTime())) return total
+            const diff = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
+            if (diff <= 0 || isNaN(diff)) return total
+            return total + diff
+          }, 0)
+          const rounded = Math.round(totalHours * 10) / 10
+          return isNaN(rounded) ? '0h' : `${rounded}h`
+        })(), icon: <Clock size={24} />, color: 'green' },
+        { label: 'Customers', value: new Set(processedEntries.map(e => e.values?.['col-customer']).filter(Boolean)).size, icon: <User size={24} />, color: 'orange' },
+        { label: 'Sites', value: new Set(processedEntries.map(e => e.values?.['col-site']).filter(Boolean)).size, icon: <MapPin size={24} />, color: 'purple' },
+      ]} />
 
-      {/* Toolbar — flat row */}
-      <div className="timesheet-toolbar mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
-        {/* Search */}
-        <div className="search-wrapper position-relative" style={{ width: '240px' }}>
-          <Form.Control
-            type="text"
-            placeholder="Search entries..."
-            className="ps-5 bg-white border-secondary-subtle"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{ borderRadius: '8px', fontSize: '13px' }}
-          />
-          <Search size={16} className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style={{ zIndex: 10 }} />
-        </div>
-
-        {/* Right side buttons */}
-        <div className="d-flex align-items-center gap-2">
-          {/* Filter */}
-          <Dropdown align="end">
-            <Dropdown.Toggle as="button" className="icon-btn">
-              <div className={`icon-wrapper ${filterBy !== 'all' ? 'active' : ''}`}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-                </svg>
-              </div>
-            </Dropdown.Toggle>
-            <Dropdown.Menu className="timesheet-dropdown-menu p-3" style={{ minWidth: '280px' }}>
-              <div className="mb-3">
-                <Form.Label className="small text-muted fw-bold mb-2">FILTER BY COLUMN</Form.Label>
-                <Form.Select value={filterBy} onChange={(e) => { setFilterBy(e.target.value); setFilterValue('') }} className="form-select-sm">
-                  <option value="all">All Columns</option>
-                  {filterableColumns.map(col => (
-                    <option key={col.id} value={col.id}>{col.name}</option>
-                  ))}
-                </Form.Select>
-              </div>
-              {filterBy !== 'all' && (
-                <div>
-                  <Form.Label className="small text-muted fw-bold mb-2">FILTER VALUE</Form.Label>
-                  <Form.Select value={filterValue} onChange={(e) => setFilterValue(e.target.value)} className="form-select-sm">
-                    <option value="">Select value...</option>
-                    {getFilterOptions(filterBy).map(value => (
-                      <option key={value} value={value}>{value}</option>
-                    ))}
-                  </Form.Select>
-                </div>
-              )}
-              {filterBy !== 'all' && (
-                <div className="mt-3 pt-2 border-top text-end">
-                  <button className="btn btn-link btn-sm text-danger text-decoration-none p-0" onClick={() => { setFilterBy('all'); setFilterValue('') }}>
-                    Clear Filters
-                  </button>
-                </div>
-              )}
-            </Dropdown.Menu>
-          </Dropdown>
-
-          {/* Group */}
-          <Dropdown align="end">
-            <Dropdown.Toggle as="button" className="icon-btn">
-              <div className={`icon-wrapper ${groupBy !== 'none' ? 'active' : ''}`}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line>
-                  <line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line>
-                </svg>
-              </div>
-            </Dropdown.Toggle>
-            <Dropdown.Menu className="timesheet-dropdown-menu p-3" style={{ minWidth: '250px' }}>
-              <Form.Label className="small text-muted fw-bold mb-2">GROUP BY</Form.Label>
-              {filterableColumns.map(col => (
-                <Dropdown.Item key={col.id} active={groupBy === col.id} onClick={() => setGroupBy(col.id)} className="rounded">{col.name}</Dropdown.Item>
-              ))}
-              <Dropdown.Divider />
-              <Dropdown.Item active={groupBy === 'none'} onClick={() => setGroupBy('none')} className="rounded">None</Dropdown.Item>
-            </Dropdown.Menu>
-          </Dropdown>
-
-          {/* Sort */}
-          <Dropdown align="end">
-            <Dropdown.Toggle as="button" className="icon-btn">
-              <div className="icon-wrapper">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline>
-                </svg>
-              </div>
-            </Dropdown.Toggle>
-            <Dropdown.Menu className="timesheet-dropdown-menu p-3" style={{ minWidth: '250px' }}>
-              <div className="mb-3">
-                <Form.Label className="small text-muted fw-bold mb-2">SORT BY</Form.Label>
-                <Form.Select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="form-select-sm">
-                  {visibleColumns.map(col => (<option key={col.id} value={col.id}>{col.name}</option>))}
-                </Form.Select>
-              </div>
-              <div>
-                <Form.Label className="small text-muted fw-bold mb-2">ORDER</Form.Label>
-                <div className="d-flex gap-2">
-                  <Button variant={sortOrder === 'asc' ? 'primary' : 'light'} size="sm" className="flex-grow-1" onClick={() => setSortOrder('asc')}>Ascending</Button>
-                  <Button variant={sortOrder === 'desc' ? 'primary' : 'light'} size="sm" className="flex-grow-1" onClick={() => setSortOrder('desc')}>Descending</Button>
-                </div>
-              </div>
-            </Dropdown.Menu>
-          </Dropdown>
-
-          <div className="vr opacity-25 mx-2"></div>
-
-          {/* View Toggle */}
-          <div className="view-toggle-group">
-            <button className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')} title="List View">
-              <svg style={{ minWidth: 18, minHeight: 18, display: 'block' }} xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="8" x2="21" y1="6" y2="6" /><line x1="8" x2="21" y1="12" y2="12" /><line x1="8" x2="21" y1="18" y2="18" />
-                <line x1="3" x2="3.01" y1="6" y2="6" /><line x1="3" x2="3.01" y1="12" y2="12" /><line x1="3" x2="3.01" y1="18" y2="18" />
-              </svg>
-            </button>
-            <button className={`view-toggle-btn ${viewMode === 'kanban' ? 'active' : ''}`} onClick={() => setViewMode('kanban')} title="Kanban View">
-              <svg style={{ minWidth: 18, minHeight: 18, display: 'block' }} xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 5v11" /><path d="M12 5v6" /><path d="M18 5v14" />
-              </svg>
-            </button>
-            <button className={`view-toggle-btn ${viewMode === 'chart' ? 'active' : ''}`} onClick={() => setViewMode('chart')} title="Chart View">
-              <svg style={{ minWidth: 18, minHeight: 18, display: 'block' }} xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 3v18h18" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" />
-              </svg>
-            </button>
-          </div>
-
-          <Button variant="outline-secondary" size="sm" onClick={() => setShowColumnManager(true)} className="d-flex align-items-center gap-2 btn-icon-text">
-            <Settings size={16} /> Manage Columns
-          </Button>
-          <Button variant="primary" size="sm" onClick={handleCreateEntry} className="d-flex align-items-center gap-2 ms-1 btn-icon-text timesheet-add-btn">
-            <Plus size={16} /> Add Entry
-          </Button>
-        </div>
-      </div>
+      <PageToolbar
+        title="Timesheet"
+        itemCount={processedEntries.length}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search entries..."
+        filters={filterableColumns.map(c => ({ id: c.id, name: c.name }))}
+        filterBy={filterBy}
+        filterValue={filterValue}
+        onFilterChange={(fb, fv) => { setFilterBy(fb); setFilterValue(fv) }}
+        getFilterOptions={getFilterOptions}
+        sortOptions={visibleColumns.map(c => ({ id: c.id, name: c.name }))}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={(sb, so) => { setSortBy(sb); setSortOrder(so) }}
+        groupOptions={[
+          { id: 'none', name: 'None' },
+          ...filterableColumns.map(c => ({ id: c.id, name: c.name }))
+        ]}
+        groupBy={groupBy}
+        onGroupChange={setGroupBy}
+        viewModes={[
+          { id: 'list', label: 'List' },
+          { id: 'kanban', label: 'Kanban' },
+          { id: 'chart', label: 'Chart' }
+        ]}
+        activeView={viewMode}
+        onViewChange={setViewMode}
+        onManageColumns={() => setShowColumnManager(true)}
+        actions={[
+          { label: 'Add Entry', icon: <Plus size={16} />, variant: 'primary', onClick: handleCreateEntry }
+        ]}
+      />
 
       {/* Content */}
       <div className="timesheet-content">

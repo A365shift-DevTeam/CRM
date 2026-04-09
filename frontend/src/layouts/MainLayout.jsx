@@ -119,7 +119,7 @@ export default function MainLayout() {
     };
 
     return (
-        <div className="d-flex" style={{ height: '100vh', overflow: 'hidden', background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)' }}>
+        <div className="d-flex" style={{ height: '100vh', overflow: 'hidden', background: '#F5F7FA' }}>
             {/* Overlay (visible when sidebar is open) */}
             {sidebarOpen && (
                 <div
@@ -384,12 +384,10 @@ export default function MainLayout() {
                 <div
                     className="h-100 w-100 d-flex flex-column"
                     style={{
-                        background: 'rgba(255, 255, 255, 0.85)',
-                        backdropFilter: 'blur(16px)',
-                        WebkitBackdropFilter: 'blur(16px)',
-                        border: '1px solid rgba(255, 255, 255, 0.6)',
-                        borderRadius: '16px',
-                        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
+                        background: '#F5F7FA',
+                        border: '1px solid #E2E8F0',
+                        borderRadius: '20px',
+                        boxShadow: 'none',
                         overflow: 'hidden'
                     }}
                 >

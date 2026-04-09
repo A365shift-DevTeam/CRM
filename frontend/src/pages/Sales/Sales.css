@@ -1,12 +1,10 @@
-/* Sales.css — Clean Light Theme */
+/* Sales.css — Apple-Inspired Light Theme */
 
 .sales-page {
     padding: 24px;
-    background-color: #f8fafc;
-    /* Light gray background */
-    min-height: 100vh;
-    color: #0f172a;
-    font-family: 'Inter', sans-serif;
+    background-color: #F5F7FA;
+    color: #0F172A;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 /* --- Stats Grid --- */
@@ -18,20 +16,20 @@
 }
 
 .sales-page .stat-card {
-    background: white;
-    border-radius: 16px;
-    padding: 24px;
+    background: #FFFFFF;
+    border-radius: 20px;
+    padding: 22px;
     display: flex;
     align-items: center;
     gap: 20px;
-    border: 1px solid rgba(226, 232, 240, 0.8);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    transition: 0.25s ease;
 }
 
 .sales-page .stat-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
 }
 
 .stat-header {
@@ -99,12 +97,13 @@
 
 /* --- Toolbar --- */
 .sales-toolbar {
-    background: white;
-    border-radius: 16px;
+    background: #FFFFFF;
+    border-radius: 20px;
     padding: 16px 24px;
-    border: 1px solid rgba(226, 232, 240, 0.8);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
     margin-bottom: 24px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .sales-toolbar input.form-control {
@@ -165,9 +164,9 @@
 }
 
 .view-mode-toggle .btn.btn-primary {
-    background: #10b981;
-    /* Green active state per theme? Or Blue? Let's go with Green common in Sales */
-    color: white;
+    background: var(--dynamic-theme-color, #10b981) !important;
+    border-color: var(--dynamic-theme-color, #10b981) !important;
+    color: white !important;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
@@ -178,30 +177,34 @@
 }
 
 /* Add Project Button */
-.sales-toolbar .btn-primary {
-    background: #10b981;
+.sales-toolbar .btn-primary,
+.sales-toolbar .btn-success {
+    background: var(--dynamic-theme-color, #10b981) !important;
+    border-color: var(--dynamic-theme-color, #10b981) !important;
+    color: #FFFFFF !important;
     border: none;
     padding: 10px 20px;
     border-radius: 10px;
     font-weight: 600;
-    box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
+    box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.15);
     transition: all 0.2s;
 }
 
-.sales-toolbar .btn-primary:hover {
-    background: #059669;
+.sales-toolbar .btn-primary:hover,
+.sales-toolbar .btn-success:hover {
+    opacity: 0.9;
     transform: translateY(-1px);
 }
 
-/* --- Sales Card (New Layout) --- */
+/* --- Sales Card (Apple Layout) --- */
 .sales-card {
-    background: white;
-    border-radius: 16px;
+    background: #FFFFFF;
+    border-radius: 20px;
     padding: 8px 16px;
     position: relative;
-    border: 1px solid #f1f5f9;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
-    transition: all 0.2s ease;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    transition: 0.25s ease;
     margin-bottom: 10px;
     overflow: hidden;
 }
@@ -220,8 +223,8 @@
 
 .sales-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
-    border-color: #cbd5e1;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+    border-color: #E2E8F0;
 }
 
 /* Project ID & Info (Left) */

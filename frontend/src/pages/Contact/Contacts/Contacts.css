@@ -1,225 +1,18 @@
-/* Contacts.css — Glassmorphism Light Theme */
+/* Contacts.css — Apple-Inspired Light Theme */
 .contacts-container {
   padding: 24px;
-  background-color: transparent;
-  min-height: 100vh;
-  color: var(--text-primary);
+  background-color: #F5F7FA;
+  color: #0F172A;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-/* --- Stats Grid --- */
-/* --- Stats Grid (New Design) --- */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-  margin-bottom: 32px;
-}
-
-.stat-card-new {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  border: 1px solid rgba(226, 232, 240, 0.6);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.stat-card-new:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
-}
-
-.stat-icon-box {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.stat-icon-box.blue-soft {
-  background: #eff6ff;
-}
-
-.stat-icon-box.green-soft {
-  background: #f0fdf4;
-}
-
-.stat-icon-box.teal-soft {
-  background: #ecfeff;
-}
-
-.stat-icon-box.purple-soft {
-  background: #f5f3ff;
-}
-
-.stat-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.stat-label {
-  font-size: 13px;
-  color: #64748b;
-  font-weight: 500;
-  margin-bottom: 4px;
-}
-
-.stat-number {
-  font-size: 24px;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 0;
-  line-height: 1.2;
-}
-
-
-/* --- Toolbar & Search (New Design) --- */
-.contacts-toolbar-wrapper {
-  background: white;
-  padding: 16px 24px;
-  border-radius: 16px;
-  border: 1px solid rgba(226, 232, 240, 0.6);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.search-pill-container {
-  width: 320px;
-}
-
-.search-pill {
-  position: relative;
-  display: flex;
-  align-items: center;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 10px 16px;
-  transition: all 0.2s;
-}
-
-.search-pill:focus-within {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.search-input-clean {
-  border: none;
-  background: transparent;
-  width: 100%;
-  font-size: 14px;
-  color: #0f172a;
-  outline: none;
-}
-
-.search-input-clean::placeholder {
-  color: #94a3b8;
-}
-
-.icon-btn-clean {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: transparent;
-  color: #64748b;
-  border-radius: 8px;
-  transition: all 0.2s;
-  cursor: pointer;
-}
-
-.icon-btn-clean:hover {
-  background: #f1f5f9;
-  color: #334155;
-}
-
-.icon-btn-clean.active {
-  background: #eff6ff;
-  color: #3b82f6;
-}
-
-.icon-group {
-  display: flex;
-  gap: 4px;
-}
-
-.view-toggle-clean {
-  display: flex;
-  background: #f1f5f9;
-  padding: 3px;
-  border-radius: 8px;
-  gap: 2px;
-}
-
-.view-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: transparent;
-  color: #64748b;
-  border-radius: 6px;
-  transition: all 0.2s;
-}
-
-.view-btn:hover {
-  color: #0f172a;
-}
-
-.view-btn.active {
-  background: white;
-  color: #10b981;
-  /* Green for active view per image? Or Blue? Image has green toggle */
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.btn-success-soft {
-  background: #10b981 !important;
-  border: none !important;
-  font-weight: 500;
-  padding: 8px 20px !important;
-  border-radius: 8px !important;
-  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
-  transition: all 0.2s;
-}
-
-.btn-success-soft:hover {
-  background: #059669 !important;
-  transform: translateY(-1px);
-}
-
-.btn-purple-soft {
-  background: #fff !important;
-  border: 1px solid #e9d5ff !important;
-  color: #9333ea !important;
-  font-weight: 600;
-  padding: 8px 16px !important;
-  border-radius: 8px !important;
-  transition: all 0.2s;
-}
-
-.btn-purple-soft:hover {
-  background: #f3e8ff !important;
-}
-
-/* Kanban Card New */
+/* Kanban Card Apple Style */
 .kanban-card-new {
-  border: 1px solid #f1f5f9 !important;
-  border-radius: 12px !important;
-  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
-  background: white;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 20px !important;
+  transition: 0.25s ease;
+  background: #FFFFFF;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
 .kanban-card-new:hover {
@@ -414,14 +207,13 @@
 
 /* --- Action Toolbar --- */
 .contacts-toolbar-card {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-radius: 16px;
-  padding: 20px;
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 22px;
   margin-bottom: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .toolbar-header {
@@ -591,11 +383,11 @@
 
 /* --- Table Container --- */
 .contacts-table-container {
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: #FFFFFF;
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
   overflow: hidden;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #E2E8F0;
 }
 
 .contacts-scroll-container {
@@ -626,46 +418,47 @@
 }
 
 .contacts-table th {
-  background: #000000 !important;
-  background-color: #000000 !important;
-  font-size: 11px;
-  font-weight: 800;
-  /* Bolder font */
-  color: #ffffff !important;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  background: #F8FAFC !important;
+  background-color: #F8FAFC !important;
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748B !important;
+  text-transform: none;
+  letter-spacing: normal;
   padding: 16px 24px;
-  border: none;
-  /* Remove borders */
+  border-bottom: 1px solid #E2E8F0 !important;
+  border-top: none !important;
   vertical-align: middle;
   white-space: nowrap;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .contacts-table thead tr {
-  background: #000000;
-  border-radius: 12px;
+  background: #F8FAFC;
+  border-radius: 18px;
 }
 
 .contacts-table th:first-child {
-  border-top-left-radius: 12px;
+  border-top-left-radius: 18px;
   border-bottom-left-radius: 0;
 }
 
 .contacts-table th:last-child {
-  border-top-right-radius: 12px;
+  border-top-right-radius: 18px;
   border-bottom-right-radius: 0;
 }
 
 .contacts-table td {
-  padding: 16px 24px;
+  padding: 18px 24px;
   vertical-align: middle;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid #E2E8F0;
   font-size: 14px;
-  color: #475569;
+  color: #0F172A;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .contacts-table tr:hover td {
-  background: rgba(240, 253, 244, 0.3);
+  background: #FAFCFF;
 }
 
 /* --- Cells --- */

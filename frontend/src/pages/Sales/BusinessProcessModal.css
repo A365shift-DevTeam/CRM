@@ -6,21 +6,21 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
     z-index: 2000;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .bp-modal-header {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-    color: #0f172a;
+    background: #FFFFFF;
+    border-bottom: 1px solid #E2E8F0;
+    color: #0F172A;
     padding: 16px 24px;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 18px;
     display: flex;
     align-items: center;
@@ -53,40 +53,41 @@
 }
 
 .bp-sidebar {
-    background-color: white;
+    background-color: #FFFFFF;
     padding: 24px 16px;
     display: flex;
     flex-direction: column;
     gap: 12px;
-    border-right: 1px solid #e2e8f0;
+    border-right: 1px solid #E2E8F0;
     min-height: 100%;
 }
 
 .bp-stage-btn {
-    background-color: white;
+    background-color: #FFFFFF;
     color: #475569;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
     padding: 14px 18px;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: 0.25s ease;
     text-align: left;
     width: 100%;
 }
 
 .bp-stage-btn:hover {
-    background-color: #f8fafc;
-    color: #0f172a;
+    background-color: #F8FAFC;
+    color: #0F172A;
     transform: translateX(3px);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
 }
 
 .bp-stage-btn.active {
-    background: rgba(59, 130, 246, 0.08);
-    border-color: rgba(59, 130, 246, 0.25);
-    color: #3b82f6;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+    background: #FFFFFF;
+    border-color: #2563EB;
+    color: #2563EB;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
     transform: translateX(3px);
 }
 
@@ -104,23 +105,24 @@
 }
 
 .bp-form-section .form-control {
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
     padding: 10px 12px;
-    font-size: 15px;
-    background: white;
-    color: #0f172a;
+    font-size: 14px;
+    background: #FFFFFF;
+    color: #0F172A;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .bp-form-section .form-control:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: #2563EB;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .bp-status-section {
     padding: 30px;
-    background-color: #f8fafc;
-    border-left: 1px solid #e2e8f0;
+    background-color: #F8FAFC;
+    border-left: 1px solid #E2E8F0;
     min-height: 100%;
 }
 

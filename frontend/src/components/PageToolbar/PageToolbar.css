@@ -1,0 +1,252 @@
+/* PageToolbar — Apple-Inspired Clean Design */
+
+.page-toolbar {
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 14px 22px;
+  margin-bottom: 24px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* --- Left Section --- */
+.page-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.page-toolbar-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #0F172A;
+  letter-spacing: -0.3px;
+}
+
+.page-toolbar-count {
+  background: #F8FAFC;
+  color: #64748B;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid #E2E8F0;
+}
+
+/* --- Search --- */
+.page-toolbar-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.page-toolbar-search-icon {
+  position: absolute;
+  left: 14px;
+  color: #667085;
+  pointer-events: none;
+}
+
+.page-toolbar-search-input {
+  width: 260px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid #E2E8F0;
+  border-radius: 999px;
+  padding: 10px 14px 10px 38px;
+  font-size: 14px;
+  color: #0F172A;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  transition: 0.25s ease;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.page-toolbar-search-input::placeholder {
+  color: #667085;
+}
+
+.page-toolbar-search-input:focus {
+  outline: none;
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1), 0 8px 24px rgba(15, 23, 42, 0.06);
+  background: #FFFFFF;
+}
+
+/* --- Right Section --- */
+.page-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* --- Icon Buttons --- */
+.page-toolbar-icons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pt-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  color: #64748B;
+  cursor: pointer;
+  transition: 0.25s ease;
+  padding: 0;
+}
+
+.pt-icon-btn:hover {
+  background: #F8FAFC;
+  color: #0F172A;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.pt-icon-btn.active {
+  background: var(--dynamic-theme-color, #2563EB) !important;
+  color: #FFFFFF !important;
+  border-color: var(--dynamic-theme-color, #2563EB) !important;
+}
+
+/* --- View Toggles --- */
+.page-toolbar-views {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  background: #F8FAFC;
+  border-radius: 12px;
+  border: 1px solid #E2E8F0;
+}
+
+.pt-view-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #64748B;
+  cursor: pointer;
+  transition: 0.2s ease;
+  padding: 0;
+}
+
+.pt-view-btn:hover {
+  color: #0F172A;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.pt-view-btn.active {
+  background: #FFFFFF !important;
+  color: var(--dynamic-theme-color, #2563EB) !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  font-weight: 600;
+}
+
+/* --- Divider --- */
+.page-toolbar-divider {
+  width: 1px;
+  height: 28px;
+  background: #E2E8F0;
+  flex-shrink: 0;
+  margin: 0 4px;
+}
+
+/* --- Action Buttons --- */
+.pt-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  color: #0F172A;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.25s ease;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  white-space: nowrap;
+}
+
+.pt-action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.pt-action-btn.pt-action-primary,
+.pt-action-btn.pt-action-success {
+  background: var(--dynamic-theme-color, #2563EB) !important;
+  border-color: var(--dynamic-theme-color, #2563EB) !important;
+  color: #FFFFFF !important;
+}
+
+.pt-action-btn.pt-action-primary:hover,
+.pt-action-btn.pt-action-success:hover {
+  opacity: 0.9;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
+}
+
+/* --- Dropdown Menu Override --- */
+.pt-dropdown-menu {
+  min-width: 220px;
+  background: rgba(255, 255, 255, 0.98) !important;
+  backdrop-filter: blur(20px);
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12) !important;
+  padding: 12px !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+  .page-toolbar {
+    padding: 12px 16px;
+    gap: 12px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-toolbar-left {
+    flex-wrap: wrap;
+  }
+
+  .page-toolbar-search-input {
+    width: 100%;
+  }
+
+  .page-toolbar-right {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-toolbar-search-input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .pt-action-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}

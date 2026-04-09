@@ -1,217 +1,19 @@
 .todo-list-container {
     padding: 24px;
-    height: 100vh;
-    overflow-y: auto;
-    background-color: #f8fafc;
-}
-
-/* Stats Cards */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 24px;
-    margin-bottom: 32px;
-}
-
-.stat-card {
-    background: white;
-    border-radius: 16px;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
-    border: 1px solid rgba(226, 232, 240, 0.8);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
-}
-
-.stat-icon-wrapper {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 16px;
-}
-
-/* Theme Colors */
-.stat-icon-wrapper.blue {
-    background: #eff6ff;
-    color: #3b82f6;
-}
-
-.stat-icon-wrapper.orange {
-    background: #fff7ed;
-    color: #f97316;
-}
-
-.stat-icon-wrapper.green {
-    background: #f0fdf4;
-    color: #22c55e;
-}
-
-.stat-icon-wrapper.purple {
-    background: #f5f3ff;
-    color: #8b5cf6;
-}
-
-.stat-value {
-    font-size: 24px;
-    font-weight: 700;
-    color: #1e293b;
-    margin-bottom: 4px;
-    line-height: 1.2;
-}
-
-.stat-label {
-    font-size: 13px;
-    color: #64748b;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-/* Toolbar */
-.todo-toolbar {
-    background: white;
-    padding: 16px 24px;
-    border-radius: 16px;
-    margin-bottom: 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
-    border: 1px solid rgba(226, 232, 240, 0.8);
-    flex-wrap: wrap;
-    gap: 16px;
-}
-
-.view-title h2 {
-    font-size: 20px;
-    font-weight: 700;
-    color: #1e293b;
-    margin: 0;
-}
-
-/* "My Tasks" Dropdown Trigger Style - Green Border */
-.my-tasks-trigger {
-    border: 1px solid #10b981;
-    border-radius: 6px;
-    padding: 8px 16px;
-    font-weight: 600;
-    color: #1e293b;
-    background: white;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.2s;
-}
-
-.my-tasks-trigger:hover {
-    background-color: #f0fdf4;
-    /* Light green hover */
-}
-
-.toolbar-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-/* Gray Action Buttons (Filters, View Settings) */
-.btn-toolbar {
-    border: 1px solid #e2e8f0;
-    background: white;
-    color: #64748b;
-    font-size: 14px;
-    font-weight: 600;
-    padding: 8px 16px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s;
-}
-
-.btn-toolbar:hover {
-    background-color: #f8fafc;
-    color: #1e293b;
-    border-color: #cbd5e1;
-}
-
-/* New Task Button - Emerald Green */
-.btn-new-task {
-    background-color: #10b981 !important;
-    border-color: #10b981 !important;
-    color: white !important;
-    font-weight: 600;
-    border-radius: 6px;
-    padding: 8px 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-}
-
-.btn-new-task:hover {
-    background-color: #059669 !important;
-    border-color: #059669 !important;
-}
-
-/* View Icons Group */
-.view-icons-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-left: 8px;
-    margin-right: 8px;
-}
-
-.btn-view-icon {
-    border: none;
-    background: transparent;
-    color: #94a3b8;
-    /* Gray inactive */
-    width: 36px;
-    height: 36px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-}
-
-.btn-view-icon:hover {
-    color: #64748b;
-    background-color: #f1f5f9;
-}
-
-.btn-view-icon.active {
-    background-color: #10b981;
-    /* Green active background */
-    color: white;
-    /* White icon */
-    box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
+    background-color: #F5F7FA;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 /* Main Content Area */
+/* Main Content Area */
 .todo-content {
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
-    border: 1px solid rgba(226, 232, 240, 0.8);
+    background: #FFFFFF;
+    border-radius: 20px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    border: 1px solid #E2E8F0;
     min-height: 500px;
-    padding: 24px;
+    padding: 22px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 /* Responsive adjustments */
@@ -221,48 +23,11 @@
         overflow-x: hidden;
     }
 
-    .todo-toolbar {
-        flex-direction: column;
-        align-items: flex-start;
-        padding: 12px;
-    }
-
-    .toolbar-actions {
-        width: 100%;
-        justify-content: space-between;
-        margin-top: 12px;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-
     .todo-content {
         padding: 12px;
         min-height: 300px;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
-    }
-
-    .view-icons-group {
-        margin-left: 0;
-    }
-
-    .pagination-controls {
-        flex-direction: column;
-        gap: 10px;
-        align-items: flex-start;
-    }
-
-    .stat-card {
-        padding: 14px;
-    }
-
-    .stat-value {
-        font-size: 20px;
-    }
-
-    .btn-new-task {
-        width: 100%;
-        justify-content: center;
     }
 }
 
@@ -271,39 +36,9 @@
         padding: 12px;
     }
 
-    .todo-toolbar {
-        padding: 12px 16px;
-        border-radius: 12px;
-    }
-
     .todo-content {
         padding: 12px;
         border-radius: 12px;
-    }
-
-    .stats-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-    }
-
-    .btn-new-task {
-        width: 100%;
-        justify-content: center;
-    }
-
-    .btn-toolbar {
-        font-size: 12px;
-        padding: 6px 12px;
-    }
-
-    .stat-icon-wrapper {
-        width: 40px;
-        height: 40px;
-        margin-bottom: 8px;
-    }
-
-    .view-title h2 {
-        font-size: 16px;
     }
 }
 
@@ -410,82 +145,6 @@ select.task-form-control {
 .btn-modal-create:hover {
     background-color: #059669 !important;
     border-color: #059669 !important;
-}
-
-/* Pagination Styling */
-.pagination-controls {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    /* Align everything to the right as per standard Material pattern often seen */
-    padding-top: 16px;
-    border-top: 1px solid #e2e8f0;
-    margin-top: auto;
-    color: #64748b;
-    font-size: 14px;
-    gap: 24px;
-}
-
-.pagination-left {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.rows-per-page-label {
-    white-space: nowrap;
-}
-
-.rows-per-page-select {
-    width: auto !important;
-    display: inline-block !important;
-    padding: 4px 24px 4px 12px !important;
-    font-size: 14px !important;
-    border: none !important;
-    background-color: transparent !important;
-    cursor: pointer;
-    font-weight: 600;
-    color: #1e293b;
-    background-position: right 4px center !important;
-}
-
-.rows-per-page-select:focus {
-    box-shadow: none !important;
-}
-
-.page-range {
-    margin-left: 8px;
-    white-space: nowrap;
-}
-
-.pagination-right {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.pagination-button {
-    background: transparent;
-    border: none;
-    color: #64748b;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.pagination-button:hover:not(:disabled) {
-    background-color: #f1f5f9;
-    color: #1e293b;
-}
-
-.pagination-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
 }
 
 /* ===== View Settings (Customize Columns) Modal ===== */

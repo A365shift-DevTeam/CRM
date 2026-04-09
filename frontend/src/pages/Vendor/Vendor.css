@@ -1,5 +1,4 @@
-/* Vendor Premium Redesign */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+/* Vendor — Apple-Inspired Design */
 
 .vendor-container {
     display: flex;
@@ -8,7 +7,8 @@
     overflow: hidden;
     padding: 16px;
     position: relative;
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: #F5F7FA;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 /* Custom Scrollbar */
@@ -33,17 +33,16 @@
     background: rgba(148, 163, 184, 0.6);
 }
 
-/* ───── Glassmorphism Panels ───── */
+/* ───── Apple-Inspired Panels ───── */
 .vendor-sidebar,
 .vendor-main-content {
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.8);
-    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+    background: #FFFFFF;
+    border-radius: 20px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
     display: flex;
     flex-direction: column;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 /* ───── Left Sidebar (Filters) ───── */
@@ -265,13 +264,11 @@
 .main-header {
     margin-bottom: 32px;
     flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: #FFFFFF;
     padding: 20px 24px;
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.8);
-    box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
 .vendor-search-bar {
@@ -431,13 +428,13 @@
 
 /* Professional Compact Vendor List Card */
 .vendor-list-card {
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(226, 232, 240, 0.8);
-    border-radius: 12px;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 20px;
     padding: 16px;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.04);
+    transition: 0.25s ease;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
     margin-bottom: 12px;
     position: relative;
     overflow: hidden;
@@ -459,8 +456,8 @@
 
 .vendor-list-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px -3px rgba(99, 102, 241, 0.15), 0 2px 6px -2px rgba(0, 0, 0, 0.06);
-    border-color: rgba(99, 102, 241, 0.3);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+    border-color: #E2E8F0;
 }
 
 .vendor-list-card:hover::before {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Row, Col, Card, Button, Form, Badge, Modal, Dropdown } from 'react-bootstrap'
-import { Plus, TrendingUp, DollarSign, Calendar, TrendingDown, Search, Edit, Trash2, Eye, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Settings, Users } from 'lucide-react'
+import { Plus, TrendingUp, DollarSign, Calendar, TrendingDown, Edit, Trash2, Eye, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Users } from 'lucide-react'
 import { expenseService } from '../../services/expenseService'
 import { incomeService } from '../../services/incomeService'
 import { projectFinanceService } from '../../services/projectFinanceService'
@@ -9,6 +9,8 @@ import { IncomeModal } from './IncomeModal'
 import FinanceSettingsModal, { DEFAULT_EXPENSE_FIELDS, DEFAULT_INCOME_FIELDS } from './FinanceSettingsModal'
 import { formatGlobalCurrency } from '../../utils/currencyUtils'
 import { useToast } from '../../components/Toast/ToastContext'
+import PageToolbar from '../../components/PageToolbar/PageToolbar'
+import StatsGrid from '../../components/StatsGrid/StatsGrid'
 import './Finance.css'
 
 const EXPENSE_CATEGORIES = [
@@ -379,268 +381,48 @@ const Finance = () => {
 
   return (
     <div className="finance-container">
-      {/* Header Section */}
-      <div className="finance-header">
-        {/* Removed old period filters */}
+      <StatsGrid stats={[
+        { label: 'Total Expenses', value: formatCurrency(overallStats.expenseTotal), icon: <TrendingDown size={24} />, color: 'red', valueColor: '#ef4444' },
+        { label: 'Total Income', value: formatCurrency(overallStats.incomeTotal), icon: <TrendingUp size={24} />, color: 'green', valueColor: '#10b981' },
+        { label: 'Total Splits', value: formatCurrency(overallStats.totalSplits), icon: <Users size={24} />, color: '#f59e0b', valueColor: '#f59e0b' },
+        { label: 'Net Profit', value: formatCurrency(overallStats.netProfit), icon: <DollarSign size={24} />, color: 'blue', valueColor: overallStats.netProfit >= 0 ? '#10b981' : '#ef4444' },
+        { label: 'This Month Net', value: formatCurrency(overallStats.netThisMonth), icon: <Calendar size={24} />, color: 'purple', valueColor: overallStats.netThisMonth >= 0 ? '#10b981' : '#ef4444' },
+      ]} />
 
-        {/* Summary Statistics - Grid View */}
-        <div className="stats-grid mt-4">
-          <div className="stat-card">
-            <div className="stat-header">
-              <div className="stat-icon-wrapper red">
-                <TrendingDown size={24} color="#ef4444" />
-              </div>
-              <div className="stat-content">
-                <div className="stat-title">Total Expenses</div>
-                <div className="stat-value text-danger">{formatCurrency(overallStats.expenseTotal)}</div>
-              </div>
-            </div>
+      <PageToolbar
+        title="Finance"
+        itemCount={combinedTransactions.length}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search transactions..."
+        filters={[
+          { id: 'type', name: 'Type' },
+          { id: 'category', name: 'Category' }
+        ]}
+        filterBy={filterBy}
+        filterValue={filterValue}
+        onFilterChange={(fb, fv) => { setFilterBy(fb); setFilterValue(fv) }}
+        getFilterOptions={getFilterOptions}
+        sortOptions={[
+          { id: 'date', name: 'Date' },
+          { id: 'amount', name: 'Amount' }
+        ]}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={(sb, so) => { setSortBy(sb); setSortOrder(so) }}
+        onManageColumns={() => setShowSettingsModal(true)}
+        extraControls={
+          <div className="btn-group">
+            <button className={`btn btn-sm ${viewMode === 'month' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setViewMode('month')}>Month</button>
+            <button className={`btn btn-sm ${viewMode === 'year' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setViewMode('year')}>Year</button>
+            <button className={`btn btn-sm ${viewMode === 'all' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setViewMode('all')}>All</button>
           </div>
-
-          <div className="stat-card">
-            <div className="stat-header">
-              <div className="stat-icon-wrapper green">
-                <TrendingUp size={24} />
-              </div>
-              <div className="stat-content">
-                <div className="stat-title">Total Income</div>
-                <div className="stat-value text-success">{formatCurrency(overallStats.incomeTotal)}</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-header">
-              <div className="stat-icon-wrapper" style={{ background: '#fef3c7' }}>
-                <Users size={24} color="#f59e0b" />
-              </div>
-              <div className="stat-content">
-                <div className="stat-title">Total Splits</div>
-                <div className="stat-value" style={{ color: '#f59e0b' }}>
-                  {formatCurrency(overallStats.totalSplits)}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-header">
-              <div className="stat-icon-wrapper blue">
-                <DollarSign size={24} />
-              </div>
-              <div className="stat-content">
-                <div className="stat-title">Net Profit</div>
-                <div className="stat-value" style={{ color: overallStats.netProfit >= 0 ? '#10b981' : '#ef4444' }}>
-                  {formatCurrency(overallStats.netProfit)}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-header">
-              <div className="stat-icon-wrapper purple">
-                <Calendar size={24} />
-              </div>
-              <div className="stat-content">
-                <div className="stat-title">This Month Net</div>
-                <div className="stat-value" style={{ color: overallStats.netThisMonth >= 0 ? '#10b981' : '#ef4444' }}>
-                  {formatCurrency(overallStats.netThisMonth)}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* New Filter Toolbar */}
-      <div className="finance-toolbar mb-4">
-        <div className="d-flex align-items-center justify-content-between flex-wrap gap-3 p-3 bg-white rounded-3 shadow-sm border">
-          {/* Search - Left */}
-          <div className="search-wrapper" style={{ minWidth: '300px' }}>
-            <div className="position-relative">
-              <div className="position-absolute top-50 start-0 translate-middle-y ps-3 text-muted">
-                <Search size={18} />
-              </div>
-              <Form.Control
-                type="text"
-                placeholder="Search transactions..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="ps-5 shadow-none border-secondary-subtle"
-              />
-            </div>
-          </div>
-
-          {/* Controls - Right */}
-          <div className="d-flex align-items-center gap-2">
-            {/* Filter Button */}
-            <Dropdown align="end">
-              <Dropdown.Toggle as="button" className="icon-btn" id="filter-dropdown">
-                <div className={`icon-wrapper ${filterBy !== 'all' ? 'active' : ''}`}>
-                  <div className="filter-icon">
-                    {/* Using svg filter icon directly or Lucide Component if simpler, sticking to SVG for consistency with Timesheet snippet if needed, but we have Lucide imported */}
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-                    </svg>
-                  </div>
-                </div>
-              </Dropdown.Toggle>
-              <Dropdown.Menu className="timesheet-dropdown-menu p-3" style={{ minWidth: '260px' }}>
-                <div className="mb-3">
-                  <Form.Label className="small text-muted fw-bold mb-2">FILTER BY</Form.Label>
-                  <Form.Select
-                    value={filterBy}
-                    onChange={(e) => {
-                      setFilterBy(e.target.value);
-                      setFilterValue('');
-                    }}
-                    size="sm"
-                    className="form-select-sm"
-                  >
-                    <option value="all">None</option>
-                    <option value="type">Type</option>
-                    <option value="category">Category</option>
-                  </Form.Select>
-                </div>
-                {filterBy !== 'all' && (
-                  <div>
-                    <Form.Label className="small text-muted fw-bold mb-2">VALUE</Form.Label>
-                    <Form.Select
-                      value={filterValue}
-                      onChange={(e) => setFilterValue(e.target.value)}
-                      size="sm"
-                      className="form-select-sm"
-                    >
-                      <option value="">Select...</option>
-                      {getFilterOptions(filterBy).map(val => (
-                        <option key={val} value={val}>{
-                          val.charAt(0).toUpperCase() + val.slice(1)
-                        }</option>
-                      ))}
-                    </Form.Select>
-                  </div>
-                )}
-                {filterBy !== 'all' && (
-                  <div className="mt-3 pt-2 border-top text-end">
-                    <button
-                      className="btn btn-link btn-sm text-danger text-decoration-none p-0"
-                      onClick={() => {
-                        setFilterBy('all')
-                        setFilterValue('')
-                      }}
-                    >
-                      Clear Filters
-                    </button>
-                  </div>
-                )}
-              </Dropdown.Menu>
-            </Dropdown>
-
-            {/* Sort Button */}
-            <Dropdown align="end">
-              <Dropdown.Toggle as="button" className="icon-btn" id="sort-dropdown">
-                <div className="icon-wrapper">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <polyline points="19 12 12 19 5 12"></polyline>
-                  </svg>
-                </div>
-              </Dropdown.Toggle>
-              <Dropdown.Menu className="timesheet-dropdown-menu p-3" style={{ minWidth: '240px' }}>
-                <div className="mb-3">
-                  <Form.Label className="small text-muted fw-bold mb-2">SORT BY</Form.Label>
-                  <Form.Select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    size="sm"
-                    className="form-select-sm"
-                  >
-                    <option value="date">Date</option>
-                    <option value="amount">Amount</option>
-                  </Form.Select>
-                </div>
-                <div>
-                  <Form.Label className="small text-muted fw-bold mb-2">ORDER</Form.Label>
-                  <div className="d-flex gap-2">
-                    <Button
-                      variant={sortOrder === 'asc' ? 'primary' : 'light'}
-                      size="sm"
-                      className="flex-grow-1"
-                      onClick={() => setSortOrder('asc')}
-                    >
-                      Asc
-                    </Button>
-                    <Button
-                      variant={sortOrder === 'desc' ? 'primary' : 'light'}
-                      size="sm"
-                      className="flex-grow-1"
-                      onClick={() => setSortOrder('desc')}
-                    >
-                      Desc
-                    </Button>
-                  </div>
-                </div>
-              </Dropdown.Menu>
-            </Dropdown>
-
-            <div className="vr mx-2 opacity-25"></div>
-
-            {/* Settings Button */}
-            <button className="icon-btn" onClick={() => setShowSettingsModal(true)} title="Configure Fields">
-              <div className="icon-wrapper">
-                <Settings size={20} />
-              </div>
-            </button>
-
-            <div className="vr mx-2 opacity-25"></div>
-
-            {/* View Mode */}
-            <div className="btn-group view-mode-toggle me-2">
-              <Button
-                variant={viewMode === 'month' ? 'primary' : 'outline-secondary'}
-                size="sm"
-                onClick={() => setViewMode('month')}
-              >
-                Month
-              </Button>
-              <Button
-                variant={viewMode === 'year' ? 'primary' : 'outline-secondary'}
-                size="sm"
-                onClick={() => setViewMode('year')}
-              >
-                Year
-              </Button>
-              <Button
-                variant={viewMode === 'all' ? 'primary' : 'outline-secondary'}
-                size="sm"
-                onClick={() => setViewMode('all')}
-              >
-                All
-              </Button>
-            </div>
-
-            <div className="d-flex align-items-center gap-2">
-              <Button
-                variant="success"
-                size="sm"
-                onClick={handleCreateIncome}
-                className="d-flex align-items-center gap-1 btn-icon-text"
-              >
-                <Plus size={16} /> Income
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={handleCreateExpense}
-                className="d-flex align-items-center gap-1 btn-icon-text"
-              >
-                <Plus size={16} /> Expense
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+        }
+        actions={[
+          { label: 'Income', icon: <Plus size={16} />, variant: 'success', onClick: handleCreateIncome },
+          { label: 'Expense', icon: <Plus size={16} />, variant: 'primary', onClick: handleCreateExpense }
+        ]}
+      />
 
       {/* Unified List View */}
       <Row>

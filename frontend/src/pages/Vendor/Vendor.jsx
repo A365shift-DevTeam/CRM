@@ -6,6 +6,7 @@ import {
     Briefcase, Percent, Award, Shield, Cpu, Cloud, Globe, Phone, Mail, Send, Reply
 } from 'lucide-react';
 import { contactService } from '../../services/contactService';
+import PageToolbar from '../../components/PageToolbar/PageToolbar';
 import './Vendor.css';
 
 // Helper function to extract category from contact (handles dynamic field names)
@@ -317,44 +318,44 @@ export default function Vendor() {
             <div className="vendor-main-content">
 
                 {/* Search & Stats Header */}
-                <div className="main-header">
-                    <div className="d-flex align-items-center gap-3 w-100">
-                        <div className="vendor-search-bar flex-grow-1">
-                            <Search size={18} className="search-icon" />
-                            <input
-                                type="text"
-                                placeholder="Search vendors by name, service, or keywords..."
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-                        <div className="sort-dropdown">
-                            <span className="text-muted small me-2">Sort by:</span>
-                            <select className="border-0 bg-transparent fw-medium outline-none">
-                                <option>Best Match</option>
-                                <option>Highest Rating</option>
-                                <option>Highest Margin</option>
-                            </select>
-                        </div>
-                    </div>
+                <div className="mb-4">
+                    <PageToolbar
+                        title="Vendors"
+                        itemCount={filteredVendors.length}
+                        searchQuery={searchQuery}
+                        onSearchChange={setSearchQuery}
+                        searchPlaceholder="Search vendors by name, service, or keywords..."
+                        actions={[
+                            { 
+                                label: 'Send Mail', 
+                                icon: <Send size={16} />, 
+                                variant: 'primary', 
+                                onClick: () => {
+                                    setMailBody(draftMessage || '');
+                                    setExcludedVendors([]);
+                                    setShowMailModal(true);
+                                }
+                            }
+                        ]}
+                    />
 
                     {/* Quick Stats Pills */}
                     <div className="quick-stats-row mt-3">
-                        <div className="stat-pill bg-white">
+                        <div className="stat-pill bg-white shadow-sm border">
                             <Building2 size={16} className="text-secondary" />
                             <span className="fw-semibold">{filteredVendors.length} Vendors</span>
                         </div>
-                        <div className="stat-pill bg-primary bg-opacity-10 text-primary border-primary border-opacity-25">
+                        <div className="stat-pill bg-primary bg-opacity-10 text-primary border-primary border border-opacity-25 shadow-sm">
                             <Award size={16} />
                             <span className="fw-semibold">AI Best Match</span>
                             <Badge bg="primary" pill className="ms-1">{filteredVendors.filter(v => v.matchScore > 80).length} found</Badge>
                         </div>
-                        <div className="stat-pill bg-white">
+                        <div className="stat-pill bg-white shadow-sm border">
                             <Percent size={16} className="text-warning" />
                             <span className="text-muted small">Avg Margin:</span>
                             <span className="fw-bold text-success">30%</span>
                         </div>
-                        <div className="stat-pill bg-white">
+                        <div className="stat-pill bg-white shadow-sm border">
                             <Star size={16} className="text-warning" fill="#fbbf24" />
                             <span className="text-muted small">Avg Rating:</span>
                             <span className="fw-bold text-dark">4.6</span>
@@ -438,28 +439,16 @@ export default function Vendor() {
                 </div>
             </div>
 
-            {/* Send Mail Button - Floating at bottom right */}
-            {filteredVendors.length > 0 && (
-                <button
-                    className="floating-send-btn"
-                    onClick={() => {
-                        setMailBody(draftMessage || '');
-                        setExcludedVendors([]); // Reset excluded vendors when opening modal
-                        setShowMailModal(true);
-                    }}
-                >
-                    <Send size={14} />
-                    <span>Send Mail ({filteredVendors.length})</span>
-                </button>
-            )}
+            {/* Send Mail Button - Floating at bottom right (Now handled in PageToolbar) */}
 
             {/* ───── MODAL: VENDOR DETAILS PREMIUM ───── */}
             <Modal
-                show={!!selectedVendor}
+                show={selectedVendor !== null}
                 onHide={() => setSelectedVendor(null)}
+                size="xl"
                 centered
-                size="lg"
-                className="vendor-details-modal"
+                animation={true}
+                className="vendor-details-modal standard-modal"
             >
                 <Modal.Body className="vendor-modal-body">
                     <button className="btn-close-details" onClick={() => setSelectedVendor(null)}>
@@ -643,22 +632,18 @@ export default function Vendor() {
                 </Modal.Body>
             </Modal>
 
-            {/* ───── MODAL: MAIL TEMPLATE ───── */}
+            {/* ───── MODAL: QUICK MAIL PREMIUM ───── */}
             <Modal
                 show={showMailModal}
                 onHide={() => setShowMailModal(false)}
-                centered
                 size="lg"
-                className="vendor-mail-modal"
+                centered
+                className="standard-modal"
             >
-                <Modal.Header className="border-0 pb-0">
-                    <Modal.Title className="d-flex align-items-center gap-2">
-                        <Mail size={24} className="text-primary" />
-                        <span className="fw-bold">Send Email to Vendors</span>
-                    </Modal.Title>
-                    <button className="btn-close" onClick={() => setShowMailModal(false)}></button>
+                <Modal.Header closeButton className="border-0 pb-0 pt-4 px-4">
+                    <Modal.Title className="fw-bold fs-4">Send Mail to Selected Vendors</Modal.Title>
                 </Modal.Header>
-                <Modal.Body className="pt-3">
+                <Modal.Body className="px-4 py-4">
                     {/* Recipients List */}
                     <div className="mb-4">
                         <label className="form-label fw-semibold text-muted small text-uppercase mb-2">
@@ -753,15 +738,13 @@ export default function Vendor() {
                         </div>
                     </div>
                 </Modal.Body>
-                <Modal.Footer className="border-0 pt-0">
-                    <Button variant="outline-secondary" onClick={() => {
-                        setShowMailModal(false);
-                        setExcludedVendors([]);
-                    }}>
+                <Modal.Footer className="border-0 pt-0 pb-4 px-4">
+                    <Button variant="light" onClick={() => setShowMailModal(false)} className="rounded-pill px-4 fw-semibold text-muted bg-transparent border-0">
                         Cancel
                     </Button>
                     <Button
                         variant="primary"
+                        className="rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center gap-2"
                         onClick={async () => {
                             const vendorsWithEmail = filteredVendors.filter(v => v.contact.email && !excludedVendors.includes(v.id));
                             if (vendorsWithEmail.length === 0) {
@@ -809,7 +792,6 @@ export default function Vendor() {
                                 alert('Error sending email. Please try again.');
                             }
                         }}
-                        className="d-flex align-items-center gap-2"
                     >
                         <Send size={18} />
                         Send Email

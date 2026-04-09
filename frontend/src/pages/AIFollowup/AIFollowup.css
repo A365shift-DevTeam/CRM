@@ -1,7 +1,8 @@
 .ai-followup-page {
     padding: 24px;
-    background-color: transparent;
-    min-height: 100%;
+    background-color: #F5F7FA;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #0F172A;
 }
 
 .ai-header-section {
@@ -27,13 +28,13 @@
 }
 
 .alert-card {
-    background: white;
-    border-radius: 16px;
+    background: #FFFFFF;
+    border-radius: 20px;
     padding: 20px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    border: 1px solid #E2E8F0;
     margin-bottom: 16px;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: 0.25s ease;
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -41,7 +42,7 @@
 
 .alert-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
 }
 
 .alert-card.project-alert {
@@ -183,9 +184,9 @@
     justify-content: center;
     padding: 60px 20px;
     text-align: center;
-    background: white;
-    border-radius: 16px;
-    border: 1px dashed #cbd5e1;
+    background: #FFFFFF;
+    border-radius: 20px;
+    border: 1px dashed #E2E8F0;
 }
 
 .empty-state-icon {
@@ -230,10 +231,10 @@
 .ai-tabs {
     display: flex;
     gap: 8px;
-    background: white;
+    background: #F8FAFC;
     padding: 4px;
     border-radius: 12px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #E2E8F0;
     margin-bottom: 24px;
     align-self: flex-start;
 }

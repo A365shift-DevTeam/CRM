@@ -1,0 +1,95 @@
+/* StatsGrid — Apple-Inspired Clean Design */
+
+.sg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.sg-card {
+  background: #FFFFFF;
+  border-radius: 20px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  padding: 20px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sg-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+}
+
+.sg-card-inner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.sg-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  flex-shrink: 0;
+}
+
+/* Preset colors */
+.sg-icon-wrapper.blue { background: #EFF6FF; color: #2563EB; }
+.sg-icon-wrapper.green { background: #ECFDF5; color: #10B981; }
+.sg-icon-wrapper.orange { background: #FFF7ED; color: #F59E0B; }
+.sg-icon-wrapper.purple { background: #F5F3FF; color: #8B5CF6; }
+.sg-icon-wrapper.red { background: #FEF2F2; color: #EF4444; }
+
+.sg-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.sg-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #94A3B8;
+  margin-bottom: 4px;
+}
+
+.sg-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0F172A;
+  line-height: 1.2;
+  letter-spacing: -0.3px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sg-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .sg-card {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .sg-value {
+    font-size: 18px;
+  }
+
+  .sg-icon-wrapper {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sg-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -2,14 +2,12 @@
 
 .finance-container {
   padding: 24px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  min-height: calc(100vh - 80px);
-  max-height: calc(100vh - 80px);
+  background: #F5F7FA;
   overflow-y: auto;
   overflow-x: hidden;
-  /* Custom scrollbar styling */
   scrollbar-width: thin;
-  scrollbar-color: #10b981 #f1f5f9;
+  scrollbar-color: #cbd5e1 transparent;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .finance-container::-webkit-scrollbar {
@@ -32,94 +30,28 @@
   background: #059669;
 }
 
-/* Header Section */
-.finance-header {
-  margin-bottom: 28px;
-}
-
-.finance-title {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  font-size: 2rem;
-  font-weight: 700;
-  margin: 0;
-  letter-spacing: -0.02em;
-  text-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
-}
-
-/* Icon Buttons & Toolbar Styles */
-.finance-toolbar .icon-btn {
-  background: transparent;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  color: inherit;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.finance-toolbar .icon-btn::after {
-  display: none !important;
-}
-
-.finance-toolbar .icon-wrapper {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Finance Settings Modal — Green Tab Pills */
+.finance-settings-modal .finance-field-tabs .nav-link {
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 20px;
   color: #64748b;
-  transition: all 0.2s ease;
   background: transparent;
   border: 1px solid transparent;
+  transition: all 0.2s ease;
 }
 
-.finance-toolbar .icon-wrapper:hover,
-.finance-toolbar .icon-btn[aria-expanded="true"] .icon-wrapper {
-  background: rgba(16, 185, 129, 0.1);
+.finance-settings-modal .finance-field-tabs .nav-link:hover {
   color: #10b981;
+  background: rgba(16, 185, 129, 0.06);
 }
 
-.finance-toolbar .icon-wrapper.active {
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.1);
-  position: relative;
-}
-
-.finance-toolbar .icon-wrapper.active::after {
-  content: '';
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 6px;
-  height: 6px;
-  background: #10b981;
-  border-radius: 50%;
-  border: 1px solid #ffffff;
-}
-
-.view-mode-toggle .btn {
-  padding: 6px 16px;
-  font-size: 13px;
-  border-radius: 6px;
-}
-
-.view-mode-toggle .btn:first-child {
-  border-radius: 6px 0 0 6px;
-}
-
-.view-mode-toggle .btn:last-child {
-  border-radius: 0 6px 6px 0;
-}
-
-.btn-icon-text {
-  font-weight: 500;
-  font-size: 13px;
-  padding: 0.5rem 1rem;
+.finance-settings-modal .finance-field-tabs .nav-link.active {
+  background: #10b981 !important;
+  color: #fff !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
 }
 
 /* Dropdown Menu Styles */
@@ -147,18 +79,18 @@
 /*                           Stats List View (Bar)                            */
 /* -------------------------------------------------------------------------- */
 .stats-list-container {
-  background: #ffffff;
-  border-radius: 16px;
+  background: #FFFFFF;
+  border-radius: 20px;
   padding: 16px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
   display: flex;
   align-items: center;
   overflow-x: auto;
   gap: 0;
-  /* Scrollbar Styles */
   scrollbar-width: thin;
-  scrollbar-color: #10b981 #f1f5f9;
+  scrollbar-color: #cbd5e1 transparent;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 /* Custom Green Scrollbar for Stats List */
@@ -193,83 +125,20 @@
   min-width: 200px;
 }
 
-.stat-divider {
-  width: 1px;
-  height: 40px;
-  background: #e5e7eb;
-  flex-shrink: 0;
-}
-
-.stat-icon-wrapper {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.stat-icon-wrapper.down {
-  background: #fef2f2;
-  color: #ef4444;
-}
-
-.stat-icon-wrapper.up {
-  background: #ecfdf5;
-  color: #10b981;
-}
-
-.stat-icon-wrapper.profit {
-  background: #f0fdf4;
-  color: #15803d;
-}
-
-.stat-icon-wrapper.neutral {
-  background: #eff6ff;
-  color: #3b82f6;
-}
-
-.stat-content {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-width: 0;
-  /* Text truncation fix */
-}
-
-.stat-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #6b7280;
-  margin-bottom: 2px;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-}
-
-.stat-value {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #111827;
-  margin: 0;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-
 /* Split View */
 .finance-split-view {
   margin-top: 20px;
 }
 
-/* Board Container - Main container for each section */
+/* Board Container */
 .finance-board {
-  background: #f8fafc;
-  border-radius: 16px;
-  padding: 24px;
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 22px;
   min-height: 500px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .finance-board-header {
@@ -306,33 +175,34 @@
 }
 
 .finance-table thead th {
-  background: #000000;
-  /* Black Header */
-  border-bottom: 1px solid #e2e8f0;
-  color: #ffffff;
-  /* White Text */
+  background: #F8FAFC !important;
+  border-bottom: 1px solid #E2E8F0 !important;
+  border-top: none !important;
+  color: #64748B !important;
   font-weight: 700;
-  text-transform: uppercase;
-  font-size: 11px;
-  letter-spacing: 0.05em;
+  text-transform: none;
+  font-size: 13px;
+  letter-spacing: normal;
   padding: 16px 24px;
   text-align: left;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .finance-table thead th:first-child {
-  border-top-left-radius: 12px;
+  border-top-left-radius: 18px;
 }
 
 .finance-table thead th:last-child {
-  border-top-right-radius: 12px;
+  border-top-right-radius: 18px;
 }
 
 .finance-table tbody td {
-  padding: 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 18px 16px;
+  border-bottom: 1px solid #E2E8F0;
   vertical-align: middle;
-  color: #1f2937;
-  font-size: 0.875rem;
+  color: #0F172A;
+  font-size: 14px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .finance-table-row {
@@ -340,8 +210,7 @@
 }
 
 .finance-table-row:hover {
-  background: rgba(240, 253, 244, 0.3);
-  transform: translateX(2px);
+  background: #FAFCFF;
 }
 
 .sortable-header {
@@ -350,8 +219,8 @@
 }
 
 .sortable-header:hover {
-  background: #000000 !important;
-  color: #ffffff !important;
+  background: #F8FAFC !important;
+  color: #64748B !important;
 }
 
 /* Category Badge in Table */

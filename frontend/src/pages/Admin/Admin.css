@@ -1,9 +1,9 @@
-/* Admin.css — Matching existing CRM glassmorphism light theme */
+/* Admin.css — Apple-Inspired Theme */
 .admin-page {
     padding: 24px;
-    background-color: transparent;
-    min-height: 100vh;
-    color: var(--text-primary);
+    background-color: #F5F7FA;
+    color: #0F172A;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .admin-page-header {
@@ -35,20 +35,20 @@
 }
 
 .admin-stat-card {
-    background: white;
-    border-radius: 16px;
-    padding: 24px;
+    background: #FFFFFF;
+    border-radius: 20px;
+    padding: 22px;
     display: flex;
     align-items: center;
     gap: 20px;
-    border: 1px solid rgba(226, 232, 240, 0.6);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    transition: 0.25s ease;
 }
 
 .admin-stat-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
 }
 
 .admin-stat-icon {
@@ -87,11 +87,11 @@
 
 /* --- Tabs (Toolbar Style) --- */
 .admin-toolbar {
-    background: white;
+    background: #FFFFFF;
     padding: 16px 24px;
-    border-radius: 16px;
-    border: 1px solid rgba(226, 232, 240, 0.6);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    border-radius: 20px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -173,11 +173,11 @@
 
 /* --- Table Card --- */
 .admin-card {
-    background: white;
-    border: 1px solid rgba(226, 232, 240, 0.6);
-    border-radius: 16px;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 20px;
     overflow: hidden;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
 /* --- Table (Black header matching global) --- */
@@ -187,31 +187,32 @@
 }
 
 .admin-table thead th {
-    background: #000000;
-    color: #ffffff;
-    padding: 12px 16px;
-    font-size: 0.75rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom: none;
+    background: #F8FAFC !important;
+    color: #64748B !important;
+    padding: 16px 24px;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: normal;
+    border-bottom: 1px solid #E2E8F0 !important;
+    border-top: none !important;
     text-align: left;
     vertical-align: middle;
 }
 
 .admin-table thead th:first-child {
-    border-top-left-radius: 12px;
+    border-top-left-radius: 18px;
 }
 
 .admin-table thead th:last-child {
-    border-top-right-radius: 12px;
+    border-top-right-radius: 18px;
 }
 
 .admin-table td {
-    padding: 12px 16px;
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    border-bottom: 1px solid var(--border-light);
+    padding: 18px 24px;
+    font-size: 14px;
+    color: #0F172A;
+    border-bottom: 1px solid #E2E8F0;
     vertical-align: middle;
 }
 
@@ -220,7 +221,7 @@
 }
 
 .admin-table tbody tr:hover td {
-    background: var(--bg-card-hover);
+    background: #FAFCFF;
 }
 
 /* --- Action Icons (matching Contacts/ListView pattern) --- */

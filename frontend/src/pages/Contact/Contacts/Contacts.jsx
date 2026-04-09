@@ -15,6 +15,8 @@ import { ContactModal } from './ContactModal'
 import { AIAssistModal } from './AIAssistModal'
 import { useToast } from '../../../components/Toast/ToastContext'
 import { ContactColumnManager } from './ContactColumnManager'
+import PageToolbar from '../../../components/PageToolbar/PageToolbar'
+import StatsGrid from '../../../components/StatsGrid/StatsGrid'
 import './Contacts.css'
 
 const DEFAULT_STATUS_COLUMNS = ['Active', 'Inactive', 'Lead', 'Customer']
@@ -418,198 +420,55 @@ const Contacts = () => {
   return (
     <div className="contacts-container">
 
-      {/* Stats Grid */}
-      {/* Stats Grid - MATCHING IMAGE EXACTLY */}
-      <div className="stats-grid mb-4">
-        <div className="stat-card-new">
-          <div className="stat-icon-box blue-soft">
-            <User size={22} className="text-primary" />
-          </div>
-          <div className="stat-info">
-            <span className="stat-label">Total Contacts</span>
-            <h3 className="stat-number">{stats.total}</h3>
-          </div>
-        </div>
+      <StatsGrid stats={[
+        { label: 'Total Contacts', value: stats.total, icon: <User size={22} />, color: 'blue' },
+        { label: 'Total Leads', value: stats.leads, icon: <Flag size={22} />, color: 'green' },
+        { label: 'Customers', value: stats.customers, icon: <Briefcase size={22} />, color: 'blue' },
+        { label: 'Companies', value: stats.companies, icon: <Building size={22} />, color: 'purple' },
+      ]} />
 
-        <div className="stat-card-new">
-          <div className="stat-icon-box green-soft">
-            <Flag size={22} className="text-success" />
-          </div>
-          <div className="stat-info">
-            <span className="stat-label">Total Leads</span>
-            <h3 className="stat-number">{stats.leads}</h3>
-          </div>
-        </div>
-
-        <div className="stat-card-new">
-          <div className="stat-icon-box teal-soft">
-            <Briefcase size={22} className="text-info" />
-          </div>
-          <div className="stat-info">
-            <span className="stat-label">Customers</span>
-            <h3 className="stat-number">{stats.customers}</h3>
-          </div>
-        </div>
-
-        <div className="stat-card-new">
-          <div className="stat-icon-box purple-soft">
-            <Building size={22} className="text-purple" />
-          </div>
-          <div className="stat-info">
-            <span className="stat-label">Companies</span>
-            <h3 className="stat-number">{stats.companies}</h3>
-          </div>
-        </div>
-      </div>
-
-      {/* Header & Toolbar - MATCHING IMAGE EXACTLY */}
-      <div className="contacts-toolbar-wrapper mb-4">
-        <div className="d-flex align-items-center gap-4">
-          <h3 className="mb-0 fw-bold text-dark">Contacts</h3>
-
-          <div className="search-pill-container">
-            <div className="search-pill">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="me-2">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <input
-                type="text"
-                placeholder="Search contacts..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="search-input-clean"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="d-flex align-items-center gap-2 ms-auto">
-          {/* Filter, Group By, Sort Icons with Dropdowns */}
-          <div className="icon-group me-3 d-flex gap-2">
-
-            {/* Filter Dropdown */}
-            <Dropdown align="end">
-              <Dropdown.Toggle as="button" bsPrefix="p-0 border-0 bg-transparent" className={`icon-btn-clean ${filterBy !== 'all' ? 'active' : ''}`} title="Filter">
-                <Filter size={18} />
-              </Dropdown.Toggle>
-              <Dropdown.Menu className="p-3 shadow-lg border-0" style={{ minWidth: '260px', borderRadius: '12px' }}>
-                <div className="mb-3">
-                  <label className="small text-muted fw-bold mb-2">FILTER BY</label>
-                  <Form.Select size="sm" value={filterBy} onChange={(e) => { setFilterBy(e.target.value); setFilterValue(''); }}>
-                    <option value="all">None</option>
-                    {filterableColumns.map(col => (
-                      <option key={col.id} value={col.id}>{col.name}</option>
-                    ))}
-                  </Form.Select>
-                </div>
-                {filterBy !== 'all' && (
-                  <div>
-                    <label className="small text-muted fw-bold mb-2">SELECT VALUE</label>
-                    <Form.Select size="sm" value={filterValue} onChange={(e) => setFilterValue(e.target.value)}>
-                      <option value="">Select...</option>
-                      {getFilterOptions(filterBy).map(opt => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </Form.Select>
-                  </div>
-                )}
-                {filterBy !== 'all' && (
-                  <div className="mt-3 pt-2 border-top text-end">
-                    <Button variant="link" size="sm" className="text-danger text-decoration-none p-0" onClick={() => { setFilterBy('all'); setFilterValue(''); }}>
-                      Clear Filters
-                    </Button>
-                  </div>
-                )}
-              </Dropdown.Menu>
-            </Dropdown>
-
-            {/* Group By Dropdown (used in Kanban) */}
-            <Dropdown align="end">
-              <Dropdown.Toggle as="button" bsPrefix="p-0 border-0 bg-transparent" className={`icon-btn-clean ${groupBy !== 'status' ? 'active' : ''}`} title="Group By" disabled={viewMode !== 'kanban'}>
-                <Layers size={18} />
-              </Dropdown.Toggle>
-              <Dropdown.Menu className="p-3 shadow-lg border-0" style={{ minWidth: '240px', borderRadius: '12px' }}>
-                <div className="mb-2">
-                  <label className="small text-muted fw-bold mb-2">GROUP BY (KANBAN)</label>
-                  <Form.Select size="sm" value={groupBy} onChange={(e) => setGroupBy(e.target.value)}>
-                    <option value="status">Status</option>
-                    <option value="type">Type</option>
-                    <option value="company">Company</option>
-                  </Form.Select>
-                </div>
-              </Dropdown.Menu>
-            </Dropdown>
-
-            {/* Sort Dropdown  */}
-            <Dropdown align="end">
-              <Dropdown.Toggle as="button" bsPrefix="p-0 border-0 bg-transparent" className="icon-btn-clean" title="Sort">
-                <ArrowUpDown size={18} />
-              </Dropdown.Toggle>
-              <Dropdown.Menu className="p-3 shadow-lg border-0" style={{ minWidth: '240px', borderRadius: '12px' }}>
-                <div className="mb-3">
-                  <label className="small text-muted fw-bold mb-2">SORT BY</label>
-                  <Form.Select size="sm" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                    <option value="name">Name</option>
-                    <option value="company">Company</option>
-                    <option value="status">Status</option>
-                    <option value="type">Type</option>
-                  </Form.Select>
-                </div>
-                <div>
-                  <label className="small text-muted fw-bold mb-2">ORDER</label>
-                  <div className="d-flex gap-2">
-                    <Button variant={sortOrder === 'asc' ? 'primary' : 'light'} size="sm" className="flex-grow-1" onClick={() => setSortOrder('asc')}>Asc</Button>
-                    <Button variant={sortOrder === 'desc' ? 'primary' : 'light'} size="sm" className="flex-grow-1" onClick={() => setSortOrder('desc')}>Desc</Button>
-                  </div>
-                </div>
-              </Dropdown.Menu>
-            </Dropdown>
-
-            <button className="icon-btn-clean" title="Customize Columns" onClick={() => setShowColumnManager(true)}>
-              <Settings size={18} />
-            </button>
-          </div>
-
-          <div className="vr h-50 my-auto opacity-25"></div>
-
-          {/* View Toggle */}
-          <div className="view-toggle-clean mx-3">
-            <button
-              className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
-              onClick={() => setViewMode('list')}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" x2="21" y1="6" y2="6" /><line x1="8" x2="21" y1="12" y2="12" /><line x1="8" x2="21" y1="18" y2="18" /><line x1="3" x2="3.01" y1="6" y2="6" /><line x1="3" x2="3.01" y1="12" y2="12" /><line x1="3" x2="3.01" y1="18" y2="18" /></svg>
-            </button>
-            <button
-              className={`view-btn ${viewMode === 'kanban' ? 'active' : ''}`}
-              onClick={() => setViewMode('kanban')}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 5v11" /><path d="M12 5v6" /><path d="M18 5v14" /></svg>
-            </button>
-            <button
-              className={`view-btn ${viewMode === 'chart' ? 'active' : ''}`}
-              onClick={() => setViewMode('chart')}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></svg>
-            </button>
-          </div>
-
-          <Button
-            className="btn-success-soft d-flex align-items-center gap-2"
-            onClick={handleCreateContact}
-          >
-            <Plus size={18} /> Contact
-          </Button>
-
-          <Button
-            className="btn-purple-soft d-flex align-items-center gap-2"
-            onClick={() => setShowAIAssist(true)}
-          >
-            ✨ AI
-          </Button>
-        </div>
-      </div>
+      {/* Standardized Toolbar */}
+      <PageToolbar
+        title="Contacts"
+        itemCount={contacts.length}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search contacts..."
+        filters={filterableColumns}
+        filterBy={filterBy}
+        filterValue={filterValue}
+        onFilterChange={(fb, fv) => { setFilterBy(fb); setFilterValue(fv); }}
+        getFilterOptions={getFilterOptions}
+        sortOptions={[
+          { id: 'name', name: 'Name' },
+          { id: 'company', name: 'Company' },
+          { id: 'status', name: 'Status' },
+          { id: 'type', name: 'Type' }
+        ]}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={(sb, so) => { setSortBy(sb); setSortOrder(so); }}
+        groupOptions={[
+          { id: 'status', name: 'Status' },
+          { id: 'type', name: 'Type' },
+          { id: 'company', name: 'Company' }
+        ]}
+        groupBy={groupBy}
+        onGroupChange={setGroupBy}
+        groupDisabled={viewMode !== 'kanban'}
+        onManageColumns={() => setShowColumnManager(true)}
+        viewModes={[
+          { id: 'list', label: 'List' },
+          { id: 'kanban', label: 'Kanban' },
+          { id: 'chart', label: 'Chart' }
+        ]}
+        activeView={viewMode}
+        onViewChange={setViewMode}
+        actions={[
+          { label: 'Contact', icon: <Plus size={16} />, variant: 'success', onClick: handleCreateContact },
+          { label: 'AI', icon: <span>✨</span>, variant: 'purple', onClick: () => setShowAIAssist(true) }
+        ]}
+      />
 
       {/* Main Content Area */}
       <div className="contacts-content-wrapper">

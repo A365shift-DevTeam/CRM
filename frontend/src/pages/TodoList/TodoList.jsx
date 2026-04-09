@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
-import { Container, Row, Col, Card, Button, InputGroup, Form, Dropdown } from 'react-bootstrap'
-import { Plus, LayoutGrid, List as ListIcon, Search, SlidersHorizontal, Settings, Calendar, ClipboardList, AlertCircle, Clock, ChevronDown, Filter, BarChart2, ArrowUpDown } from 'lucide-react'
+import { Plus, Calendar, ClipboardList, AlertCircle, Clock } from 'lucide-react'
 import { ListView } from './ListView'
 import { KanbanView } from './KanbanView'
 import { TaskModal } from './TaskModal'
 import { ColumnManager } from './ColumnManager'
 import { taskService } from '../../services/api'
 import { useToast } from '../../components/Toast/ToastContext'
+import PageToolbar from '../../components/PageToolbar/PageToolbar'
+import StatsGrid from '../../components/StatsGrid/StatsGrid'
 import './TodoList.css'
 
 const TodoList = () => {
@@ -217,142 +218,42 @@ const TodoList = () => {
 
     return (
         <div className="todo-list-container">
-            {/* Stats Cards */}
-            <div className="stats-grid">
-                <div className="stat-card">
-                    <div className="stat-icon-wrapper blue">
-                        <ClipboardList size={20} strokeWidth={1.5} />
-                    </div>
-                    <div className="stat-value">{totalTasks}</div>
-                    <div className="stat-label">TOTAL TASKS</div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon-wrapper orange">
-                        <Clock size={20} strokeWidth={1.5} />
-                    </div>
-                    <div className="stat-value">{highPriorityTasks}</div>
-                    <div className="stat-label">HIGH PRIORITY</div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon-wrapper green">
-                        <AlertCircle size={20} strokeWidth={1.5} />
-                    </div>
-                    <div className="stat-value">{pendingTasks}</div>
-                    <div className="stat-label">PENDING TASKS</div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon-wrapper purple">
-                        <Calendar size={20} strokeWidth={1.5} />
-                    </div>
-                    <div className="stat-value">{dueSoonTasks}</div>
-                    <div className="stat-label">DUE SOON</div>
-                </div>
-            </div>
+            <StatsGrid stats={[
+                { label: 'Total Tasks', value: totalTasks, icon: <ClipboardList size={20} />, color: 'blue' },
+                { label: 'High Priority', value: highPriorityTasks, icon: <Clock size={20} />, color: 'orange' },
+                { label: 'Pending Tasks', value: pendingTasks, icon: <AlertCircle size={20} />, color: 'green' },
+                { label: 'Due Soon', value: dueSoonTasks, icon: <Calendar size={20} />, color: 'purple' },
+            ]} />
 
-            {/* Toolbar */}
-            <div className="todo-toolbar">
-                <div className="d-flex align-items-center gap-3">
-                    <div className="my-tasks-trigger">
-                        <span>My Tasks</span>
-                        <ChevronDown size={14} className="text-muted" />
-                    </div>
-                </div>
-
-                <div className="toolbar-actions">
-                    <Dropdown align="end">
-                        <Dropdown.Toggle as="button" bsPrefix="custom-toggle" className="btn-toolbar" style={filterBy !== 'all' ? { background: '#e0e7ff', color: '#4f46e5', borderColor: '#c7d2fe' } : {}}>
-                            <Filter size={16} /> Filters <ChevronDown size={12} className="ms-1" />
-                        </Dropdown.Toggle>
-                        <Dropdown.Menu className="p-3 shadow-sm border-0" style={{ minWidth: '240px', borderRadius: '12px' }}>
-                            <div className="mb-3">
-                                <label className="small text-muted fw-bold mb-2">FILTER BY</label>
-                                <Form.Select size="sm" value={filterBy} onChange={(e) => { setFilterBy(e.target.value); setFilterValue(''); }}>
-                                    <option value="all">None</option>
-                                    {columns.filter(c => c.type === 'choice' || c.type === 'dropdown' || c.type === 'text').map(col => (
-                                        <option key={col.id} value={col.id}>{col.name}</option>
-                                    ))}
-                                </Form.Select>
-                            </div>
-                            {filterBy !== 'all' && (
-                                <div>
-                                    <label className="small text-muted fw-bold mb-2">SELECT VALUE</label>
-                                    <Form.Select size="sm" value={filterValue} onChange={(e) => setFilterValue(e.target.value)}>
-                                        <option value="">Select...</option>
-                                        {getFilterOptions(filterBy).map(opt => (
-                                            <option key={opt} value={opt}>{opt}</option>
-                                        ))}
-                                    </Form.Select>
-                                </div>
-                            )}
-                            {filterBy !== 'all' && (
-                                <div className="mt-3 pt-2 border-top text-end">
-                                    <Button variant="link" size="sm" className="text-danger text-decoration-none p-0" onClick={() => { setFilterBy('all'); setFilterValue(''); }}>
-                                        Clear Filters
-                                    </Button>
-                                </div>
-                            )}
-                        </Dropdown.Menu>
-                    </Dropdown>
-
-                    <Dropdown align="end">
-                        <Dropdown.Toggle as="button" bsPrefix="custom-toggle" className="btn-toolbar">
-                            <ArrowUpDown size={16} /> Sort <ChevronDown size={12} className="ms-1" />
-                        </Dropdown.Toggle>
-                        <Dropdown.Menu className="p-3 shadow-sm border-0" style={{ minWidth: '220px', borderRadius: '12px' }}>
-                            <div className="mb-3">
-                                <label className="small text-muted fw-bold mb-2">SORT BY</label>
-                                <Form.Select size="sm" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                                    <option value="id">Task ID</option>
-                                    {columns.map(col => (
-                                        <option key={col.id} value={col.id}>{col.name}</option>
-                                    ))}
-                                </Form.Select>
-                            </div>
-                            <div>
-                                <label className="small text-muted fw-bold mb-2">ORDER</label>
-                                <div className="d-flex gap-2">
-                                    <Button variant={sortOrder === 'asc' ? 'primary' : 'light'} size="sm" className="flex-grow-1" onClick={() => setSortOrder('asc')}>Asc</Button>
-                                    <Button variant={sortOrder === 'desc' ? 'primary' : 'light'} size="sm" className="flex-grow-1" onClick={() => setSortOrder('desc')}>Desc</Button>
-                                </div>
-                            </div>
-                        </Dropdown.Menu>
-                    </Dropdown>
-
-                    <button className="btn-toolbar" onClick={() => setShowColumnManager(true)}>
-                        <Settings size={16} /> View Settings
-                    </button>
-
-                    <div className="view-icons-group">
-                        <button
-                            className={`btn-view-icon ${view === 'list' ? 'active' : ''}`}
-                            onClick={() => setView('list')}
-                            title="List View"
-                        >
-                            <ListIcon size={18} />
-                        </button>
-                        <button
-                            className={`btn-view-icon ${view === 'board' ? 'active' : ''}`}
-                            onClick={() => setView('board')}
-                            title="Board View"
-                        >
-                            <LayoutGrid size={18} />
-                        </button>
-                        <button className="btn-view-icon" title="Graph View">
-                            <BarChart2 size={18} />
-                        </button>
-                    </div>
-
-                    <button
-                        className="btn-new-task"
-                        onClick={() => {
-                            setEditingTask(null)
-                            setShowTaskModal(true)
-                        }}
-                    >
-                        <Plus size={16} /> New Task
-                    </button>
-                </div>
-            </div>
+            <PageToolbar
+                title="My Tasks"
+                itemCount={filteredTasks.length}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                searchPlaceholder="Search tasks..."
+                filters={columns.filter(c => c.type === 'choice' || c.type === 'dropdown' || c.type === 'text').map(c => ({ id: c.id, name: c.name }))}
+                filterBy={filterBy}
+                filterValue={filterValue}
+                onFilterChange={(fb, fv) => { setFilterBy(fb); setFilterValue(fv) }}
+                getFilterOptions={getFilterOptions}
+                sortOptions={[
+                    { id: 'id', name: 'Task ID' },
+                    ...columns.map(c => ({ id: c.id, name: c.name }))
+                ]}
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSortChange={(sb, so) => { setSortBy(sb); setSortOrder(so) }}
+                viewModes={[
+                    { id: 'list', label: 'List' },
+                    { id: 'board', label: 'Kanban' }
+                ]}
+                activeView={view}
+                onViewChange={setView}
+                onManageColumns={() => setShowColumnManager(true)}
+                actions={[
+                    { label: 'New Task', icon: <Plus size={16} />, variant: 'primary', onClick: () => { setEditingTask(null); setShowTaskModal(true) } }
+                ]}
+            />
 
             {/* Main Content */}
             <div className="todo-content">

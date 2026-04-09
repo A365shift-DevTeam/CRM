@@ -27,13 +27,13 @@ import { useToast } from '../../components/Toast/ToastContext';
 // ==========================================
 const TrackerStyles = () => (
     <style>{`
-        /* ═══ Premium Invoice Theme ═══ */
+        /* ═══ Premium Invoice Theme (Apple Style) ═══ */
         .tracker-wrapper {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            color: #333;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: #0F172A;
             min-height: 100vh;
-            background: linear-gradient(135deg, #f0f4f8 0%, #e8edf3 100%);
-            padding: 2rem;
+            background: #F5F7FA;
+            padding: 24px;
         }
 
         /* --- Global Utils --- */
@@ -55,7 +55,7 @@ const TrackerStyles = () => (
             justify-content: center;
             gap: 0.5rem;
             padding: 0.45rem 1rem;
-            border-radius: 8px;
+            border-radius: 12px;
             font-weight: 600;
             font-size: 0.875rem;
             transition: all 0.25s ease;
@@ -96,14 +96,14 @@ const TrackerStyles = () => (
         }
 
         .stage {
-            background: #ffffff;
-            border: none;
-            border-radius: 16px;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 20px;
             margin: 20px 0;
             overflow: hidden;
-            color: #1a1d21;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
-            transition: box-shadow 0.3s ease;
+            color: #0F172A;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+            transition: 0.25s ease;
             position: relative;
         }
         .stage::before {
@@ -118,7 +118,7 @@ const TrackerStyles = () => (
             z-index: 1;
         }
         .stage:hover {
-            box-shadow: 0 8px 32px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
         }
 
         .bar {
@@ -230,17 +230,17 @@ const TrackerStyles = () => (
         .stage-muted { color: #7b8794; font-size: 0.8rem; margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
         .kpi-value { font-weight: 800; font-size: 1.2rem; color: #1a1d21; }
 
-        /* --- Dashboard Cards (Light Theme) --- */
+        /* --- Dashboard Cards (Apple Theme) --- */
         .dashboard-card {
-            background: #ffffff;
-            border: none;
-            border-radius: 16px;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 20px;
             overflow: hidden;
             height: 100%;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-            transition: all 0.3s ease;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+            transition: 0.25s ease;
         }
-        .dashboard-card:hover { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.09); }
+        .dashboard-card:hover { box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1); transform: translateY(-2px); }
         .dashboard-card-body { padding: 1.5rem; }
         .dashboard-card-header {
             padding: 1rem 1.5rem;

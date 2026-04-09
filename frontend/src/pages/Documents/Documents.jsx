@@ -4,6 +4,7 @@ import { useToast } from '../../components/Toast/ToastContext';
 import { useTheme } from '../../context/ThemeContext';
 import { FaFilePdf, FaFileWord, FaFileExcel, FaFileImage, FaFileLines, FaDownload, FaTrash, FaCloudArrowUp } from 'react-icons/fa6';
 import { Modal, Form, Button } from 'react-bootstrap';
+import PageToolbar from '../../components/PageToolbar/PageToolbar';
 
 export default function Documents() {
     const { themeColor } = useTheme();
@@ -94,24 +95,16 @@ export default function Documents() {
 
     return (
         <div className="p-4" style={{ maxWidth: '1400px', margin: '0 auto' }}>
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h4 className="fw-bold mb-0 text-slate-800 d-flex align-items-center gap-2">
-                    <FaFileLines style={{ color: themeColor }} /> Document Repository
-                </h4>
-                <div className="d-flex gap-3">
-                    <input 
-                        type="text" 
-                        placeholder="Search files..." 
-                        className="form-control"
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        style={{ width: '250px', borderRadius: '8px' }}
-                    />
-                    <button onClick={() => setShowModal(true)} className="btn text-white fw-bold d-flex align-items-center gap-2 shadow-sm" style={{ backgroundColor: themeColor, borderRadius: '8px' }}>
-                        <FaCloudArrowUp /> Upload File
-                    </button>
-                </div>
-            </div>
+            <PageToolbar
+                title="Documents"
+                itemCount={filteredDocs.length}
+                searchQuery={search}
+                onSearchChange={setSearch}
+                searchPlaceholder="Search files..."
+                actions={[
+                    { label: 'Upload File', icon: <FaCloudArrowUp />, variant: 'primary', onClick: () => setShowModal(true) }
+                ]}
+            />
 
             {loading ? (
                 <div className="d-flex justify-content-center p-5">
@@ -120,7 +113,7 @@ export default function Documents() {
                     </div>
                 </div>
             ) : (
-                <div className="bg-white rounded-4 shadow-sm border border-slate-200 overflow-hidden">
+                <div className="card border-0 overflow-hidden">
                     {filteredDocs.length === 0 ? (
                         <div className="text-center p-5 text-slate-500">
                             <FaCloudArrowUp size={48} className="text-slate-300 mb-3" />

@@ -1,0 +1,245 @@
+/* StandardListView — Apple-Inspired Clean Design */
+
+.slv-container {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* --- Table Wrapper --- */
+.slv-table-wrapper {
+  background: #FFFFFF;
+  border-radius: 20px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.slv-scroll-container {
+  overflow-x: auto;
+  overflow-y: visible;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.slv-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+.slv-scroll-container.dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.slv-scroll-container.dragging * {
+  cursor: grabbing;
+}
+
+/* --- Table --- */
+.slv-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-bottom: 0;
+}
+
+.slv-table th {
+  background: #F8FAFC !important;
+  padding: 14px 20px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748B;
+  border-bottom: 1px solid #E2E8F0;
+  white-space: nowrap;
+  position: relative;
+}
+
+.slv-table thead tr {
+  background: #F8FAFC;
+}
+
+.slv-table th:first-child {
+  border-top-left-radius: 18px;
+}
+
+.slv-table th:last-child {
+  border-top-right-radius: 18px;
+}
+
+.slv-table td {
+  padding: 16px 20px;
+  vertical-align: middle;
+  font-size: 14px;
+  color: #334155;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  transition: background 0.15s ease;
+}
+
+.slv-row:hover td {
+  background: #FAFCFF;
+}
+
+.slv-row:last-child td {
+  border-bottom: none;
+}
+
+/* --- Sort Header --- */
+.slv-sortable-header {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+
+.slv-sortable-header:hover {
+  color: #0F172A;
+}
+
+/* --- Resize Handle --- */
+.slv-resizable-header {
+  position: relative;
+}
+
+.slv-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  width: 12px;
+  height: 100%;
+  cursor: col-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.slv-resizable-header:hover .slv-resize-handle {
+  opacity: 1;
+}
+
+.slv-resize-line {
+  width: 2px;
+  height: 60%;
+  background: #CBD5E1;
+  border-radius: 2px;
+  transition: background 0.15s ease;
+}
+
+.slv-resize-handle:hover .slv-resize-line {
+  background: #2563EB;
+}
+
+.slv-resize-icon {
+  display: none;
+}
+
+/* --- Pagination --- */
+.slv-pagination {
+  padding: 14px 20px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.slv-pagination-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.slv-rows-select {
+  width: auto !important;
+  cursor: pointer;
+  border-color: #E2E8F0 !important;
+  border-radius: 10px !important;
+  font-size: 13px !important;
+  color: #64748B !important;
+}
+
+.slv-pagination-info {
+  font-size: 13px;
+  color: #94A3B8;
+}
+
+.slv-pagination-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.slv-page-btn {
+  border: none !important;
+  color: #64748B !important;
+  padding: 4px 8px !important;
+  border-radius: 8px !important;
+  transition: 0.2s ease;
+}
+
+.slv-page-btn:hover:not(:disabled) {
+  background: #F1F5F9 !important;
+  color: #0F172A !important;
+}
+
+.slv-page-btn:disabled {
+  opacity: 0.35;
+}
+
+.slv-page-indicator {
+  font-size: 13px;
+  color: #94A3B8;
+  margin: 0 8px;
+}
+
+/* --- Action Icons --- */
+.slv-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.slv-action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: 0.2s ease;
+  padding: 0;
+}
+
+.slv-action-icon:hover {
+  background: #F1F5F9;
+  transform: translateY(-1px);
+}
+
+.slv-action-icon.text-primary { color: #2563EB; }
+.slv-action-icon.text-info { color: #0EA5E9; }
+.slv-action-icon.text-danger { color: #EF4444; }
+.slv-action-icon.text-success { color: #10B981; }
+.slv-action-icon.text-warning { color: #F59E0B; }
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+  .slv-table-wrapper {
+    border-radius: 14px;
+  }
+
+  .slv-table th,
+  .slv-table td {
+    padding: 12px 14px;
+  }
+
+  .slv-pagination {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

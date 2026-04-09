@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { User, Mail, Contact, Settings, Plus, CheckCircle, Trash2, Briefcase, DollarSign, Timer, Flag, AlertTriangle, ArrowUpRight, Search, Monitor, Phone, FileText, MessageSquare, Edit, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
 import { FaWhatsapp } from 'react-icons/fa6'
-import { Button, Modal, Form, Dropdown } from 'react-bootstrap'
+import { Button, Modal, Form, Dropdown, FloatingLabel } from 'react-bootstrap'
+import PageToolbar from '../../components/PageToolbar/PageToolbar'
 import './Sales.css'
 import StageSettingsModal from './StageSettingsModal'
 import BusinessProcessModal from './BusinessProcessModal'
@@ -10,6 +11,7 @@ import { projectService } from '../../services/api'
 import { incomeService } from '../../services/incomeService'
 import { projectFinanceService } from '../../services/projectFinanceService'
 import { useToast } from '../../components/Toast/ToastContext'
+import { useTheme } from '../../context/ThemeContext'
 
 const getDefaultStages = () => [
     { id: 0, label: 'Demo', color: 'cyan', ageing: 7 },
@@ -49,6 +51,7 @@ const GenerateCustomId = (brandingName, clientName) => {
 
 const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onDelete, onEdit, onInvoice, onTimesheet, delay, clientName, brandingName, title, history = [] }) => {
     const toast = useToast()
+    const { themeColor } = useTheme()
     const [showNotification, setShowNotification] = useState(false)
     const [stageTransition, setStageTransition] = useState({ from: '', to: '' })
     const [iconsExpanded, setIconsExpanded] = useState(false)
@@ -246,11 +249,11 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
                             const isPast = index < activeStage;
 
                             // Colors based on status
-                            // Past = Greenish circle
+                            // Past = Theme Color
                             // Active = Gold/Yellowish border & circle
                             // Future = Gray
                             const activeColor = '#eab308'; // Gold/Yellow
-                            const pastColor = '#86efac'; // Light Green
+                            const pastColor = themeColor || '#2563EB'; // Dynamic Theme Color
                             const futureColor = '#e5e7eb'; // Light Gray
 
                             // Calculate days in current stage for Ageing color
@@ -281,7 +284,7 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
                                                 draggable="true"
                                                 onDragStart={handleDragStart}
                                             >
-                                                <i className="fa-solid fa-person-running" style={{ color: '#116454', fontSize: '22px' }}></i>
+                                                <i className="fa-solid fa-person-running" style={{ color: themeColor || '#2563EB', fontSize: '22px' }}></i>
                                             </div>
                                         )}
 
@@ -292,8 +295,8 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
                                             onDragOver={handleDragOver}
                                             onDrop={(e) => handleDrop(e, index)}
                                             style={{
-                                                background: isPast ? '#10b981' : 'white',
-                                                border: isActive ? `2px solid ${activeColor}` : (isPast ? '1px solid #10b981' : '1px solid #e5e7eb'),
+                                                background: isPast ? (themeColor || '#2563EB') : 'white',
+                                                border: isActive ? `2px solid ${activeColor}` : (isPast ? `1px solid ${themeColor || '#2563EB'}` : '1px solid #e5e7eb'),
                                                 borderRadius: '12px',
                                                 minWidth: '90px',
                                                 height: '30px',
@@ -323,7 +326,7 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
                                                     width: '24px',
                                                     height: '24px',
                                                     background: isPast ? pastColor : (isActive ? activeColor : futureColor),
-                                                    color: isActive ? ageingColor : '#0f172a',
+                                                    color: isActive ? ageingColor : (isPast ? '#ffffff' : '#0f172a'),
                                                     fontSize: '11px',
                                                     fontWeight: '800',
                                                     zIndex: 3,
@@ -380,6 +383,7 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
 function Sales() {
     const navigate = useNavigate();
     const toast = useToast();
+    const { themeColor } = useTheme();
     const [showSettings, setShowSettings] = useState(false)
     const [activeTab, setActiveTab] = useState('Product') // 'Product' or 'Service'
 
@@ -837,7 +841,7 @@ function Sales() {
     const notOnTrack = filteredProjects.filter(p => p.delay > 0).length; // Simplify for now, assuming all delays are "not on track"
 
     return (
-        <div className="sales-page">
+        <div className="sales-page" style={{ '--dynamic-theme-color': themeColor || '#2563EB' }}>
 
             <div className="sales-stats-grid">
                 {/* Card 0: Total Projects */}
@@ -901,189 +905,61 @@ function Sales() {
             </div>
 
             {/* New Unified Toolbar */}
-            <div className="sales-toolbar mb-4">
-                <div className="d-flex align-items-center justify-content-between flex-wrap gap-3 p-3 bg-white rounded-3 shadow-sm border">
-                    {/* Search - Left */}
-                    <div className="search-wrapper" style={{ minWidth: '300px' }}>
-                        <div className="position-relative">
-                            <div className="position-absolute top-50 start-0 translate-middle-y ps-3 text-muted">
-                                <Search size={18} />
-                            </div>
-                            <input
-                                type="text"
-                                className="form-control ps-5 shadow-none border-secondary-subtle"
-                                placeholder="Search Project ID..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Controls - Right */}
-                    <div className="d-flex align-items-center gap-2">
-
-                        {/* Filter Button */}
-                        <Dropdown>
-                            <Dropdown.Toggle as="button" className="icon-btn" bsPrefix="p-0 border-0 bg-transparent">
-                                <div className={`icon-wrapper ${filterBy !== 'all' ? 'active' : ''}`}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-                                    </svg>
-                                </div>
-                            </Dropdown.Toggle>
-                            <Dropdown.Menu className="timesheet-dropdown-menu p-3 shadow-sm border-0" style={{ minWidth: '260px', borderRadius: '12px' }}>
-                                <div className="mb-3">
-                                    <label className="small text-muted fw-bold mb-2">FILTER BY</label>
-                                    <Form.Select
-                                        size="sm"
-                                        value={filterBy}
-                                        onChange={(e) => {
-                                            setFilterBy(e.target.value);
-                                            setFilterValue('');
-                                        }}
-                                    >
-                                        <option value="all">None</option>
-                                        <option value="stage">Stage</option>
-                                    </Form.Select>
-                                </div>
-                                {filterBy === 'stage' && (
-                                    <div>
-                                        <label className="small text-muted fw-bold mb-2">SELECT STAGE</label>
-                                        <Form.Select
-                                            size="sm"
-                                            value={filterValue}
-                                            onChange={(e) => setFilterValue(e.target.value)}
-                                        >
-                                            <option value="">Select...</option>
-                                            {activeStages.map(s => (
-                                                <option key={s.id} value={s.label}>{s.label}</option>
-                                            ))}
-                                        </Form.Select>
-                                    </div>
-                                )}
-                                {filterBy !== 'all' && (
-                                    <div className="mt-3 pt-2 border-top text-end">
-                                        <Button
-                                            variant="link"
-                                            size="sm"
-                                            className="text-danger text-decoration-none p-0"
-                                            onClick={() => {
-                                                setFilterBy('all');
-                                                setFilterValue('');
-                                                setStatusFilter('all');
-                                            }}
-                                        >
-                                            Clear Filters
-                                        </Button>
-                                    </div>
-                                )}
-                            </Dropdown.Menu>
-                        </Dropdown>
-
-                        {/* Status Filter Button */}
-                        <Dropdown>
-                            <Dropdown.Toggle as="button" className="icon-btn" bsPrefix="p-0 border-0 bg-transparent">
-                                <div className={`icon-wrapper ${statusFilter !== 'all' ? 'active' : ''}`}>
-                                    <CheckCircle size={20} />
-                                </div>
-                            </Dropdown.Toggle>
-                            <Dropdown.Menu className="timesheet-dropdown-menu p-3 shadow-sm border-0" style={{ minWidth: '200px', borderRadius: '12px' }}>
-                                <div>
-                                    <label className="small text-muted fw-bold mb-2">FILTER BY STATUS</label>
-                                    <div className="d-grid gap-2">
-                                        <Button
-                                            variant={statusFilter === 'all' ? 'primary' : 'light'}
-                                            size="sm"
-                                            onClick={() => setStatusFilter('all')}
-                                        >
-                                            All Projects
-                                        </Button>
-                                        <Button
-                                            variant={statusFilter === 'Won' ? 'success' : 'light'}
-                                            size="sm"
-                                            onClick={() => setStatusFilter('Won')}
-                                        >
-                                            Won
-                                        </Button>
-                                        <Button
-                                            variant={statusFilter === 'Lost' ? 'danger' : 'light'}
-                                            size="sm"
-                                            onClick={() => setStatusFilter('Lost')}
-                                        >
-                                            Lost
-                                        </Button>
-                                    </div>
-                                </div>
-                                {statusFilter !== 'all' && (
-                                    <div className="mt-3 pt-2 border-top text-end">
-                                        <Button
-                                            variant="link"
-                                            size="sm"
-                                            className="text-danger text-decoration-none p-0"
-                                            onClick={() => setStatusFilter('all')}
-                                        >
-                                            Clear Filter
-                                        </Button>
-                                    </div>
-                                )}
-                            </Dropdown.Menu>
-                        </Dropdown>
-
-                        {/* Sort Button */}
-                        <Dropdown>
-                            <Dropdown.Toggle as="button" className="icon-btn" bsPrefix="p-0 border-0 bg-transparent">
-                                <div className="icon-wrapper">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                                        <polyline points="19 12 12 19 5 12"></polyline>
-                                    </svg>
-                                </div>
-                            </Dropdown.Toggle>
-                            <Dropdown.Menu className="timesheet-dropdown-menu p-3 shadow-sm border-0" style={{ minWidth: '240px', borderRadius: '12px' }}>
-                                <div className="mb-3">
-                                    <label className="small text-muted fw-bold mb-2">SORT BY</label>
-                                    <Form.Select
-                                        size="sm"
-                                        value={sortBy}
-                                        onChange={(e) => setSortBy(e.target.value)}
-                                    >
-                                        <option value="id">Project ID</option>
-                                        <option value="rating">Rating</option>
-                                        <option value="delay">Delay</option>
-                                    </Form.Select>
-                                </div>
-                                <div>
-                                    <label className="small text-muted fw-bold mb-2">ORDER</label>
-                                    <div className="d-flex gap-2">
-                                        <Button
-                                            variant={sortOrder === 'asc' ? 'primary' : 'light'}
-                                            size="sm"
-                                            className="flex-grow-1"
-                                            onClick={() => setSortOrder('asc')}
-                                        >
-                                            Asc
-                                        </Button>
-                                        <Button
-                                            variant={sortOrder === 'desc' ? 'primary' : 'light'}
-                                            size="sm"
-                                            className="flex-grow-1"
-                                            onClick={() => setSortOrder('desc')}
-                                        >
-                                            Desc
-                                        </Button>
-                                    </div>
-                                </div>
-                            </Dropdown.Menu>
-                        </Dropdown>
-
-                        <div className="vr mx-2 opacity-25"></div>
-
-                        {/* Toggle Product/Service - Mapped to View Mode */}
-                        <div className="btn-group view-mode-toggle me-2">
+            <div className="mb-4">
+                <PageToolbar
+                    title="Sales Pipeline"
+                    itemCount={totalProjects}
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                    searchPlaceholder="Search Project ID..."
+                    filters={[
+                        { id: 'stage', name: 'Stage' },
+                        { id: 'status', name: 'Status' }
+                    ]}
+                    filterBy={filterBy === 'all' && statusFilter !== 'all' ? 'status' : filterBy}
+                    filterValue={filterBy === 'stage' ? filterValue : (statusFilter !== 'all' ? statusFilter : '')}
+                    onFilterChange={(fBy, fValue) => {
+                        if (fBy === 'all') {
+                            setFilterBy('all');
+                            setFilterValue('');
+                            setStatusFilter('all');
+                        } else if (fBy === 'status') {
+                            setFilterBy('all');
+                            setFilterValue('');
+                            setStatusFilter(fValue || 'all');
+                        } else if (fBy === 'stage') {
+                            setFilterBy('stage');
+                            setFilterValue(fValue);
+                            setStatusFilter('all');
+                        }
+                    }}
+                    getFilterOptions={(fBy) => {
+                        if (fBy === 'stage') return activeStages.map(s => s.label);
+                        if (fBy === 'status') return ['Won', 'Lost'];
+                        return [];
+                    }}
+                    sortOptions={[
+                        { id: 'id', name: 'Project ID' },
+                        { id: 'rating', name: 'Rating' },
+                        { id: 'delay', name: 'Delay' }
+                    ]}
+                    sortBy={sortBy}
+                    sortOrder={sortOrder}
+                    onSortChange={(sBy, sOrd) => {
+                        setSortBy(sBy);
+                        setSortOrder(sOrd);
+                    }}
+                    onManageColumns={handleConfigure}
+                    actions={[
+                        { label: 'Add Project', icon: <Plus size={16} />, variant: 'primary', onClick: handleAddProject }
+                    ]}
+                    extraControls={
+                        <div className="btn-group view-mode-toggle me-2 d-none d-sm-flex">
                             <Button
                                 variant={activeTab === 'Product' ? 'primary' : 'outline-secondary'}
                                 size="sm"
                                 onClick={() => setActiveTab('Product')}
+                                className="px-3"
                             >
                                 {productLabel}
                             </Button>
@@ -1091,28 +967,13 @@ function Sales() {
                                 variant={activeTab === 'Service' ? 'primary' : 'outline-secondary'}
                                 size="sm"
                                 onClick={() => setActiveTab('Service')}
+                                className="px-3"
                             >
                                 {serviceLabel}
                             </Button>
                         </div>
-
-                        {/* Actions */}
-                        <button className="icon-btn" onClick={handleConfigure} title="Settings">
-                            <div className="icon-wrapper">
-                                <Settings size={20} />
-                            </div>
-                        </button>
-
-                        <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={handleAddProject}
-                            className="d-flex align-items-center gap-2 btn-icon-text ms-2"
-                        >
-                            <Plus size={16} /> Add Project
-                        </Button>
-                    </div>
-                </div>
+                    }
+                />
             </div>
 
             <div className="sales-list">
@@ -1143,37 +1004,33 @@ function Sales() {
                 <Modal.Header closeButton>
                     <Modal.Title>Add New Project</Modal.Title>
                 </Modal.Header>
-                <Modal.Body>
+                <Modal.Body className="p-4">
                     <Form>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Branding Name (Left)</Form.Label>
+                        <FloatingLabel controlId="addBrandingName" label="Branding Name (Left)" className="mb-3">
                             <Form.Control
                                 type="text"
                                 placeholder="e.g. A365Shift"
                                 value={newProjectData.brandingName}
                                 onChange={(e) => setNewProjectData({ ...newProjectData, brandingName: e.target.value })}
                             />
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Client Name (Right)</Form.Label>
+                        </FloatingLabel>
+                        <FloatingLabel controlId="addClientName" label="Client Name (Right)" className="mb-3">
                             <Form.Control
                                 type="text"
                                 placeholder="Enter client name"
                                 value={newProjectData.clientName}
                                 onChange={(e) => setNewProjectData({ ...newProjectData, clientName: e.target.value })}
                             />
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Phone Number</Form.Label>
+                        </FloatingLabel>
+                        <FloatingLabel controlId="addPhone" label="Phone Number" className="mb-3">
                             <Form.Control
                                 type="text"
                                 placeholder="Enter client phone"
                                 value={newProjectData.phone}
                                 onChange={(e) => setNewProjectData({ ...newProjectData, phone: e.target.value })}
                             />
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Project Type</Form.Label>
+                        </FloatingLabel>
+                        <FloatingLabel controlId="addType" label="Project Type" className="mb-3">
                             <Form.Select
                                 value={newProjectData.type}
                                 onChange={(e) => setNewProjectData({ ...newProjectData, type: e.target.value })}
@@ -1181,7 +1038,7 @@ function Sales() {
                                 <option value="Product">{productLabel}</option>
                                 <option value="Service">{serviceLabel}</option>
                             </Form.Select>
-                        </Form.Group>
+                        </FloatingLabel>
                     </Form>
                 </Modal.Body>
                 <Modal.Footer>
@@ -1199,46 +1056,41 @@ function Sales() {
                 <Modal.Header closeButton>
                     <Modal.Title>Edit Project</Modal.Title>
                 </Modal.Header>
-                <Modal.Body>
+                <Modal.Body className="p-4">
                     <Form>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Project Title</Form.Label>
+                        <FloatingLabel controlId="editTitle" label="Project Title" className="mb-3">
                             <Form.Control
                                 type="text"
                                 placeholder="Enter project title"
                                 value={editProjectData.title}
                                 onChange={(e) => setEditProjectData({ ...editProjectData, title: e.target.value })}
                             />
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Branding Name (Left)</Form.Label>
+                        </FloatingLabel>
+                        <FloatingLabel controlId="editBrandingName" label="Branding Name (Left)" className="mb-3">
                             <Form.Control
                                 type="text"
                                 placeholder="e.g. A365Shift"
                                 value={editProjectData.brandingName}
                                 onChange={(e) => setEditProjectData({ ...editProjectData, brandingName: e.target.value })}
                             />
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Client Name (Right)</Form.Label>
+                        </FloatingLabel>
+                        <FloatingLabel controlId="editClientName" label="Client Name (Right)" className="mb-3">
                             <Form.Control
                                 type="text"
                                 placeholder="Enter client name"
                                 value={editProjectData.clientName}
                                 onChange={(e) => setEditProjectData({ ...editProjectData, clientName: e.target.value })}
                             />
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Phone Number</Form.Label>
+                        </FloatingLabel>
+                        <FloatingLabel controlId="editPhone" label="Phone Number" className="mb-3">
                             <Form.Control
                                 type="text"
                                 placeholder="Enter client phone"
                                 value={editProjectData.phone}
                                 onChange={(e) => setEditProjectData({ ...editProjectData, phone: e.target.value })}
                             />
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Project Type</Form.Label>
+                        </FloatingLabel>
+                        <FloatingLabel controlId="editType" label="Project Type" className="mb-3">
                             <Form.Select
                                 value={editProjectData.type}
                                 onChange={(e) => setEditProjectData({ ...editProjectData, type: e.target.value })}
@@ -1246,9 +1098,8 @@ function Sales() {
                                 <option value="Product">{productLabel}</option>
                                 <option value="Service">{serviceLabel}</option>
                             </Form.Select>
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Status</Form.Label>
+                        </FloatingLabel>
+                        <FloatingLabel controlId="editStatus" label="Status" className="mb-3">
                             <Form.Select
                                 value={editProjectData.status}
                                 onChange={(e) => setEditProjectData({ ...editProjectData, status: e.target.value })}
@@ -1257,7 +1108,7 @@ function Sales() {
                                 <option value="Won">Won</option>
                                 <option value="Lost">Lost</option>
                             </Form.Select>
-                        </Form.Group>
+                        </FloatingLabel>
                     </Form>
                 </Modal.Body>
                 <Modal.Footer>

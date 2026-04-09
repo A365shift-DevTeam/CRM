@@ -25,7 +25,7 @@ export default function Settings() {
                 <FaPalette className="text-slate-500" /> System Settings
             </h2>
 
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="card border-0 p-6">
                 <h3 className="text-lg font-semibold text-slate-700 mb-4 border-b pb-2">Appearance</h3>
                 
                 <div className="space-y-4 max-w-md">

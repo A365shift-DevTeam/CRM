@@ -1,42 +1,41 @@
 /* ==============================
-   Dashboard — Clean Minimal SaaS
+   Dashboard — Apple-Inspired Clean
    ============================== */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --app-bg: #f8fafc;
+  --app-bg: #F5F7FA;
   --card-bg: #ffffff;
-  --card-border: #e2e8f0;
-  --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
-  --card-shadow-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --card-border: #E2E8F0;
+  --card-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  --card-shadow-hover: 0 12px 28px rgba(15, 23, 42, 0.1);
 
-  --text-main: #0f172a;
-  --text-muted: #475569;
-  --text-light: #94a3b8;
+  --text-main: #0F172A;
+  --text-muted: #64748B;
+  --text-light: #667085;
 
-  --radius-lg: 12px;
-  --radius-md: 8px;
-  --radius-sm: 6px;
+  --radius-lg: 20px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
 
-  --transition: all 0.2s ease;
+  --transition: all 0.25s ease;
 
   /* Solid professional colors */
-  --color-blue: #3b82f6;
+  --color-blue: #0071E3;
   --color-blue-light: #eff6ff;
   --color-purple: #8b5cf6;
   --color-purple-light: #f5f3ff;
-  --color-green: #10b981;
+  --color-green: #12B76A;
   --color-green-light: #ecfdf5;
   --color-cyan: #06b6d4;
   --color-cyan-light: #ecfeff;
-  --color-rose: #f43f5e;
+  --color-rose: #EF4444;
   --color-rose-light: #fff1f2;
 }
 
 .dashboard {
-  font-family: 'Inter', sans-serif;
-  min-height: 100vh;
-  background-color: var(--app-bg);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: #F5F7FA;
   color: var(--text-main);
   position: relative;
 }
@@ -148,19 +147,19 @@ h4,
 }
 
 .stat-card-dash {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-lg);
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 20px;
   padding: 16px;
   position: relative;
-  transition: var(--transition);
-  box-shadow: var(--card-shadow);
+  transition: 0.25s ease;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
   display: flex;
   flex-direction: column;
 }
 
 .stat-card-dash:hover {
-  box-shadow: var(--card-shadow-hover);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
 }
 
 /* Crisp Icon container */
@@ -264,13 +263,18 @@ h4,
 }
 
 .dashboard-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-lg);
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: var(--card-shadow);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
   display: flex;
   flex-direction: column;
+  transition: 0.25s ease;
+}
+
+.dashboard-card:hover {
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
 }
 
 .dashboard-card>.card-header {
