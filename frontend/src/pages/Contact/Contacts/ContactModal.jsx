@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Form, Row, Col } from 'react-bootstrap'
 import { StandardModal } from '../../../components/StandardModal/StandardModal'
+import { companyService } from '../../../services/companyService'
 
 const STATUS_OPTIONS = ['Active', 'Inactive', 'Lead', 'Customer']
 
@@ -21,7 +22,7 @@ const LOCATIONS = [
   'Mumbai, India', 'Paris, France'
 ]
 
-const ENTITY_TYPES = ['Company', 'Individual', 'Vendor']
+// Entity Type field removed from UI — company is now a dropdown from backend
 
 const getDefaultValue = (column) => {
   if (column.type === 'choice' && column.config?.options) {
@@ -35,17 +36,17 @@ const getDefaultValue = (column) => {
   return ''
 }
 
-const renderField = (column, value, onChange, errors, formData) => {
+const renderField = (column, value, onChange, errors, formData, companies = []) => {
   const fieldId = column.id
   const isInvalid = !!errors[fieldId]
 
-  if (fieldId === 'type') {
-    const options = column.config?.options?.map(o => typeof o === 'string' ? o : o.label) || ENTITY_TYPES
+  if (fieldId === 'company') {
     return (
-      <Form.Select size="sm" value={formData.entityType || formData.type || ''}
-        onChange={(e) => { onChange('entityType', e.target.value); onChange('type', e.target.value) }}
+      <Form.Select size="sm" value={value || ''}
+        onChange={(e) => onChange(fieldId, e.target.value)}
         isInvalid={isInvalid}>
-        {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+        <option value="">Select Company</option>
+        {companies.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
       </Form.Select>
     )
   }
@@ -152,6 +153,16 @@ const renderField = (column, value, onChange, errors, formData) => {
 }
 
 export const ContactModal = ({ show, onHide, contact, columns = [], onSave, onDelete }) => {
+  const [companies, setCompanies] = useState([])
+
+  useEffect(() => {
+    if (show) {
+      companyService.getCompanies()
+        .then(data => setCompanies(data || []))
+        .catch(err => console.error('Error loading companies:', err))
+    }
+  }, [show])
+
   const initializeFormData = (cols, contactData = null) => {
     const initialData = {}
     cols.forEach(col => {
@@ -229,7 +240,7 @@ export const ContactModal = ({ show, onHide, contact, columns = [], onSave, onDe
   }
 
   const displayColumns = useMemo(() => {
-    return columns.filter(col => col && col.id)
+    return columns.filter(col => col && col.id && col.id !== 'type')
   }, [columns])
 
   const indiaTaxFields = ['gstin', 'pan', 'cin', 'msmeStatus', 'tdsSection', 'tdsRate']
@@ -244,8 +255,8 @@ export const ContactModal = ({ show, onHide, contact, columns = [], onSave, onDe
       const fieldId = col.id
       if (['name', 'jobTitle', 'email', 'phone', 'linkedin'].includes(fieldId)) categories.basic.push(col)
       else if (['company', 'location', 'clientAddress', 'clientCountry'].includes(fieldId)) categories.company.push(col)
-      else if (['type', 'status', 'category'].includes(fieldId) ||
-        (col.type === 'choice' && !indiaTaxFields.includes(fieldId) && fieldId !== 'msmeStatus')) categories.classification.push(col)
+      else if (['status', 'category'].includes(fieldId) ||
+        (col.type === 'choice' && fieldId !== 'type' && !indiaTaxFields.includes(fieldId) && fieldId !== 'msmeStatus')) categories.classification.push(col)
       else if (indiaTaxFields.includes(fieldId)) categories.taxIndia.push(col)
       else if (fieldId === 'internationalTaxId') categories.taxInternational.push(col)
       else categories.additional.push(col)
@@ -272,7 +283,7 @@ export const ContactModal = ({ show, onHide, contact, columns = [], onSave, onDe
                     {column.name}
                     {column.required && <span className="text-danger"> *</span>}
                   </Form.Label>
-                  {renderField(column, value, handleChange, errors, formData)}
+                  {renderField(column, value, handleChange, errors, formData, companies)}
                   {errors[fieldId] && (
                     <Form.Control.Feedback type="invalid" className="d-block">
                       {errors[fieldId]}

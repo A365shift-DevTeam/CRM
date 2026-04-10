@@ -52,7 +52,15 @@ async function request(endpoint, options = {}) {
     }
 
     if (!res.ok || json.success === false) {
-        const msg = json.message || json.errors?.join(', ') || `Request failed (${res.status})`;
+        let msg = json.message;
+        if (!msg && json.errors) {
+            if (Array.isArray(json.errors)) {
+                msg = json.errors.join(', ');
+            } else if (typeof json.errors === 'object') {
+                msg = Object.values(json.errors).flat().join(', ');
+            }
+        }
+        msg = msg || json.title || `Request failed (${res.status})`;
         throw new Error(msg);
     }
 

@@ -90,8 +90,7 @@ export default function Company() {
         itemCount={filtered.length}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        onAdd={openAdd}
-        addLabel="Add Company"
+        actions={[{ label: 'Add Company', variant: 'primary', onClick: openAdd }]}
       />
 
       {isLoading ? (

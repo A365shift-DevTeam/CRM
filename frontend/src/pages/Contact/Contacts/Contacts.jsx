@@ -377,8 +377,8 @@ const Contacts = () => {
         score: 'Warm',
         stage: 'New',
         notes: '',
-        expectedValue: '',
-        expectedCloseDate: '',
+        expectedValue: null,
+        expectedCloseDate: null,
         assignedTo: '',
       })
       toast.success(`Contact "${c.name}" converted to a Lead!`)

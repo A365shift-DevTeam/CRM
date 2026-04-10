@@ -49,12 +49,18 @@ export default function Leads() {
 
   const handleSave = async () => {
     if (!form.contactName.trim()) { toast.error('Contact name is required'); return; }
+    const payload = {
+      ...form,
+      contactId: form.contactId !== '' ? parseInt(form.contactId) : null,
+      expectedValue: form.expectedValue !== '' ? parseFloat(form.expectedValue) : null,
+      expectedCloseDate: form.expectedCloseDate || null,
+    };
     try {
       if (editing) {
-        await leadService.updateLead(editing.id, form);
+        await leadService.updateLead(editing.id, payload);
         toast.success('Lead updated');
       } else {
-        await leadService.createLead(form);
+        await leadService.createLead(payload);
         toast.success('Lead created');
       }
       setShowModal(false);
@@ -141,14 +147,13 @@ export default function Leads() {
         itemCount={filtered.length}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        onAdd={openAdd}
-        addLabel="Add Lead"
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
         viewModes={[
-          { value: 'list', icon: <List size={15} />, label: 'List' },
-          { value: 'kanban', icon: <Columns size={15} />, label: 'Kanban' },
+          { id: 'list', icon: <List size={15} />, label: 'List' },
+          { id: 'kanban', icon: <Columns size={15} />, label: 'Kanban' },
         ]}
+        activeView={viewMode}
+        onViewChange={setViewMode}
+        actions={[{ label: 'Add Lead', variant: 'primary', onClick: openAdd }]}
       />
 
       {isLoading ? (

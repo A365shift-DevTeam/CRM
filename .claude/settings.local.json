@@ -23,7 +23,30 @@
       "Bash(ls \"/c/Program Files/PostgreSQL/\"*/bin/psql.exe)",
       "Read(//c/Program Files \\(x86\\)/**)",
       "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/16/bin/psql.exe\" -h localhost -U postgres -d a365shift_tracker -c \"INSERT INTO \"\"__EFMigrationsHistory\"\" \\(\"\"MigrationId\"\", \"\"ProductVersion\"\"\\) VALUES \\(''20260326101534_AddPasswordResetAndNewFeatures'', ''8.0.25''\\), \\(''20260330104213_AddTaskColumns'', ''8.0.25''\\) ON CONFLICT DO NOTHING;\")",
-      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/16/bin/psql.exe\" -h localhost -U postgres -d a365shift_tracker -c \"SELECT column_name, data_type, column_default FROM information_schema.columns WHERE table_name IN \\(''incomes'', ''expenses''\\) AND column_name = ''status'';\")"
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/16/bin/psql.exe\" -h localhost -U postgres -d a365shift_tracker -c \"SELECT column_name, data_type, column_default FROM information_schema.columns WHERE table_name IN \\(''incomes'', ''expenses''\\) AND column_name = ''status'';\")",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "Bash(curl -s http://localhost:5095/api/auth/login -X POST -H \"Content-Type: application/json\" -d '{\"email\":\"admin@a365.com\",\"password\":\"Admin@123\"}')",
+      "Bash(curl -s --connect-timeout 3 http://localhost:5095/health)",
+      "Bash(curl -s --connect-timeout 3 http://localhost:7095/health)",
+      "Bash(curl -s --connect-timeout 3 http://localhost:5231/health)",
+      "Bash(curl -s --connect-timeout 5 http://localhost:5231/swagger/index.html)",
+      "Bash(curl -s http://localhost:5231/api/auth/login -X POST -H \"Content-Type: application/json\" -d '{\"email\":\"admin@a365shift.com\",\"password\":\"Admin@123\"}')",
+      "Bash(PGPASSWORD=postgres psql:*)",
+      "Bash(\"C:/Program Files/PostgreSQL/17/bin/psql.exe\" -U postgres -d a365shift_tracker -c \"SELECT email, display_name FROM users LIMIT 5;\")",
+      "Read(//c/Program Files/**)",
+      "Bash(PGPASSWORD=postgres C:/Program Files/PostgreSQL/16/bin/psql.exe:*)",
+      "mcp__plugin_playwright_playwright__browser_fill_form",
+      "mcp__plugin_playwright_playwright__browser_click",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "mcp__plugin_playwright_playwright__browser_type",
+      "mcp__plugin_playwright_playwright__browser_console_messages",
+      "Bash(curl -s http://localhost:5231/api/auth/login -X POST -H 'Content-Type: application/json' -d '{\"email\":\"admin@a365.com\",\"password\":\"Admin@123\"}')",
+      "Bash(curl -s http://localhost:5231/api/leads -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
+      "Bash(curl -s http://localhost:5231/api/auth/login -X POST -H \"Content-Type: application/json\" -d '{\"email\":\"admin@a365.com\",\"password\":\"Admin@123\"}')",
+      "mcp__plugin_playwright_playwright__browser_network_requests",
+      "mcp__plugin_playwright_playwright__browser_handle_dialog",
+      "mcp__plugin_playwright_playwright__browser_evaluate"
     ]
   }
 }
