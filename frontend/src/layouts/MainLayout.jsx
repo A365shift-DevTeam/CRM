@@ -83,9 +83,14 @@ export default function MainLayout() {
       items: [
         { path: '/finance',   icon: <FaMoneyBillWave size={14} />, label: 'Finance',   permission: 'finance.view' },
         { path: '/invoice',   icon: <FaFileInvoice size={14} />,   label: 'Invoice',   permission: 'invoice.view' },
-        { path: '/legal',     icon: <FaFileInvoice size={14} />,   label: 'Legal',     permission: 'invoice.view' },
         { path: '/documents', icon: <FaFileInvoice size={14} />,   label: 'Documents', permission: 'dashboard.view' },
-        { path: '/links',     icon: <FaHouse size={14} />,         label: 'Links',     permission: 'dashboard.view' },
+        { path: '/calendar',  icon: <FaHouse size={14} />,         label: 'Calendar',  permission: 'dashboard.view' },
+      ],
+    },
+    {
+      title: 'Reports',
+      items: [
+        { path: '/reports',   icon: <FaChartColumn size={14} />,   label: 'Reports',   permission: 'dashboard.view' },
       ],
     },
     {

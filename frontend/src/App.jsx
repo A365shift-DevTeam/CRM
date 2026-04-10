@@ -22,6 +22,10 @@ import Admin from './pages/Admin/Admin';
 import Settings from './pages/Settings/Settings';
 import Projects from './pages/Projects/Projects';
 import Documents from './pages/Documents/Documents';
+import Company from './pages/Company/Company';
+import Leads from './pages/Leads/Leads';
+import Calendar from './pages/Calendar/Calendar';
+import Reports from './pages/Reports/Reports';
 import { ThemeProvider } from './context/ThemeContext';
 import './index.css';
 
@@ -60,14 +64,15 @@ function App() {
             <Route path="admin" element={<PrivateRoute permission="admin.view"><Admin /></PrivateRoute>} />
             <Route path="settings" element={<PrivateRoute permission="dashboard.view"><Settings /></PrivateRoute>} />
             
-            {/* Newly added placeholder routes for Sidebar */}
-            <Route path="company" element={<PrivateRoute permission="contacts.view"><PlaceholderPage title="Company" /></PrivateRoute>} />
-            <Route path="leads" element={<PrivateRoute permission="sales.view"><PlaceholderPage title="Leads" /></PrivateRoute>} />
+            {/* CRM modules */}
+            <Route path="company" element={<PrivateRoute permission="contacts.view"><Company /></PrivateRoute>} />
+            <Route path="leads" element={<PrivateRoute permission="sales.view"><Leads /></PrivateRoute>} />
             <Route path="projects" element={<PrivateRoute permission="timesheet.view"><Projects /></PrivateRoute>} />
             <Route path="hr" element={<PrivateRoute permission="dashboard.view"><PlaceholderPage title="HR" /></PrivateRoute>} />
             <Route path="legal" element={<PrivateRoute permission="invoice.view"><PlaceholderPage title="Legal" /></PrivateRoute>} />
             <Route path="documents" element={<PrivateRoute permission="dashboard.view"><Documents /></PrivateRoute>} />
-            <Route path="links" element={<PrivateRoute permission="dashboard.view"><PlaceholderPage title="Links" /></PrivateRoute>} />
+            <Route path="calendar" element={<PrivateRoute permission="dashboard.view"><Calendar /></PrivateRoute>} />
+            <Route path="reports" element={<PrivateRoute permission="dashboard.view"><Reports /></PrivateRoute>} />
 
             <Route path="ai-agents" element={<PrivateRoute permission="aiagents.view"><AIAgentsLayout /></PrivateRoute>}>
               <Route index element={<Navigate to="ai-followup" replace />} />
