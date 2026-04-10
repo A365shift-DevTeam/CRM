@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { contactService } from '../../../services/contactService'
 import { projectService } from '../../../services/api'
+import { leadService } from '../../../services/leadService'
 
 import { ListView } from './ListView'
 import { KanbanView } from './KanbanView'
@@ -19,7 +20,7 @@ import PageToolbar from '../../../components/PageToolbar/PageToolbar'
 import StatsGrid from '../../../components/StatsGrid/StatsGrid'
 import './Contacts.css'
 
-const DEFAULT_STATUS_COLUMNS = ['Active', 'Inactive', 'Lead', 'Customer']
+const DEFAULT_STATUS_COLUMNS = ['Active', 'Inactive', 'Lead', 'Prospect', 'Customer']
 
 const Contacts = () => {
   const toast = useToast()
@@ -356,10 +357,9 @@ const Contacts = () => {
     }
   }
 
-  // --- Convert to Sales ---
+  // --- Convert to Lead ---
   const handleConvertToSales = (contact) => {
     setConvertingContact(contact)
-    setConvertType('Product')
     setConvertBranding(contact.company || '')
     setConvertClient(contact.name || '')
     setShowConvertModal(true)
@@ -368,43 +368,24 @@ const Contacts = () => {
   const handleConfirmConvert = async () => {
     if (!convertingContact) return
     const c = convertingContact
-    const today = new Date()
-    const date = String(today.getDate()).padStart(2, '0')
-    const year = String(today.getFullYear()).slice(-2)
-    const brandCode = (c.company || 'A3').substring(0, 2).toUpperCase()
-    const clientCode = (c.name || 'C').slice(-1).toUpperCase()
-    const customId = `${date}${brandCode}${clientCode}${year}`
-
-    const newProject = {
-      activeStage: 0,
-      history: [],
-      type: convertType,
-      rating: 4.0,
-      delay: 0,
-      title: `${convertClient} - ${convertBranding || 'Direct'}`,
-      clientName: convertClient || 'New Client',
-      brandingName: convertBranding || 'A365Shift',
-      customId,
-      // Map new contact fields
-      clientEmail: c.email || '',
-      clientPhone: c.phone || '',
-      clientAddress: c.clientAddress || '',
-      clientGstin: c.gstin || '',
-      clientPan: c.pan || '',
-      clientCin: c.cin || '',
-      msmeStatus: c.msmeStatus || 'NON MSME',
-      tdsSection: c.tdsSection || '',
-      tdsRate: c.tdsRate || ''
-    }
-
     try {
-      await projectService.create(newProject)
-      const typeLabel = convertType === 'Product' ? productLabel : serviceLabel
-      toast.success(`Contact "${c.name}" converted to a ${typeLabel} sales project!`)
+      await leadService.createLead({
+        contactId: c.id,
+        contactName: convertClient || c.name,
+        company: convertBranding || c.company || '',
+        source: 'Inbound',
+        score: 'Warm',
+        stage: 'New',
+        notes: '',
+        expectedValue: '',
+        expectedCloseDate: '',
+        assignedTo: '',
+      })
+      toast.success(`Contact "${c.name}" converted to a Lead!`)
       setShowConvertModal(false)
       setConvertingContact(null)
     } catch (error) {
-      console.error('Error converting contact to sales:', error)
+      console.error('Error converting contact to lead:', error)
       toast.error('Failed to convert contact. Please try again.')
     }
   }
@@ -629,7 +610,7 @@ const Contacts = () => {
       {/* CONVERT TO SALES MODAL */}
       <Modal show={showConvertModal} onHide={() => setShowConvertModal(false)} centered size="sm">
         <Modal.Header closeButton className="border-0 pb-0">
-          <Modal.Title className="h6 fw-bold">Convert to Sales Client</Modal.Title>
+          <Modal.Title className="h6 fw-bold">Convert to Lead</Modal.Title>
         </Modal.Header>
         <Modal.Body className="pt-3">
           {convertingContact && (
