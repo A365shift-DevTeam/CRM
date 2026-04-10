@@ -37,6 +37,7 @@ const INCOME_CATEGORIES = [
   { id: 'investments', label: 'Investments', color: '#8b5cf6' },
   { id: 'other', label: 'Other', color: '#f59e0b' }
 ]
+const STATUS_OPTIONS = ['Pending', 'Raised', 'Paid']
 
 const Finance = () => {
   const toast = useToast()
@@ -136,7 +137,7 @@ const Finance = () => {
     return Object.entries(map)
       .map(([client, total]) => ({ client, total }))
       .sort((a, b) => b.total - a.total)
-      .slice(0, 10);
+      .slice(0, 5);
   }, [incomes]);
 
   // Calculate overall statistics
@@ -359,6 +360,24 @@ const Finance = () => {
     }
   }
 
+  const handleQuickStatusChange = async (item, newStatus) => {
+    if (!newStatus || (item.status || 'Pending') === newStatus) return
+    const { type, uniqueId, ...basePayload } = item
+    try {
+      if (item.type === 'expense') {
+        await expenseService.updateExpense(item.id, { ...basePayload, status: newStatus })
+        setExpenses(prev => prev.map(exp => exp.id === item.id ? { ...exp, status: newStatus } : exp))
+      } else {
+        await incomeService.updateIncome(item.id, { ...basePayload, status: newStatus })
+        setIncomes(prev => prev.map(inc => inc.id === item.id ? { ...inc, status: newStatus } : inc))
+      }
+      toast.success(`Status updated to ${newStatus}`)
+    } catch (error) {
+      console.error('Error updating status:', error)
+      toast.error('Failed to update status')
+    }
+  }
+
   // Pagination handlers
   const handleRowsPerPageChange = (count) => {
     setRowsPerPage(count)
@@ -521,14 +540,16 @@ const Finance = () => {
                             </span>
                           </td>
                           <td>
-                            {(() => {
-                              const status = item.status || 'Pending';
-                              return (
-                                <span className={`fin-status-badge ${status.toLowerCase()}`}>
-                                  {status}
-                                </span>
-                              );
-                            })()}
+                            <Form.Select
+                              size="sm"
+                              value={item.status || 'Pending'}
+                              onChange={(e) => handleQuickStatusChange(item, e.target.value)}
+                              style={{ minWidth: 110 }}
+                            >
+                              {STATUS_OPTIONS.map(status => (
+                                <option key={status} value={status}>{status}</option>
+                              ))}
+                            </Form.Select>
                           </td>
                           <td>
                             <span style={{ fontWeight: 700, fontSize: '14px', color: isExpense ? '#F43F5E' : '#10B981', fontFamily: 'var(--font-display, Outfit)' }}>
