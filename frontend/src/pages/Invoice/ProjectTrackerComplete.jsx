@@ -1140,10 +1140,40 @@ const PaymentProcess = ({ stakeholders, updateStakeholder, details, dealValue })
 };
 
 // ==========================================
-// 9. INVOICE MAIN (DETAIL VIEW)
+// 9. COMPANY MARGIN TAB
+// ==========================================
+const CompanyMarginTab = ({ details, stakeholders, milestones, taxes }) => {
+    const chargesList = Array.isArray(taxes) ? taxes : [];
+    const totalTaxRate = chargesList.reduce((s, c) => s + (parseFloat(c.percentage) || 0), 0);
+    const clientTotal = milestones.reduce((s, m) => {
+        const base = ((parseFloat(details.dealValue) || 0) * m.percentage) / 100;
+        return s + base + (base * totalTaxRate) / 100;
+    }, 0);
+    const investorShare = stakeholders.reduce((s, sh) => s + ((parseFloat(details.dealValue) || 0) * sh.percentage) / 100, 0);
+    const margin = clientTotal - investorShare;
+    const fmt = (n) => Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
+    const cur = details.currency || 'INR';
+    return (
+        <div className="inv-stage-card">
+            <div className="inv-stage-header"><div className="inv-stage-title">Company Margin</div><div className="inv-stage-sub">Profit after investor distributions</div></div>
+            <table className="table table-sm mb-0 mt-3">
+                <tbody>
+                    <tr><td className="text-muted">Client Billed (incl. tax)</td><td className="fw-semibold text-end">{cur} {fmt(clientTotal)}</td></tr>
+                    <tr><td className="text-muted">Investor Share</td><td className="fw-semibold text-end text-warning">− {cur} {fmt(investorShare)}</td></tr>
+                    <tr className="table-success"><td className="fw-bold">Company Margin</td><td className="fw-bold text-end">{cur} {fmt(margin)}</td></tr>
+                </tbody>
+            </table>
+            <div className="text-muted mt-2" style={{ fontSize: 11 }}>Dev costs can be tracked via the Timesheet module and will be deducted here in a future update.</div>
+        </div>
+    );
+};
+
+// ==========================================
+// 10. INVOICE MAIN (DETAIL VIEW)
 // ==========================================
 const InvoiceMain = ({ details, updateDetails, stakeholders, addStakeholder, removeStakeholder, updateStakeholder, milestones, addMilestone, removeMilestone, updateMilestone, charges, addCharge, removeCharge, updateCharge, onSave, onBack }) => {
     const dVal = parseFloat(details.dealValue) || 0;
+    const [activePartyTab, setActivePartyTab] = useState('client');
 
     return (
         <div className="inv-content">
@@ -1190,17 +1220,49 @@ const InvoiceMain = ({ details, updateDetails, stakeholders, addStakeholder, rem
                 </div>
             </div>
 
-            {/* Stage 1 */}
-            <BusinessDetails details={details} updateDetails={updateDetails} charges={charges} addCharge={addCharge} removeCharge={removeCharge} updateCharge={updateCharge} />
+            {/* 4-Party Tab Bar */}
+            <div className="d-flex gap-2 mb-3 flex-wrap px-1">
+                {[
+                    { key: 'client',    label: '🧾 Client Bill' },
+                    { key: 'investors', label: '📊 Investors' },
+                    { key: 'devs',      label: '💻 Dev Cost' },
+                    { key: 'company',   label: '🏢 Company Margin' },
+                ].map(tab => (
+                    <button key={tab.key}
+                        className={`btn btn-sm ${activePartyTab === tab.key ? 'btn-primary' : 'btn-outline-secondary'}`}
+                        onClick={() => setActivePartyTab(tab.key)}
+                        style={{ fontWeight: 600, fontSize: 13 }}>
+                        {tab.label}
+                    </button>
+                ))}
+            </div>
 
-            {/* Stage 2 */}
-            <StageTwoCombined stakeholders={stakeholders} addStakeholder={addStakeholder} removeStakeholder={removeStakeholder} updateStakeholder={updateStakeholder} dealValue={dVal} currency={details.currency} />
+            {/* Client Tab: Business Details + Payment Milestones */}
+            {activePartyTab === 'client' && <>
+                <BusinessDetails details={details} updateDetails={updateDetails} charges={charges} addCharge={addCharge} removeCharge={removeCharge} updateCharge={updateCharge} />
+                <PaymentMilestones milestones={milestones} addMilestone={addMilestone} removeMilestone={removeMilestone} updateMilestone={updateMilestone} dealValue={dVal} details={details} taxes={charges} projectType={details.type} />
+            </>}
 
-            {/* Stage 3 */}
-            <PaymentMilestones milestones={milestones} addMilestone={addMilestone} removeMilestone={removeMilestone} updateMilestone={updateMilestone} dealValue={dVal} details={details} taxes={charges} projectType={details.type} />
+            {/* Investors Tab: Stakeholder Distribution + Payout */}
+            {activePartyTab === 'investors' && <>
+                <StageTwoCombined stakeholders={stakeholders} addStakeholder={addStakeholder} removeStakeholder={removeStakeholder} updateStakeholder={updateStakeholder} dealValue={dVal} currency={details.currency} />
+                <PaymentProcess stakeholders={stakeholders} updateStakeholder={updateStakeholder} details={details} dealValue={dVal} />
+            </>}
 
-            {/* Stage 4 */}
-            <PaymentProcess stakeholders={stakeholders} updateStakeholder={updateStakeholder} details={details} dealValue={dVal} />
+            {/* Dev Cost Tab */}
+            {activePartyTab === 'devs' && (
+                <div className="inv-stage-card">
+                    <div className="inv-stage-header"><div className="inv-stage-title">Dev Cost</div><div className="inv-stage-sub">Team hours and rates from Timesheet module</div></div>
+                    <div className="text-muted mt-3 p-3 bg-light rounded" style={{ fontSize: 13 }}>
+                        Dev cost allocation is tracked via the <strong>Timesheet</strong> module. Log hours against this project there and they will roll up here in a future update.
+                    </div>
+                </div>
+            )}
+
+            {/* Company Margin Tab */}
+            {activePartyTab === 'company' && (
+                <CompanyMarginTab details={details} stakeholders={stakeholders} milestones={milestones} taxes={charges} />
+            )}
         </div>
     );
 };
@@ -1578,7 +1640,27 @@ const ProjectTrackerComplete = () => {
         updateProject(p => ({ ...p, milestones: [...p.milestones, { id: Date.now(), name: defaultName, percentage: 0, status: 'Pending', invoiceDate: '', paidDate: '' }] }));
     };
     const removeMilestone = (id) => updateProject(p => ({ ...p, milestones: p.milestones.filter(m => m.id !== id) }));
-    const updateMilestone  = (id, f, v) => updateProject(p => ({ ...p, milestones: p.milestones.map(m => m.id === id ? { ...m, ...(typeof f === 'object' ? f : { [f]: v }) } : m) }));
+    const updateMilestone = (id, f, v) => {
+        // Auto-create Finance income record when milestone is marked Paid
+        const newStatus = typeof f === 'object' ? f.status : (f === 'status' ? v : null);
+        if (newStatus === 'Paid' && activeProject) {
+            const milestone = activeProject.milestones.find(m => m.id === id);
+            if (milestone) {
+                const totalTaxRate = (activeProject.charges || []).reduce((s, c) => s + (parseFloat(c.percentage) || 0), 0);
+                const base = ((parseFloat(activeProject.dealValue) || 0) * (parseFloat(milestone.percentage) || 0)) / 100;
+                const total = base + (base * totalTaxRate) / 100;
+                incomeService.createIncome({
+                    description: `${activeProject.clientName || 'Client'} — ${milestone.name}`,
+                    amount: total,
+                    category: 'sales',
+                    date: new Date().toISOString().split('T')[0],
+                    source: 'invoice',
+                    invoiceId: activeProject.projectId,
+                }).catch(err => console.error('Auto-income creation failed:', err));
+            }
+        }
+        updateProject(p => ({ ...p, milestones: p.milestones.map(m => m.id === id ? { ...m, ...(typeof f === 'object' ? f : { [f]: v }) } : m) }));
+    };
 
     const addCharge    = () => updateProject(p => ({ ...p, charges: [...p.charges, { id: Date.now(), name: 'Tax', taxType: 'Other', country: 'India', state: '', percentage: 0 }] }));
     const removeCharge = (id) => updateProject(p => ({ ...p, charges: p.charges.filter(c => c.id !== id) }));

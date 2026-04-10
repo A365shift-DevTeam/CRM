@@ -1297,7 +1297,7 @@ function Sales() {
                     <Button variant="secondary" size="sm" onClick={() => setShowWonDialog(false)}>Later</Button>
                     <Button variant="success" size="sm" onClick={() => {
                         setShowWonDialog(false);
-                        if (wonProject) navigate(`/invoice?dealId=${wonProject.id}&client=${encodeURIComponent(wonProject.clientName || '')}&value=${wonProject.dealValue || ''}`);
+                        if (wonProject) navigate('/invoice', { state: { project: wonProject } });
                     }}>Create Invoice</Button>
                 </Modal.Footer>
             </Modal>
