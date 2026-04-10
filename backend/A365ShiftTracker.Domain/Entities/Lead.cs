@@ -13,6 +13,7 @@ public class Lead : AuditableEntity, IOwnedByUser
     public string Stage { get; set; } = "New";
     public string? AssignedTo { get; set; }
     public string? Notes { get; set; }
+    public string? Type { get; set; }
     public decimal? ExpectedValue { get; set; }
     public DateTime? ExpectedCloseDate { get; set; }
 }

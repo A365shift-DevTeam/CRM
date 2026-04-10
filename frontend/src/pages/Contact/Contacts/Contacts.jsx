@@ -377,6 +377,7 @@ const Contacts = () => {
         score: 'Warm',
         stage: 'New',
         notes: '',
+        type: convertType,
         expectedValue: null,
         expectedCloseDate: null,
         assignedTo: '',

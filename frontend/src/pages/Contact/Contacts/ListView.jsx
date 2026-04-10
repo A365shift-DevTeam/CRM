@@ -81,7 +81,7 @@ export const ListView = ({ contacts, columns: columnsProp, sortBy, sortOrder, on
       }} style={{ cursor: 'pointer' }}>
         <Trash2 size={18} />
       </div>
-      <div className="slv-action-icon text-success" onClick={() => onConvertToSales(contact)} style={{ cursor: 'pointer' }} title="Convert to Sales Client">
+      <div className="slv-action-icon text-success" onClick={() => onConvertToSales(contact)} style={{ cursor: 'pointer' }} title="Convert to Lead">
         <ArrowUpRight size={18} />
       </div>
     </div>

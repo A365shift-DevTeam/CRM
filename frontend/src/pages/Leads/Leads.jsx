@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button, Modal, Form } from 'react-bootstrap';
 import { User, Building, Target, Edit, Trash2, ArrowUpRight, List, Columns } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { leadService } from '../../services/leadService';
 import { contactService } from '../../services/contactService';
 import { projectService } from '../../services/api';
@@ -71,7 +72,16 @@ export default function Leads() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this lead?')) return;
+    const result = await Swal.fire({
+      title: 'Delete lead?',
+      text: 'This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
     try {
       await leadService.deleteLead(id);
       toast.success('Lead deleted');
@@ -82,7 +92,16 @@ export default function Leads() {
   };
 
   const handleQualify = async (lead) => {
-    if (!window.confirm(`Qualify "${lead.contactName}" and create a Sales deal?`)) return;
+    const result = await Swal.fire({
+      title: 'Qualify lead?',
+      text: `Qualify "${lead.contactName}" and create a Sales deal?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, qualify',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
     const today = new Date();
     const date = String(today.getDate()).padStart(2, '0');
     const year = String(today.getFullYear()).slice(-2);
@@ -90,18 +109,36 @@ export default function Leads() {
     const clientCode = (lead.contactName || 'C').slice(-1).toUpperCase();
     const customId = `${date}${brandCode}${clientCode}${year}`;
 
+    // Use the lead's type (Product/Service), default to 'Product' if not set
+    const projectType = lead.type || 'Product';
+
+    // Load default stages for this project type from localStorage (same as Sales page)
+    const STAGE_STORAGE_KEYS = { Product: 'sales_stages_product', Service: 'sales_stages_service' };
+    const defaultStages = [
+      { id: 0, label: 'Demo', color: 'cyan', ageing: 7 },
+      { id: 1, label: 'Proposal', color: 'gray', ageing: 15 },
+      { id: 2, label: 'Negotiation', color: 'gray', ageing: 30 },
+      { id: 3, label: 'Approval', color: 'gray', ageing: 15 },
+      { id: 4, label: 'Won', color: 'green', ageing: 30 },
+      { id: 5, label: 'Closed', color: 'green', ageing: 90 },
+      { id: 6, label: 'Lost', color: 'orange', ageing: 60 },
+    ];
+    let initialStages = defaultStages;
+    try {
+      const stored = localStorage.getItem(STAGE_STORAGE_KEYS[projectType]);
+      if (stored) initialStages = JSON.parse(stored);
+    } catch (e) { /* use defaults */ }
+
     try {
       await projectService.create({
         activeStage: 0,
         history: [],
-        type: 'Service',
-        rating: 4.0,
+        type: projectType,
         delay: 0,
         title: `${lead.contactName} - ${lead.company || 'Direct'}`,
         clientName: lead.contactName,
-        brandingName: lead.company || 'A365Shift',
         customId,
-        leadId: lead.id,
+        stages: initialStages,
       });
       await leadService.updateLead(lead.id, { ...lead, stage: 'Qualified' });
       toast.success(`Lead qualified — Sales deal created for ${lead.contactName}`);

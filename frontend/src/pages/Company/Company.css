@@ -14,3 +14,40 @@
   font-size: 11px;
   font-weight: 600;
 }
+
+/* Premium SweetAlert Styling */
+.premium-swal-popup {
+  border-radius: 24px !important;
+  padding: 2rem !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.premium-swal-title {
+  color: #1e293b !important;
+  font-weight: 700 !important;
+  font-size: 1.5rem !important;
+}
+
+.premium-swal-confirm-danger,
+.premium-swal-confirm-success,
+.premium-swal-cancel {
+  padding: 10px 24px !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  text-transform: none !important;
+  box-shadow: none !important;
+}
+
+.premium-swal-confirm-danger {
+  background-color: #ef4444 !important;
+}
+
+.premium-swal-confirm-success {
+  background-color: #10b981 !important;
+}
+
+.premium-swal-cancel {
+  background-color: #64748b !important;
+  margin-right: 8px !important;
+}

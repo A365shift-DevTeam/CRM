@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Button, Modal, Form } from 'react-bootstrap';
-import { Building, Globe, MapPin, Edit, Trash2, Users, Briefcase } from 'lucide-react';
+import { Building, Globe, MapPin, Edit, Trash2, Users, Briefcase, ArrowUpRight } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { companyService } from '../../services/companyService';
+import { contactService } from '../../services/contactService';
 import { useToast } from '../../components/Toast/ToastContext';
 import PageToolbar from '../../components/PageToolbar/PageToolbar';
 import StatsGrid from '../../components/StatsGrid/StatsGrid';
@@ -59,13 +61,65 @@ export default function Company() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this company?')) return;
-    try {
-      await companyService.deleteCompany(id);
-      toast.success('Company deleted');
-      loadCompanies();
-    } catch (e) {
-      toast.error('Failed to delete company');
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this company deletion!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, delete it!',
+      customClass: {
+        popup: 'premium-swal-popup',
+        title: 'premium-swal-title',
+        confirmButton: 'premium-swal-confirm-danger',
+        cancelButton: 'premium-swal-cancel'
+      }
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await companyService.deleteCompany(id);
+        toast.success('Company deleted');
+        loadCompanies();
+      } catch (e) {
+        toast.error('Failed to delete company');
+      }
+    }
+  };
+
+  const handleConvertToContact = async (company) => {
+    const result = await Swal.fire({
+      title: 'Convert company?',
+      text: `Do you want to convert "${company.name}" into a Contact person?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, convert',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await contactService.createContact({
+          name: company.name,
+          company: company.name,
+          type: 'Company',
+          entityType: 'Company',
+          status: 'Active',
+          clientAddress: company.address || null,
+          clientCountry: company.country || null,
+          gstin: company.gstin || null,
+          phone: null,
+          email: null,
+          jobTitle: null,
+          location: company.country || null,
+        });
+        toast.success(`"${company.name}" converted to Contact`);
+      } catch (e) {
+        console.error('Error converting company to contact:', e);
+        toast.error('Failed to convert company to contact');
+      }
     }
   };
 
@@ -109,6 +163,7 @@ export default function Company() {
                   </div>
                   <div className="d-flex gap-2">
                     <button className="btn btn-sm btn-light" onClick={() => openEdit(c)}><Edit size={14} /></button>
+                    <button className="btn btn-sm btn-success" title="Convert to Contact" onClick={() => handleConvertToContact(c)}><ArrowUpRight size={14} /></button>
                     <button className="btn btn-sm btn-light text-danger" onClick={() => handleDelete(c.id)}><Trash2 size={14} /></button>
                   </div>
                 </div>

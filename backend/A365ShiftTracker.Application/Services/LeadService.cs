@@ -29,6 +29,7 @@ public class LeadService : ILeadService
             Stage = request.Stage ?? "New",
             AssignedTo = request.AssignedTo,
             Notes = request.Notes,
+            Type = request.Type,
             ExpectedValue = request.ExpectedValue,
             ExpectedCloseDate = request.ExpectedCloseDate,
         };
@@ -54,6 +55,7 @@ public class LeadService : ILeadService
         entity.Stage = request.Stage ?? entity.Stage;
         entity.AssignedTo = request.AssignedTo;
         entity.Notes = request.Notes;
+        entity.Type = request.Type;
         entity.ExpectedValue = request.ExpectedValue;
         entity.ExpectedCloseDate = request.ExpectedCloseDate;
 
@@ -78,7 +80,7 @@ public class LeadService : ILeadService
     {
         Id = l.Id, ContactId = l.ContactId, ContactName = l.ContactName,
         Company = l.Company, Source = l.Source, Score = l.Score, Stage = l.Stage,
-        AssignedTo = l.AssignedTo, Notes = l.Notes, ExpectedValue = l.ExpectedValue,
+        AssignedTo = l.AssignedTo, Notes = l.Notes, Type = l.Type, ExpectedValue = l.ExpectedValue,
         ExpectedCloseDate = l.ExpectedCloseDate, CreatedAt = l.CreatedAt,
     };
 }
