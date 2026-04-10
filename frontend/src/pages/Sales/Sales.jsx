@@ -127,6 +127,14 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
             {/* Title Row */}
             <div className="sales-card-title">{title || 'Untitled Project'}</div>
 
+            {/* Contact / Company row */}
+            {(clientName || brandingName) && (
+                <div className="d-flex gap-2 mb-1" style={{ fontSize: 11, color: '#64748B' }}>
+                    {clientName && <span>👤 {clientName}</span>}
+                    {brandingName && brandingName !== 'A365Shift' && <span>🏢 {brandingName}</span>}
+                </div>
+            )}
+
             {/* Header Row: ID + Meta + Icons */}
             <div className="d-flex justify-content-between align-items-center mb-2">
                 <div className="d-flex align-items-center gap-3">
@@ -298,6 +306,10 @@ function Sales() {
     const [projects, setProjects] = useState([])
     const [, setLoading] = useState(true)
 
+    // Won → Invoice dialog
+    const [showWonDialog, setShowWonDialog] = useState(false)
+    const [wonProject, setWonProject] = useState(null)
+
     // Helper to get correct stages based on type
     const getStagesByType = (type) => type === 'Product' ? productStages : serviceStages
 
@@ -380,6 +392,11 @@ function Sales() {
             // Call API
             await projectService.update(projectId, apiUpdates);
             toast.success(`Stage updated: ${transitionStr}`);
+            // Prompt to create invoice when deal is Won
+            if (newStageLabel === 'Won') {
+                setWonProject({ ...p, activeStage: newStageIndex });
+                setShowWonDialog(true);
+            }
         } catch (error) {
             console.error('Failed to update project stage:', error);
             toast.error('Failed to update project stage');
@@ -1262,6 +1279,28 @@ function Sales() {
                     serviceLabel={serviceLabel}
                 />
             )}
+
+            {/* Won → Invoice Dialog */}
+            <Modal show={showWonDialog} onHide={() => setShowWonDialog(false)} centered size="sm">
+                <Modal.Header closeButton className="border-0 pb-0">
+                    <Modal.Title className="h6 fw-bold">🎉 Deal Won!</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="pt-2">
+                    {wonProject && (
+                        <p className="text-muted small mb-0">
+                            <strong>{wonProject.title}</strong> is marked as Won.<br />
+                            Create an Invoice for this deal now?
+                        </p>
+                    )}
+                </Modal.Body>
+                <Modal.Footer className="border-0 pt-0">
+                    <Button variant="secondary" size="sm" onClick={() => setShowWonDialog(false)}>Later</Button>
+                    <Button variant="success" size="sm" onClick={() => {
+                        setShowWonDialog(false);
+                        if (wonProject) navigate(`/invoice?dealId=${wonProject.id}&client=${encodeURIComponent(wonProject.clientName || '')}&value=${wonProject.dealValue || ''}`);
+                    }}>Create Invoice</Button>
+                </Modal.Footer>
+            </Modal>
         </div>
     )
 }
