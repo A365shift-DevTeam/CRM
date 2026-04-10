@@ -1,7 +1,7 @@
 .ai-followup-page {
     padding: 24px;
-    background-color: #F5F7FA;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-primary, #EEF2F8);
+    font-family: var(--font-family, 'DM Sans', sans-serif);
     color: #0F172A;
 }
 
@@ -29,20 +29,20 @@
 
 .alert-card {
     background: #FFFFFF;
-    border-radius: 20px;
-    padding: 20px;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-    border: 1px solid #E2E8F0;
-    margin-bottom: 16px;
-    transition: 0.25s ease;
+    border-radius: 14px;
+    padding: 18px 20px;
+    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06), 0 1px 4px rgba(15, 23, 42, 0.04);
+    border: 1px solid #E1E8F4;
+    margin-bottom: 12px;
+    transition: box-shadow 0.2s, transform 0.2s;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
 }
 
 .alert-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
 }
 
 .alert-card.project-alert {
@@ -252,9 +252,9 @@
 }
 
 .ai-tab.active {
-    background: #3b82f6;
+    background: var(--accent-primary, #4361EE);
     color: white;
-    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 2px 8px rgba(67, 97, 238, 0.25);
 }
 
 .ai-tab:hover:not(.active) {

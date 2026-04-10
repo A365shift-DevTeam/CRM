@@ -82,6 +82,7 @@ export default function MainLayout() {
       title: 'Operations',
       items: [
         { path: '/finance',   icon: <FaMoneyBillWave size={14} />, label: 'Finance',   permission: 'finance.view' },
+        { path: '/invoice',   icon: <FaFileInvoice size={14} />,   label: 'Invoice',   permission: 'invoice.view' },
         { path: '/legal',     icon: <FaFileInvoice size={14} />,   label: 'Legal',     permission: 'invoice.view' },
         { path: '/documents', icon: <FaFileInvoice size={14} />,   label: 'Documents', permission: 'dashboard.view' },
         { path: '/links',     icon: <FaHouse size={14} />,         label: 'Links',     permission: 'dashboard.view' },
@@ -100,6 +101,16 @@ export default function MainLayout() {
       ],
     },
   ];
+
+  const allExpanded = navCategories.every(cat => expandedCategories[cat.title] !== false);
+
+  const handleToggleAll = () => {
+    const newState = {};
+    navCategories.forEach(cat => {
+      newState[cat.title] = !allExpanded;
+    });
+    setExpandedCategories(newState);
+  };
 
   let currentPageLabel = 'A365 Tracker';
   if (location.pathname === '/') currentPageLabel = 'Dashboard';
@@ -259,6 +270,21 @@ export default function MainLayout() {
             </div>
             <span>Dashboard</span>
           </Link>
+
+          {/* Menus Header & Toggle All Button */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '8px 0 4px', padding: '0 4px' }}>
+            <span style={{ fontSize: '10px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Menus</span>
+            <button
+               onClick={handleToggleAll}
+               style={{
+                 background: 'none', border: 'none', color: themeColor,
+                 fontSize: '10px', fontWeight: 700, cursor: 'pointer',
+                 fontFamily: 'DM Sans, sans-serif'
+               }}
+            >
+               {allExpanded ? 'View Less' : 'View All'}
+            </button>
+          </div>
 
           {/* Categories */}
           {navCategories.map((category) => {

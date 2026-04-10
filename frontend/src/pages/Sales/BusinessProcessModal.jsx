@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Modal, Button, Form, Row, Col } from 'react-bootstrap'
-import { X } from 'lucide-react'
+import { X, Clock, DollarSign, FileText, Paperclip, History } from 'lucide-react'
 import './BusinessProcessModal.css'
 
 const CURRENCIES = [
@@ -24,26 +23,23 @@ const BusinessProcessModal = ({
     stages = [],
     activeStage,
     targetStage,
-
     delay = 0,
     history = []
 }) => {
-    // Sort history by timestamp ascending (Oldest first) "one by one order"
-    const sortedHistory = [...history].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+    const sortedHistory = [...history].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
 
     const initialStage = targetStage !== undefined ? targetStage : activeStage
     const [viewedStage, setViewedStage] = useState(initialStage)
     const [formData, setFormData] = useState({
         targetDate: '',
         amount: '',
-        currency: 'USD',
+        currency: 'INR',
         description: '',
         attachment: ''
     })
 
     useEffect(() => {
         if (show) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             setViewedStage(targetStage !== undefined ? targetStage : activeStage)
         }
     }, [show, targetStage, activeStage])
@@ -53,163 +49,186 @@ const BusinessProcessModal = ({
     }
 
     const handleSubmit = () => {
-        handleSave({
-            stageIndex: viewedStage,
-            ...formData
-        })
-        setFormData({
-            targetDate: '',
-            amount: '',
-            currency: 'USD',
-            description: '',
-            attachment: ''
-        })
+        handleSave({ stageIndex: viewedStage, ...formData })
+        setFormData({ targetDate: '', amount: '', currency: 'INR', description: '', attachment: '' })
     }
 
     if (!show) return null
 
     const currentStageLabel = stages[viewedStage]?.label || 'Stage'
 
-    // Use Portal to render outside of the local stacking context (which has transforms/z-index issues)
     return createPortal(
         <div className="business-process-overlay">
-            {/* HEADER */}
+
+            {/* ── Header ── */}
             <div className="bp-modal-header">
-                <div className="header-content">
-                    Business Process – Project ID {projectId} —{' '}
-                    {delay > 0 ? `Delay ${delay} Days` : 'On Track'}
+                <div className="bp-header-left">
+                    <span className="bp-header-title">
+                        Business Process
+                        <span className="bp-header-id"> · #{String(projectId).slice(-8).toUpperCase()}</span>
+                    </span>
+                    <span className={`bp-header-badge ${delay > 0 ? 'delayed' : 'on-track'}`}>
+                        {delay > 0 ? `⚠ ${delay}d delay` : '● On Track'}
+                    </span>
                 </div>
-                <button className="bp-close-btn" onClick={handleClose}>
-                    <X size={24} />
+                <button className="bp-close-btn" onClick={handleClose} title="Close">
+                    <X size={16} />
                 </button>
             </div>
 
-            {/* BODY */}
+            {/* ── Body ── */}
             <div className="bp-content-body">
-                <Row className="g-0 h-100">
-                    {/* LEFT SIDEBAR */}
-                    <Col md={2} className="bp-sidebar">
-                        {stages.map((stage, index) => (
-                            <button
-                                key={index}
-                                type="button"
-                                className={`bp-stage-btn ${index === viewedStage ? 'active' : ''}`}
-                                onClick={() => setViewedStage(index)}
+
+                {/* LEFT: Stage Sidebar */}
+                <div className="bp-sidebar">
+                    <div className="bp-sidebar-label">Pipeline Stages</div>
+                    {stages.map((stage, index) => (
+                        <button
+                            key={index}
+                            type="button"
+                            className={`bp-stage-btn ${index === viewedStage ? 'active' : ''}`}
+                            onClick={() => setViewedStage(index)}
+                        >
+                            <span className="bp-stage-num">{index + 1}</span>
+                            {stage.label}
+                        </button>
+                    ))}
+                </div>
+
+                {/* CENTER: Form */}
+                <div className="bp-form-section">
+                    <div className="bp-form-stage-title">{currentStageLabel}</div>
+                    <div className="bp-form-stage-sub">Log activity and set targets for this stage</div>
+
+                    {/* Target Date */}
+                    <div className="mb-3">
+                        <label className="form-label d-flex align-items-center gap-2">
+                            <Clock size={12} />
+                            Target Date
+                        </label>
+                        <input
+                            type="date"
+                            className="form-control"
+                            value={formData.targetDate}
+                            onChange={e => handleFormChange('targetDate', e.target.value)}
+                        />
+                    </div>
+
+                    {/* Amount */}
+                    <div className="mb-3">
+                        <label className="form-label d-flex align-items-center gap-2">
+                            <DollarSign size={12} />
+                            Amount
+                        </label>
+                        <div className="bp-amount-group">
+                            <select
+                                className="form-select"
+                                value={formData.currency}
+                                onChange={e => handleFormChange('currency', e.target.value)}
                             >
-                                {stage.label}
-                            </button>
-                        ))}
-                    </Col>
+                                {CURRENCIES.map(curr => (
+                                    <option key={curr.code} value={curr.code}>
+                                        {curr.code} {curr.symbol}
+                                    </option>
+                                ))}
+                            </select>
+                            <input
+                                type="number"
+                                className="form-control"
+                                placeholder="0.00"
+                                value={formData.amount}
+                                onChange={e => handleFormChange('amount', e.target.value)}
+                            />
+                        </div>
+                    </div>
 
-                    {/* CENTER FORM */}
-                    <Col md={5} className="bp-form-section">
-                        <Form>
-                            <Form.Group className="mb-3">
-                                <Form.Label>Target Date</Form.Label>
-                                <Form.Control
-                                    type="date"
-                                    value={formData.targetDate}
-                                    onChange={e => handleFormChange('targetDate', e.target.value)}
-                                />
-                            </Form.Group>
+                    {/* Description */}
+                    <div className="mb-3">
+                        <label className="form-label d-flex align-items-center gap-2">
+                            <FileText size={12} />
+                            Description
+                        </label>
+                        <textarea
+                            className="form-control"
+                            rows={5}
+                            value={formData.description}
+                            placeholder={`Notes for ${currentStageLabel}...`}
+                            onChange={e => handleFormChange('description', e.target.value)}
+                        />
+                    </div>
 
+                    {/* Attachment */}
+                    <div className="mb-4">
+                        <label className="form-label d-flex align-items-center gap-2">
+                            <Paperclip size={12} />
+                            Attachment
+                        </label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder="File path or URL"
+                            value={formData.attachment}
+                            onChange={e => handleFormChange('attachment', e.target.value)}
+                        />
+                    </div>
 
-                            <Form.Group className="mb-3">
-                                <Form.Label>Amount</Form.Label>
-                                <div className="d-flex">
-                                    <Form.Select
-                                        style={{ maxWidth: '120px', borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
-                                        value={formData.currency}
-                                        onChange={e => handleFormChange('currency', e.target.value)}
-                                    >
-                                        {CURRENCIES.map(curr => (
-                                            <option key={curr.code} value={curr.code}>
-                                                {curr.code} ({curr.symbol})
-                                            </option>
-                                        ))}
-                                    </Form.Select>
-                                    <Form.Control
-                                        type="number"
-                                        placeholder="Enter amount"
-                                        value={formData.amount}
-                                        onChange={e => handleFormChange('amount', e.target.value)}
-                                        style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
-                                    />
-                                </div>
-                            </Form.Group>
+                    <div className="bp-action-row">
+                        <button className="bp-save-btn" onClick={handleSubmit}>
+                            Save Stage
+                        </button>
+                        <button className="bp-cancel-btn" onClick={handleClose}>
+                            Cancel
+                        </button>
+                    </div>
+                </div>
 
-                            <Form.Group className="mb-3">
-                                <Form.Label>Description</Form.Label>
-                                <Form.Control
-                                    as="textarea"
-                                    rows={5}
-                                    value={formData.description}
-                                    placeholder={`Enter details for ${currentStageLabel}...`}
-                                    onChange={e => handleFormChange('description', e.target.value)}
-                                />
-                            </Form.Group>
+                {/* RIGHT: History Timeline */}
+                <div className="bp-status-section">
+                    <div className="bp-history-header d-flex align-items-center gap-2">
+                        <History size={12} />
+                        Stage History
+                    </div>
 
-                            <Form.Group className="mb-4">
-                                <Form.Label>Attachment</Form.Label>
-                                <Form.Control
-                                    type="text"
-                                    placeholder="File path or URL"
-                                    value={formData.attachment}
-                                    onChange={e => handleFormChange('attachment', e.target.value)}
-                                />
-                            </Form.Group>
-
-                            <div className="d-flex gap-3">
-                                <Button variant="primary" onClick={handleSubmit}>
-                                    Save
-                                </Button>
-                                <Button variant="outline-secondary" onClick={handleClose}>
-                                    Cancel
-                                </Button>
+                    {sortedHistory.length === 0 ? (
+                        <div className="bp-history-empty">
+                            <div className="bp-history-empty-icon">
+                                <History size={20} />
                             </div>
-                        </Form>
-                    </Col>
-
-                    {/* RIGHT STATUS */}
-                    <Col md={5} className="bp-status-section">
-                        <h6 className="mb-3">Status History</h6>
-                        <div className="history-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                            {(!sortedHistory || sortedHistory.length === 0) ? (
-                                <p className="text-muted small">
-                                    History and logs for {currentStageLabel} will appear here.
-                                </p>
-                            ) : (
-                                sortedHistory.map((item, idx) => (
-                                    <div key={idx} className="history-item mb-3 p-2 border-bottom">
-                                        <div className="d-flex justify-content-between">
-                                            <strong style={{ fontSize: '0.9rem', color: '#1f2937' }}>{item.transition}</strong>
-                                            <small className="text-secondary" style={{ fontSize: '0.75rem' }}>
-                                                {new Date(item.timestamp).toLocaleString()}
-                                            </small>
+                            <p>No history yet.<br />Stage transitions will appear here.</p>
+                        </div>
+                    ) : (
+                        <div className="bp-timeline">
+                            {sortedHistory.map((item, idx) => (
+                                <div key={idx} className="bp-timeline-item">
+                                    <div className="bp-timeline-dot" />
+                                    <div className="bp-timeline-card">
+                                        <div className="bp-timeline-transition">{item.transition}</div>
+                                        <div className="bp-timeline-time">
+                                            {new Date(item.timestamp).toLocaleString(undefined, {
+                                                month: 'short', day: 'numeric', year: 'numeric',
+                                                hour: '2-digit', minute: '2-digit'
+                                            })}
                                         </div>
-                                        {item.amount && (
-                                            <div className="text-success small fw-bold">
-                                                Amount: {item.currency || 'USD'} {item.amount}
+                                        {item.amount > 0 && (
+                                            <div className="bp-timeline-amount">
+                                                {item.currency || 'USD'} {Number(item.amount).toLocaleString()}
                                             </div>
                                         )}
                                         {item.description && (
-                                            <div className="small mt-1" style={{ color: '#374151' }}>
-                                                {item.description}
+                                            <div className="bp-timeline-desc">{item.description}</div>
+                                        )}
+                                        {item.targetDate && (
+                                            <div className="bp-timeline-target">
+                                                Target: {item.targetDate}
                                             </div>
                                         )}
-                                        <div className="d-flex gap-2 mt-1">
-                                            {item.targetDate && (
-                                                <small className="text-secondary" style={{ fontSize: '0.75rem' }}>
-                                                    Target: {item.targetDate}
-                                                </small>
-                                            )}
-                                        </div>
                                     </div>
-                                ))
-                            )}
+                                </div>
+                            ))}
                         </div>
-                    </Col>
-                </Row>
+                    )}
+                </div>
+
             </div>
         </div>,
         document.body

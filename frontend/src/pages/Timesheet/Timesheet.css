@@ -1,37 +1,32 @@
-/* Timesheet.css — Apple-Inspired Design */
+/* Timesheet.css — Enterprise Design */
 .timesheet-container {
   padding: 24px;
-  background-color: #F5F7FA;
+  background: var(--bg-primary, #EEF2F8);
   overflow-x: hidden;
   position: relative;
   color: #0F172A;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-family, 'DM Sans', sans-serif);
 }
 
 /* --- Content Area --- */
 .timesheet-content {
   background: #FFFFFF;
-  border-radius: 20px;
-  padding: 22px;
-  border: 1px solid #E2E8F0;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #E1E8F4;
+  box-shadow: 0 2px 14px rgba(15, 23, 42, 0.06), 0 1px 4px rgba(15, 23, 42, 0.04);
   min-height: 400px;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  transition: 0.25s ease;
-}
-
-.timesheet-content:hover {
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+  font-family: var(--font-family, 'DM Sans', sans-serif);
 }
 
 /* --- Section Title --- */
 .timesheet-content .section-title,
 .timesheet-content h3 {
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0 0 18px;
+  font-size: 16px;
+  font-weight: 800;
+  margin: 0 0 16px;
   color: #0F172A;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-display, 'Outfit', sans-serif);
 }
 
 /* --- List View --- */

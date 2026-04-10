@@ -813,6 +813,190 @@
   animation: layout-alert-pop-fade 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
+/* ══════════════════════════════════════════════
+   Deal Breakdown — Donut Pie
+══════════════════════════════════════════════ */
+.pie-chart-body {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-top: 4px;
+}
+
+.pie-donut-wrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 180px;
+}
+
+.pie-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.pie-center-num {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.pie-center-lbl {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 3px;
+}
+
+.pie-legend-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pie-legend-row {
+  display: grid;
+  grid-template-columns: 9px 1fr 28px 70px;
+  align-items: center;
+  gap: 8px;
+}
+
+.pie-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pie-legend-name {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  font-family: var(--font-family);
+}
+
+.pie-legend-val {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.pie-legend-bar-track {
+  height: 5px;
+  background: var(--bg-primary);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+}
+
+.pie-legend-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  min-width: 2px;
+}
+
+/* ══════════════════════════════════════════════
+   Sales Funnel Chart — SVG Trapezoid
+══════════════════════════════════════════════ */
+.funnel-enterprise-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 56%) minmax(0, 44%);
+  gap: 12px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.funnel-canvas-wrap {
+  min-height: 260px;
+  display: flex;
+  align-items: center;
+}
+
+.funnel-canvas {
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  display: block;
+}
+
+.funnel-metric-list {
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+  padding-left: 6px;
+}
+
+.funnel-metric-row {
+  display: grid;
+  grid-template-columns: 9px 1fr 24px 56px 30px;
+  align-items: center;
+  gap: 8px;
+}
+
+.funnel-metric-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.funnel-metric-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  font-family: var(--font-family);
+}
+
+.funnel-metric-count {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: #0F172A;
+  text-align: right;
+}
+
+.funnel-metric-track {
+  height: 6px;
+  border-radius: 999px;
+  background: #EEF2F8;
+  overflow: hidden;
+}
+
+.funnel-metric-pct {
+  font-size: 11px;
+  color: #94A3B8;
+  font-weight: 700;
+  text-align: right;
+  font-family: var(--font-family);
+}
+
+.funnel-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-light);
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: var(--font-family);
+}
+
 /* ─────────────────────────────────────────────
    RESPONSIVE
 ───────────────────────────────────────────── */
@@ -829,6 +1013,9 @@
   .kpi-number { font-size: 22px; }
   .dash-alert-sidebar { width: 100%; }
   .quick-stats-grid { grid-template-columns: 1fr 1fr; }
+  .funnel-enterprise-layout { grid-template-columns: 1fr; gap: 14px; }
+  .funnel-canvas-wrap { min-height: 220px; justify-content: center; }
+  .funnel-metric-list { min-height: auto; padding-left: 0; }
 }
 
 @media (max-width: 480px) {

@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   AreaChart, Area, BarChart, Bar,
-  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
+  PieChart, Pie,
+  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell
 } from 'recharts';
 import { projectService, taskService } from '../../services/api';
 import { contactService } from '../../services/contactService';
@@ -279,8 +280,248 @@ function PipelineChart({ projects }) {
 }
 
 /* ─────────────────────────────────────────
-   Intelligence Feed (Activity)
+   Deal Breakdown — Donut Pie
 ───────────────────────────────────────── */
+const PIE_SLICES = [
+  { label: 'Active',      color: '#4361EE', key: 'active'  },
+  { label: 'Won',         color: '#10B981', key: 'won'     },
+  { label: 'In Progress', color: '#F59E0B', key: 'progress'},
+  { label: 'Lost',        color: '#F43F5E', key: 'lost'    },
+  { label: 'Closed',      color: '#64748B', key: 'closed'  },
+];
+
+function DealPieChart({ projects }) {
+  const data = useMemo(() => {
+    const counts = {
+      active:   projects.filter(p => !p.status || p.status === 'Active').length,
+      won:      projects.filter(p => p.status === 'Won').length,
+      progress: projects.filter(p => p.status === 'In Progress').length,
+      lost:     projects.filter(p => p.status === 'Lost').length,
+      closed:   projects.filter(p => p.status === 'Closed').length,
+    };
+    const result = PIE_SLICES
+      .map(s => ({ name: s.label, value: counts[s.key], color: s.color }))
+      .filter(d => d.value > 0);
+    if (result.length === 0) return [{ name: 'No Data', value: 1, color: '#E1E8F4' }];
+    return result;
+  }, [projects]);
+
+  const total = projects.length;
+
+  const PieTooltip = ({ active, payload }) => {
+    if (!active || !payload?.length) return null;
+    const d = payload[0];
+    return (
+      <div className="dash-chart-tooltip">
+        <div className="tooltip-row">
+          <span className="tooltip-dot" style={{ background: d.payload.color }} />
+          <span>{d.name}: <b>{d.value} deals</b></span>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <motion.div className="chart-card"
+      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.32 }}
+    >
+      <div className="chart-card-header">
+        <div>
+          <h3 className="chart-card-title">Deal Breakdown</h3>
+          <p className="chart-card-sub">Project status distribution</p>
+        </div>
+        <div className="chart-total-badge">{total} Total</div>
+      </div>
+      <div className="pie-chart-body">
+        <div className="pie-donut-wrap">
+          <ResponsiveContainer width="100%" height={200}>
+            <PieChart>
+              <Pie data={data} cx="50%" cy="50%"
+                innerRadius={56} outerRadius={86}
+                paddingAngle={3} dataKey="value" strokeWidth={0}
+                label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                  if (percent < 0.07) return null;
+                  const RADIAN = Math.PI / 180;
+                  const r = innerRadius + (outerRadius - innerRadius) * 0.5;
+                  const x = cx + r * Math.cos(-midAngle * RADIAN);
+                  const y = cy + r * Math.sin(-midAngle * RADIAN);
+                  return (
+                    <text x={x} y={y} fill="#fff" textAnchor="middle"
+                      dominantBaseline="central" fontSize={11} fontWeight={700}
+                      fontFamily="DM Sans, sans-serif">
+                      {(percent * 100).toFixed(0)}%
+                    </text>
+                  );
+                }}
+                labelLine={false}
+              >
+                {data.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+              </Pie>
+              <Tooltip content={<PieTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="pie-center">
+            <span className="pie-center-num">{total}</span>
+            <span className="pie-center-lbl">Deals</span>
+          </div>
+        </div>
+        <div className="pie-legend-col">
+          {data.map(d => (
+            <div key={d.name} className="pie-legend-row">
+              <span className="pie-legend-dot" style={{ background: d.color }} />
+              <span className="pie-legend-name">{d.name}</span>
+              <span className="pie-legend-val">{d.value}</span>
+              <div className="pie-legend-bar-track">
+                <motion.div className="pie-legend-bar-fill"
+                  style={{ background: d.color }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${total > 0 ? (d.value / total) * 100 : 0}%` }}
+                  transition={{ duration: 0.7, delay: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─────────────────────────────────────────
+   Sales Funnel Chart (Enterprise SVG)
+───────────────────────────────────────── */
+const FUNNEL_STAGES = [
+  { name: 'Demo',        color: '#4361EE' },
+  { name: 'Proposal',   color: '#06B6D4' },
+  { name: 'Negotiation',color: '#F59E0B' },
+  { name: 'Approval',   color: '#8B5CF6' },
+  { name: 'Won',        color: '#10B981' },
+];
+
+function SalesFunnelChart({ projects }) {
+  const raw = useMemo(() => FUNNEL_STAGES.map((stage, idx) => ({
+    ...stage,
+    count: projects.filter((p) => p.activeStage === idx || p.status === stage.name).length,
+  })), [projects]);
+
+  const total = raw.reduce((sum, d) => sum + d.count, 0);
+  const trackedStages = raw.filter((s) => s.count > 0).length;
+  const maxCount = Math.max(...raw.map((s) => s.count), 1);
+
+  const SVG_W = 460;
+  const SVG_H = 280;
+  const CENTER_X = SVG_W / 2;
+  const SEGMENT_H = 50;
+  const TOP_GAP = 12;
+  const START_HALF_W = 200;
+  const MIN_HALF_W = 6;
+
+  // Force a triangle/pyramid shape by linearly decreasing width by index
+  const scaledHalfWidth = (idx, total) => {
+    const ratio = Math.max(0, (total - idx) / total);
+    return Math.max(MIN_HALF_W, Math.round(MIN_HALF_W + ratio * (START_HALF_W - MIN_HALF_W)));
+  };
+
+  return (
+    <motion.div className="chart-card"
+      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.44 }}
+    >
+      <div className="chart-card-header">
+        <div>
+          <h3 className="chart-card-title">Sales Funnel</h3>
+          <p className="chart-card-sub">Pipeline conversion by stage</p>
+        </div>
+        <div className="chart-total-badge">{trackedStages} Tracked</div>
+      </div>
+
+      <div className="funnel-enterprise-layout">
+        <div className="funnel-canvas-wrap">
+          <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="funnel-canvas" role="img" aria-label="Sales funnel by stage">
+            {raw.map((stage, i) => {
+              const next = raw[i + 1];
+              const topWidth = scaledHalfWidth(i, raw.length);
+              const bottomWidth = scaledHalfWidth(i + 1, raw.length);
+              const yTop = TOP_GAP + i * SEGMENT_H;
+              const yBottom = yTop + SEGMENT_H - 2;
+              const points = `${CENTER_X - topWidth},${yTop} ${CENTER_X + topWidth},${yTop} ${CENTER_X + bottomWidth},${yBottom} ${CENTER_X - bottomWidth},${yBottom}`;
+              const showLabel = topWidth > 38 || bottomWidth > 38;
+
+              return (
+                <g key={stage.name}>
+                  <polygon points={points} fill={stage.color} opacity="0.97" />
+                  {showLabel && (
+                    <text
+                      x={CENTER_X}
+                      y={(yTop + yBottom) / 2 + 5}
+                      textAnchor="middle"
+                      fill="#fff"
+                      fontSize="11"
+                      fontWeight="700"
+                      fontFamily="DM Sans, sans-serif"
+                    >
+                      {stage.name}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+            <line
+              x1={CENTER_X}
+              y1={TOP_GAP + raw.length * SEGMENT_H - 2}
+              x2={CENTER_X}
+              y2={SVG_H - 8}
+              stroke={raw[raw.length - 1]?.color || '#10B981'}
+              strokeWidth="2"
+              strokeLinecap="round"
+              opacity="0.8"
+            />
+          </svg>
+        </div>
+
+        <div className="funnel-metric-list">
+          {raw.map((s, i) => {
+            // Stage percentage — same formula as Sales page: (stageIndex / maxStageIndex) * 100
+            const maxStageIndex = FUNNEL_STAGES.length - 1;
+            const stagePct = maxStageIndex > 0 ? Math.round((i / maxStageIndex) * 100) : 0;
+            return (
+              <motion.div
+                key={s.name}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.35, delay: 0.4 + i * 0.07 }}
+                className="funnel-metric-row"
+              >
+                <span className="funnel-metric-dot" style={{ background: s.color }} />
+                <span className="funnel-metric-name">{s.name}</span>
+                <span className="funnel-metric-count">{s.count}</span>
+                <div className="funnel-metric-track">
+                  <motion.div
+                    style={{ height: '100%', borderRadius: 999, background: s.color }}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.max(stagePct, 4)}%` }}
+                    transition={{ duration: 0.6, delay: 0.5 + i * 0.07 }}
+                  />
+                </div>
+                <span className="funnel-metric-pct">{stagePct}%</span>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="funnel-footer">
+        <span>Total in pipeline</span>
+        <span style={{ fontWeight: 700, color: '#0F172A' }}>{total} deals</span>
+      </div>
+    </motion.div>
+  );
+}
+
+/* -----------------------------------------------
+   Intelligence Feed (Activity)
+----------------------------------------------- */
 const FEED_STYLES = {
   danger: { bg: '#FFF1F2', color: '#F43F5E', border: '#FECDD3' },
   warning:{ bg: '#FFFBEB', color: '#D97706', border: '#FDE68A' },
@@ -826,9 +1067,15 @@ export default function Dashboard() {
         {/* ── Revenue Chart ── */}
         <RevenueChart data={monthlyData} />
 
-        {/* ── Pipeline + Intelligence ── */}
+        {/* ── Pipeline + Deal Breakdown Pie ── */}
         <div className="dash-two-col">
           <PipelineChart projects={projects} />
+          <DealPieChart projects={projects} />
+        </div>
+
+        {/* ── Sales Funnel + Intelligence Feed ── */}
+        <div className="dash-two-col">
+          <SalesFunnelChart projects={projects} />
           <IntelligenceFeed alerts={alerts} tasks={pendingTasks} />
         </div>
 
@@ -856,3 +1103,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+
