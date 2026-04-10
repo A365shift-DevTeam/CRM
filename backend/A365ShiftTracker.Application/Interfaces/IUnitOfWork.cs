@@ -32,5 +32,7 @@ public interface IUnitOfWork : IDisposable
     IRepository<EntityTag> EntityTags { get; }
     IRepository<EmailTemplate> EmailTemplates { get; }
     IRepository<Document> Documents { get; }
+    IRepository<Company> Companies { get; }
+    IRepository<Lead> Leads { get; }
     Task<int> SaveChangesAsync();
 }

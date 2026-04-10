@@ -36,6 +36,8 @@ public class AppDbContext : DbContext
     public DbSet<EntityTag> EntityTags => Set<EntityTag>();
     public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
     public DbSet<Document> Documents => Set<Document>();
+    public DbSet<Company> Companies => Set<Company>();
+    public DbSet<Lead> Leads => Set<Lead>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -340,6 +342,22 @@ public class AppDbContext : DbContext
             e.ToTable("documents");
             e.HasIndex(d => d.UserId);
             e.HasIndex(d => new { d.EntityType, d.EntityId });
+        });
+
+        // ─── Companies ───────────────────────────────────
+        modelBuilder.Entity<Company>(e =>
+        {
+            e.ToTable("companies");
+            e.HasIndex(c => c.UserId);
+            e.HasIndex(c => c.Name);
+        });
+
+        // ─── Leads ───────────────────────────────────────
+        modelBuilder.Entity<Lead>(e =>
+        {
+            e.ToTable("leads");
+            e.HasIndex(l => l.UserId);
+            e.HasIndex(l => l.Stage);
         });
 
         // ─── Snake case column naming convention ───────────

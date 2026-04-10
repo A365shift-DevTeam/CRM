@@ -40,6 +40,8 @@ public static class DependencyInjection
         services.AddScoped<IEmailTemplateService, EmailTemplateService>();
         services.AddScoped<IDocumentService, DocumentService>();
         services.AddScoped<IReportService, ReportService>();
+        services.AddScoped<ICompanyService, CompanyService>();
+        services.AddScoped<ILeadService, LeadService>();
 
         return services;
     }

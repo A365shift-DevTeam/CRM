@@ -28,7 +28,9 @@ public class IncomeService : IIncomeService
             EmployeeName = request.EmployeeName,
             ProjectDepartment = request.ProjectDepartment,
             ReceiptUrl = request.ReceiptUrl,
-            Status = request.Status ?? "Pending"
+            Status = request.Status ?? "Pending",
+            Source = request.Source,
+            InvoiceId = request.InvoiceId,
         };
 
         await _uow.Incomes.AddAsync(entity);
@@ -52,6 +54,8 @@ public class IncomeService : IIncomeService
         entity.ProjectDepartment = request.ProjectDepartment;
         entity.ReceiptUrl = request.ReceiptUrl;
         entity.Status = request.Status ?? entity.Status;
+        entity.Source = request.Source ?? entity.Source;
+        entity.InvoiceId = request.InvoiceId ?? entity.InvoiceId;
 
         await _uow.Incomes.UpdateAsync(entity);
         await _uow.SaveChangesAsync();
@@ -75,6 +79,7 @@ public class IncomeService : IIncomeService
         Id = i.Id, Date = i.Date, Category = i.Category, Amount = i.Amount,
         Description = i.Description, EmployeeName = i.EmployeeName,
         ProjectDepartment = i.ProjectDepartment, ReceiptUrl = i.ReceiptUrl,
-        Status = i.Status, CreatedAt = i.CreatedAt
+        Status = i.Status, Source = i.Source, InvoiceId = i.InvoiceId,
+        CreatedAt = i.CreatedAt,
     };
 }
