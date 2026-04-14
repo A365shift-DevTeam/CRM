@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Form, Row, Col } from 'react-bootstrap'
 import { StandardModal } from '../../../components/StandardModal/StandardModal'
 import { companyService } from '../../../services/companyService'
+import AuditPanel from '../../../components/AuditPanel/AuditPanel'
 
 const STATUS_OPTIONS = ['Active', 'Inactive', 'Lead', 'Customer']
 
@@ -315,6 +316,12 @@ export const ContactModal = ({ show, onHide, contact, columns = [], onSave, onDe
       {renderCategorySection('Tax & Financial Information', fieldCategories.taxIndia, isIndia)}
       {renderCategorySection('Tax Information', fieldCategories.taxInternational, !isIndia)}
       {renderCategorySection('Additional Information', fieldCategories.additional)}
+      {contact?.id && (
+        <div style={{ marginTop: 16, borderTop: '1px solid #E1E8F4', paddingTop: 12 }}>
+          <div className="standard-modal-section-title">Change History</div>
+          <AuditPanel entityName="Contact" entityId={contact.id} />
+        </div>
+      )}
     </StandardModal>
   )
 }

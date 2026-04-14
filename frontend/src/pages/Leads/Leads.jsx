@@ -8,6 +8,7 @@ import { projectService } from '../../services/api';
 import { useToast } from '../../components/Toast/ToastContext';
 import PageToolbar from '../../components/PageToolbar/PageToolbar';
 import StatsGrid from '../../components/StatsGrid/StatsGrid';
+import AuditPanel from '../../components/AuditPanel/AuditPanel';
 import './Leads.css';
 
 const KANBAN_STAGES = ['New', 'Contacted', 'Qualified', 'Disqualified'];
@@ -315,6 +316,12 @@ export default function Leads() {
               <Form.Control as="textarea" rows={2} size="sm" value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} />
             </div>
           </div>
+          {editing?.id && (
+            <div style={{ marginTop: 16, borderTop: '1px solid #E1E8F4', paddingTop: 12 }}>
+              <div className="small fw-bold mb-2" style={{ fontSize: 11, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Change History</div>
+              <AuditPanel entityName="Lead" entityId={editing.id} />
+            </div>
+          )}
         </Modal.Body>
         <Modal.Footer className="border-0 pt-0">
           <Button variant="secondary" size="sm" onClick={() => setShowModal(false)}>Cancel</Button>
