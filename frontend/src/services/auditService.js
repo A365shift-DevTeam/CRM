@@ -1,4 +1,4 @@
-import apiClient from './apiClient';
+import { apiClient } from './apiClient';
 
 export const auditService = {
   getAuditLogs: (entityName, entityId, page = 1, pageSize = 50) =>

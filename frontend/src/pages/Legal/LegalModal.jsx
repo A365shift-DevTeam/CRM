@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Form, Button, Nav, Tab } from 'react-bootstrap';
 import { Upload, FileText, X } from 'lucide-react';
 import AuditPanel from '../../components/AuditPanel/AuditPanel';
-import { storageService } from '../../services/storageService';
+import { uploadFile } from '../../services/storageService';
 
 const TYPES = ['MSA', 'NDA', 'SOW', 'Internal Approval'];
 const STATUSES = ['Draft', 'Under Review', 'Approved', 'Signed', 'Expired', 'Terminated'];
@@ -57,7 +57,7 @@ export default function LegalModal({ show, onHide, editing, onSaved }) {
     if (!file) return;
     setUploading(true);
     try {
-      const url = await storageService.upload(file);
+      const url = await uploadFile(file, 'legal');
       set('fileUrl', url);
       set('fileName', file.name);
     } catch (err) {
