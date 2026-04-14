@@ -1,8 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { legalService } from '../../services/legalService';
 import PageToolbar from '../../components/PageToolbar/PageToolbar';
+import StatsGrid from '../../components/StatsGrid/StatsGrid';
+import { useToast } from '../../components/Toast/ToastContext';
 import { Plus, FileText, Shield, AlertTriangle, Clock } from 'lucide-react';
 import { FaPen, FaTrash } from 'react-icons/fa6';
+import Swal from 'sweetalert2';
 import LegalModal from './LegalModal';
 import './Legal.css';
 
@@ -37,6 +40,7 @@ function ExpiryCell({ expiryDate }) {
 }
 
 export default function Legal() {
+  const toast = useToast();
   const [agreements, setAgreements] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -75,23 +79,35 @@ export default function Legal() {
     try {
       if (editing) {
         await legalService.update(editing.id, payload);
+        toast.success('Agreement updated');
       } else {
         await legalService.create(payload);
+        toast.success('Agreement created');
       }
       setShowModal(false);
       load();
     } catch (e) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to save agreement');
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this agreement?')) return;
+    const result = await Swal.fire({
+      title: 'Delete agreement?',
+      text: 'This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
     try {
       await legalService.delete(id);
+      toast.success('Agreement deleted');
       setAgreements(prev => prev.filter(a => a.id !== id));
     } catch (e) {
-      alert(e.message);
+      toast.error('Failed to delete agreement');
     }
   };
 
@@ -104,27 +120,16 @@ export default function Legal() {
   }).length;
   const drafts = agreements.filter(a => a.status === 'Draft').length;
 
-  const stats = [
-    { label: 'Total', value: total, icon: <FileText size={18} />, color: '#4361EE' },
-    { label: 'Active (Signed)', value: active, icon: <Shield size={18} />, color: '#10B981' },
-    { label: 'Expiring Soon', value: expiring, icon: <AlertTriangle size={18} />, color: '#F59E0B' },
-    { label: 'Drafts', value: drafts, icon: <Clock size={18} />, color: '#64748B' },
+  const statsData = [
+    { label: 'Total', value: total, icon: <FileText size={18} />, color: 'blue' },
+    { label: 'Active (Signed)', value: active, icon: <Shield size={18} />, color: 'green' },
+    { label: 'Expiring Soon', value: expiring, icon: <AlertTriangle size={18} />, color: 'orange' },
+    { label: 'Drafts', value: drafts, icon: <Clock size={18} />, color: 'purple' },
   ];
 
   return (
     <div style={{ padding: '0 16px 24px' }}>
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 16 }}>
-        {stats.map(s => (
-          <div key={s.label} style={{ background: '#FFF', border: '1px solid #E1E8F4', borderRadius: 12, padding: '14px 18px', boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-              <span style={{ fontSize: 12, color: '#64748B', fontWeight: 600 }}>{s.label}</span>
-              <span style={{ color: s.color }}>{s.icon}</span>
-            </div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: '#0F172A', fontFamily: 'var(--font-display)' }}>{s.value}</div>
-          </div>
-        ))}
-      </div>
+      <StatsGrid stats={statsData} />
 
       <PageToolbar
         title="Legal Agreements"
@@ -203,7 +208,6 @@ export default function Legal() {
         onSaved={handleSaved}
       />
 
-      <style>{`tr:hover .row-actions { opacity: 1 !important; }`}</style>
     </div>
   );
 }

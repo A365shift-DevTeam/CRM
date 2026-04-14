@@ -1,5 +1,9 @@
 /* Tickets Module */
 
+/* Status badge color extensions (supplement global badge-enterprise) */
+.badge-orange { background: rgba(245,158,11,0.12); color: #B45309; }
+.badge-red    { background: rgba(244,63,94,0.12);  color: #E11D48; }
+
 /* Priority color dots */
 .ticket-priority-dot {
   display: inline-block;

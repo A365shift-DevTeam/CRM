@@ -1,8 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { ticketService } from '../../services/ticketService';
 import PageToolbar from '../../components/PageToolbar/PageToolbar';
+import StatsGrid from '../../components/StatsGrid/StatsGrid';
+import { useToast } from '../../components/Toast/ToastContext';
 import { Plus, Sparkles, LayoutList, Columns, AlertCircle, Clock, CheckCircle, Zap } from 'lucide-react';
 import { FaPen, FaTrash } from 'react-icons/fa6';
+import Swal from 'sweetalert2';
 import TicketModal from './TicketModal';
 import AITicketModal from './AITicketModal';
 import './Tickets.css';
@@ -11,7 +14,16 @@ const PRIORITY_BADGE = { Critical: 'tpb-critical', High: 'tpb-high', Medium: 'tp
 const TYPE_BADGE = { 'Client Support': 'ttb-client', 'Bug': 'ttb-bug', 'Internal Task': 'ttb-internal' };
 const KANBAN_COLS = ['Open', 'In Progress', 'Pending', 'Resolved'];
 
+const STATUS_BADGE = {
+  'Open':        'badge-blue',
+  'In Progress': 'badge-purple',
+  'Pending':     'badge-orange',
+  'Resolved':    'badge-green',
+  'Closed':      'badge-gray',
+};
+
 export default function Tickets() {
+  const toast = useToast();
   const [tickets, setTickets] = useState([]);
   const [stats, setStats] = useState(null);
   const [filtered, setFiltered] = useState([]);
@@ -54,49 +66,49 @@ export default function Tickets() {
 
   const handleSaved = async (payload) => {
     try {
-      if (editing) { await ticketService.update(editing.id, payload); }
-      else { await ticketService.create(payload); }
+      if (editing) { await ticketService.update(editing.id, payload); toast.success('Ticket updated'); }
+      else { await ticketService.create(payload); toast.success('Ticket created'); }
       setShowModal(false);
       load();
-    } catch (e) { alert(e.message); }
+    } catch (e) { toast.error(e.message || 'Failed to save ticket'); }
   };
 
   const handleAiConfirm = async (payload) => {
     try {
       await ticketService.create(payload);
+      toast.success('AI ticket created');
       load();
-    } catch (e) { alert(e.message); }
+    } catch (e) { toast.error(e.message || 'Failed to create ticket'); }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this ticket?')) return;
-    try { await ticketService.delete(id); setTickets(prev => prev.filter(t => t.id !== id)); }
-    catch (e) { alert(e.message); }
+    const result = await Swal.fire({
+      title: 'Delete ticket?',
+      text: 'This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await ticketService.delete(id);
+      toast.success('Ticket deleted');
+      setTickets(prev => prev.filter(t => t.id !== id));
+    } catch (e) { toast.error('Failed to delete ticket'); }
   };
 
   const statCards = stats ? [
-    { label: 'Open', value: stats.open, icon: <AlertCircle size={18} />, color: '#4361EE' },
-    { label: 'In Progress', value: stats.inProgress, icon: <Clock size={18} />, color: '#F59E0B' },
-    { label: 'Resolved', value: stats.resolved, icon: <CheckCircle size={18} />, color: '#10B981' },
-    { label: 'Critical', value: stats.critical, icon: <Zap size={18} />, color: '#F43F5E' },
+    { label: 'Open', value: stats.open, icon: <AlertCircle size={18} />, color: 'blue' },
+    { label: 'In Progress', value: stats.inProgress, icon: <Clock size={18} />, color: 'orange' },
+    { label: 'Resolved', value: stats.resolved, icon: <CheckCircle size={18} />, color: 'green' },
+    { label: 'Critical', value: stats.critical, icon: <Zap size={18} />, color: 'red' },
   ] : [];
 
   return (
     <div style={{ padding: '0 16px 24px' }}>
-      {/* Stats */}
-      {stats && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 16 }}>
-          {statCards.map(s => (
-            <div key={s.label} style={{ background: '#FFF', border: '1px solid #E1E8F4', borderRadius: 12, padding: '14px 18px', boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ fontSize: 12, color: '#64748B', fontWeight: 600 }}>{s.label}</span>
-                <span style={{ color: s.color }}>{s.icon}</span>
-              </div>
-              <div style={{ fontSize: 26, fontWeight: 800, color: '#0F172A', fontFamily: 'var(--font-display)' }}>{s.value}</div>
-            </div>
-          ))}
-        </div>
-      )}
+      {stats && <StatsGrid stats={statCards} />}
 
       <PageToolbar
         title="Tickets"
@@ -157,7 +169,7 @@ export default function Tickets() {
                   </td>
                   <td style={{ padding: '10px 16px' }}><span className={`ticket-type-badge ${TYPE_BADGE[t.type] ?? ''}`}>{t.type}</span></td>
                   <td style={{ padding: '10px 16px' }}><span className={`ticket-priority-badge ${PRIORITY_BADGE[t.priority] ?? ''}`}><span className={`ticket-priority-dot priority-${t.priority.toLowerCase()}`} />{t.priority}</span></td>
-                  <td style={{ padding: '10px 16px' }}><span className="badge-enterprise">{t.status}</span></td>
+                  <td style={{ padding: '10px 16px' }}><span className={`badge-enterprise ${STATUS_BADGE[t.status] ?? 'badge-gray'}`}>{t.status}</span></td>
                   <td style={{ padding: '10px 16px', color: '#64748B' }}>{t.assignedToName ?? '—'}</td>
                   <td style={{ padding: '10px 16px', color: '#64748B' }}>{t.dueDate ? new Date(t.dueDate).toLocaleDateString() : '—'}</td>
                   <td style={{ padding: '10px 16px' }} onClick={e => e.stopPropagation()}>
@@ -202,7 +214,6 @@ export default function Tickets() {
 
       <TicketModal show={showModal} onHide={() => setShowModal(false)} editing={editing} onSaved={handleSaved} />
       <AITicketModal show={showAiModal} onHide={() => setShowAiModal(false)} onConfirm={handleAiConfirm} />
-      <style>{`tr:hover .row-actions { opacity: 1 !important; }`}</style>
     </div>
   );
 }
