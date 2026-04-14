@@ -59,7 +59,7 @@ public class InvoicesController : BaseApiController
         var userId = GetCurrentUserId();
         var deleted = await _service.DeleteAsync(id, userId);
         if (!deleted) return NotFound(ApiResponse<object>.Fail("Not found"));
-        return Ok(ApiResponse<object>.Ok(null, "Invoice deleted"));
+        return Ok(ApiResponse<bool>.Ok(true, "Invoice deleted"));
     }
 
     [HttpGet("by-project/{projectFinanceId}")]

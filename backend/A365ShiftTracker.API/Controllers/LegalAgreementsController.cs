@@ -59,7 +59,7 @@ public class LegalAgreementsController : BaseApiController
         var userId = GetCurrentUserId();
         var deleted = await _service.DeleteAsync(id, userId);
         if (!deleted) return NotFound(ApiResponse<object>.Fail("Not found"));
-        return Ok(ApiResponse<object>.Ok(null, "Legal agreement deleted"));
+        return Ok(ApiResponse<bool>.Ok(true, "Legal agreement deleted"));
     }
 
     [HttpGet("expiring-soon")]
