@@ -1,6 +1,8 @@
+using A365ShiftTracker.Application.Common;
 using A365ShiftTracker.Application.Interfaces;
 using A365ShiftTracker.Application.Services;
 using A365ShiftTracker.Infrastructure.Data;
+using A365ShiftTracker.Infrastructure.Helpers;
 using A365ShiftTracker.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -16,6 +18,10 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"),
                 npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(3)));
+
+        // Current user service
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
 
         // Repositories
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));

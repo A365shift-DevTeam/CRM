@@ -40,6 +40,7 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<Document>? _documents;
     private IRepository<Company>? _companies;
     private IRepository<Lead>? _leads;
+    private IRepository<AuditLog>? _auditLogs;
 
     public IRepository<User> Users => _users ??= new Repository<User>(_context);
     public IRepository<Role> Roles => _roles ??= new Repository<Role>(_context);
@@ -71,6 +72,7 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<Document> Documents => _documents ??= new Repository<Document>(_context);
     public IRepository<Company> Companies => _companies ??= new Repository<Company>(_context);
     public IRepository<Lead> Leads => _leads ??= new Repository<Lead>(_context);
+    public IRepository<AuditLog> AuditLogs => _auditLogs ??= new Repository<AuditLog>(_context);
 
     public async Task<int> SaveChangesAsync()
         => await _context.SaveChangesAsync();

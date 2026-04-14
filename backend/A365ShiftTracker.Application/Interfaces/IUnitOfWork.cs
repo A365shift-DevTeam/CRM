@@ -34,5 +34,6 @@ public interface IUnitOfWork : IDisposable
     IRepository<Document> Documents { get; }
     IRepository<Company> Companies { get; }
     IRepository<Lead> Leads { get; }
+    IRepository<AuditLog> AuditLogs { get; }
     Task<int> SaveChangesAsync();
 }
