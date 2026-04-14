@@ -26,6 +26,8 @@ import Company from './pages/Company/Company';
 import Leads from './pages/Leads/Leads';
 import Calendar from './pages/Calendar/Calendar';
 import Reports from './pages/Reports/Reports';
+import Legal from './pages/Legal/Legal';
+import Tickets from './pages/Tickets/Tickets';
 import { ThemeProvider } from './context/ThemeContext';
 import './index.css';
 
@@ -69,7 +71,8 @@ function App() {
             <Route path="leads" element={<PrivateRoute permission="sales.view"><Leads /></PrivateRoute>} />
             <Route path="projects" element={<PrivateRoute permission="timesheet.view"><Projects /></PrivateRoute>} />
             <Route path="hr" element={<PrivateRoute permission="dashboard.view"><PlaceholderPage title="HR" /></PrivateRoute>} />
-            <Route path="legal" element={<PrivateRoute permission="invoice.view"><PlaceholderPage title="Legal" /></PrivateRoute>} />
+            <Route path="legal" element={<PrivateRoute permission="invoice.view"><Legal /></PrivateRoute>} />
+            <Route path="tickets" element={<PrivateRoute permission="dashboard.view"><Tickets /></PrivateRoute>} />
             <Route path="documents" element={<PrivateRoute permission="dashboard.view"><Documents /></PrivateRoute>} />
             <Route path="calendar" element={<PrivateRoute permission="dashboard.view"><Calendar /></PrivateRoute>} />
             <Route path="reports" element={<PrivateRoute permission="dashboard.view"><Reports /></PrivateRoute>} />

@@ -20,6 +20,7 @@ import { expenseService } from '../../services/expenseService';
 import { addPDFHeader, generateInvoicePDF, generateTaxInvoicePDF, generateInvestorPaymentPDF, generatePaymentInvoicePDF } from '../../utils/pdfGenerator';
 import { numberToWords } from '../../utils/currencyUtils';
 import { useToast } from '../../components/Toast/ToastContext';
+import InvoiceList from './components/InvoiceList';
 import './Invoice.css';
 
 // ==========================================
@@ -1171,7 +1172,7 @@ const CompanyMarginTab = ({ details, stakeholders, milestones, taxes }) => {
 // ==========================================
 // 10. INVOICE MAIN (DETAIL VIEW)
 // ==========================================
-const InvoiceMain = ({ details, updateDetails, stakeholders, addStakeholder, removeStakeholder, updateStakeholder, milestones, addMilestone, removeMilestone, updateMilestone, charges, addCharge, removeCharge, updateCharge, onSave, onBack }) => {
+const InvoiceMain = ({ projectFinanceId, details, updateDetails, stakeholders, addStakeholder, removeStakeholder, updateStakeholder, milestones, addMilestone, removeMilestone, updateMilestone, charges, addCharge, removeCharge, updateCharge, onSave, onBack }) => {
     const dVal = parseFloat(details.dealValue) || 0;
     const [activePartyTab, setActivePartyTab] = useState('client');
 
@@ -1241,6 +1242,7 @@ const InvoiceMain = ({ details, updateDetails, stakeholders, addStakeholder, rem
             {activePartyTab === 'client' && <>
                 <BusinessDetails details={details} updateDetails={updateDetails} charges={charges} addCharge={addCharge} removeCharge={removeCharge} updateCharge={updateCharge} />
                 <PaymentMilestones milestones={milestones} addMilestone={addMilestone} removeMilestone={removeMilestone} updateMilestone={updateMilestone} dealValue={dVal} details={details} taxes={charges} projectType={details.type} />
+                {projectFinanceId && <InvoiceList projectFinanceId={projectFinanceId} />}
             </>}
 
             {/* Investors Tab: Stakeholder Distribution + Payout */}
@@ -1680,6 +1682,7 @@ const ProjectTrackerComplete = () => {
                 />
             ) : activeProject ? (
                 <InvoiceMain
+                    projectFinanceId={activeProject.id}
                     details={activeProject} updateDetails={updateDetails}
                     stakeholders={activeProject.stakeholders} addStakeholder={addStakeholder} removeStakeholder={removeStakeholder} updateStakeholder={updateStakeholder}
                     milestones={activeProject.milestones} addMilestone={addMilestone} removeMilestone={removeMilestone} updateMilestone={updateMilestone}

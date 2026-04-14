@@ -8,8 +8,13 @@ namespace A365ShiftTracker.Application.Services;
 public class ProjectFinanceService : IProjectFinanceService
 {
     private readonly IUnitOfWork _uow;
+    private readonly IInvoiceService _invoiceService;
 
-    public ProjectFinanceService(IUnitOfWork uow) => _uow = uow;
+    public ProjectFinanceService(IUnitOfWork uow, IInvoiceService invoiceService)
+    {
+        _uow = uow;
+        _invoiceService = invoiceService;
+    }
 
     private static DateTime? EnsureUtc(DateTime? dateTime)
     {
@@ -113,6 +118,12 @@ public class ProjectFinanceService : IProjectFinanceService
         if (entity.UserId != userId)
             throw new UnauthorizedAccessException("You do not have access to this project finance.");
 
+        // Track which milestone names were already "Invoiced" so we only auto-create new ones
+        var alreadyInvoicedNames = entity.Milestones
+            .Where(m => m.Status == "Invoiced")
+            .Select(m => m.Name ?? string.Empty)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         entity.ProjectId = request.ProjectId;
         entity.ClientName = request.ClientName;
         entity.ClientAddress = request.ClientAddress;
@@ -160,6 +171,29 @@ public class ProjectFinanceService : IProjectFinanceService
 
         await _uow.ProjectFinances.UpdateAsync(entity);
         await _uow.SaveChangesAsync();
+
+        // Auto-create invoices for milestones newly set to "Invoiced"
+        var newlyInvoiced = entity.Milestones
+            .Where(m => m.Status == "Invoiced" && !alreadyInvoicedNames.Contains(m.Name ?? string.Empty))
+            .ToList();
+
+        foreach (var milestone in newlyInvoiced)
+        {
+            var dealValue = entity.DealValue ?? 0m;
+            var milestoneValue = dealValue * ((milestone.Percentage ?? 0m) / 100m);
+            await _invoiceService.CreateAsync(new CreateInvoiceRequest
+            {
+                ProjectFinanceId = entity.Id,
+                MilestoneId = milestone.Id,
+                ClientName = entity.ClientName ?? string.Empty,
+                ClientAddress = entity.ClientAddress,
+                ClientGstin = entity.ClientGstin,
+                SubTotal = milestoneValue,
+                TaxAmount = 0m,
+                TotalAmount = milestoneValue,
+                Currency = entity.Currency
+            }, userId);
+        }
 
         return MapToDto(entity);
     }

@@ -48,6 +48,11 @@ public static class DependencyInjection
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<ICompanyService, CompanyService>();
         services.AddScoped<ILeadService, LeadService>();
+        services.AddScoped<ILegalAgreementService, LegalAgreementService>();
+        services.AddScoped<IInvoiceService, InvoiceService>();
+        services.AddScoped<ITicketService, TicketService>();
+        services.AddHttpClient("Claude");
+        services.AddScoped<TicketAiService>();
 
         return services;
     }

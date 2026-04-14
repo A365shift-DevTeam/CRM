@@ -46,6 +46,10 @@ public class AppDbContext : DbContext
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<Lead> Leads => Set<Lead>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<LegalAgreement> LegalAgreements => Set<LegalAgreement>();
+    public DbSet<Ticket> Tickets => Set<Ticket>();
+    public DbSet<TicketComment> TicketComments => Set<TicketComment>();
+    public DbSet<Invoice> Invoices => Set<Invoice>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -375,6 +379,52 @@ public class AppDbContext : DbContext
             e.HasIndex(a => new { a.EntityName, a.EntityId });
             e.HasIndex(a => a.ChangedAt);
             e.HasIndex(a => a.ChangedByUserId);
+        });
+
+        // ─── Legal Agreements ─────────────────────────────
+        modelBuilder.Entity<LegalAgreement>(e =>
+        {
+            e.ToTable("legal_agreements");
+            e.HasIndex(l => l.UserId);
+            e.HasIndex(l => l.Status);
+            e.HasIndex(l => l.Type);
+            e.HasIndex(l => l.ExpiryDate);
+        });
+
+        // ─── Tickets ─────────────────────────────────────
+        modelBuilder.Entity<Ticket>(e =>
+        {
+            e.ToTable("tickets");
+            e.HasIndex(t => t.UserId);
+            e.HasIndex(t => t.Status);
+            e.HasIndex(t => t.Priority);
+            e.HasIndex(t => t.TicketNumber).IsUnique();
+            e.HasMany(t => t.Comments).WithOne(c => c.Ticket)
+                .HasForeignKey(c => c.TicketId).OnDelete(DeleteBehavior.Cascade);
+            e.Property(t => t.AiConfidence).HasColumnType("decimal(4,3)");
+        });
+
+        modelBuilder.Entity<TicketComment>(e =>
+        {
+            e.ToTable("ticket_comments");
+            e.HasIndex(c => c.TicketId);
+        });
+
+        // ─── Invoices ─────────────────────────────────────
+        modelBuilder.Entity<Invoice>(e =>
+        {
+            e.ToTable("invoices");
+            e.HasIndex(i => i.UserId);
+            e.HasIndex(i => i.InvoiceNumber).IsUnique();
+            e.HasIndex(i => i.ProjectFinanceId);
+            e.HasIndex(i => i.Status);
+            e.HasOne(i => i.ProjectFinance).WithMany()
+                .HasForeignKey(i => i.ProjectFinanceId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(i => i.Milestone).WithMany()
+                .HasForeignKey(i => i.MilestoneId).OnDelete(DeleteBehavior.Restrict);
+            e.Property(i => i.SubTotal).HasColumnType("decimal(18,2)");
+            e.Property(i => i.TaxAmount).HasColumnType("decimal(18,2)");
+            e.Property(i => i.TotalAmount).HasColumnType("decimal(18,2)");
         });
 
         // ─── Snake case column naming convention ───────────

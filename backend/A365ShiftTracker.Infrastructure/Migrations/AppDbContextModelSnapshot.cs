@@ -1952,7 +1952,7 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 4, 14, 5, 47, 31, 229, DateTimeKind.Utc).AddTicks(983),
+                            CreatedAt = new DateTime(2026, 4, 14, 14, 9, 45, 534, DateTimeKind.Utc).AddTicks(1936),
                             Description = "Full access to all features",
                             IsSystem = true,
                             Name = "Admin"
@@ -1960,7 +1960,7 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 4, 14, 5, 47, 31, 229, DateTimeKind.Utc).AddTicks(990),
+                            CreatedAt = new DateTime(2026, 4, 14, 14, 9, 45, 534, DateTimeKind.Utc).AddTicks(1944),
                             Description = "Can manage teams and view reports",
                             IsSystem = true,
                             Name = "Manager"
@@ -1968,7 +1968,7 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         new
                         {
                             Id = 3,
-                            CreatedAt = new DateTime(2026, 4, 14, 5, 47, 31, 229, DateTimeKind.Utc).AddTicks(992),
+                            CreatedAt = new DateTime(2026, 4, 14, 14, 9, 45, 534, DateTimeKind.Utc).AddTicks(1946),
                             Description = "Standard user with limited access",
                             IsSystem = true,
                             Name = "User"
