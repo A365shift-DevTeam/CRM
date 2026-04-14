@@ -221,14 +221,14 @@ export default function Leads() {
                   </td>
                   <td>{l.expectedValue ? `${l.expectedValue}` : '—'}</td>
                   <td>
-                    <div className="d-flex gap-1">
-                      <button className="btn btn-sm btn-light" onClick={() => openEdit(l)}><Edit size={13} /></button>
+                    <div className="d-flex gap-1 align-items-center">
+                      <button className="action-icon-btn text-info" title="Edit" onClick={() => openEdit(l)}><Edit size={15} /></button>
                       {l.stage !== 'Qualified' && l.stage !== 'Disqualified' && (
-                        <button className="btn btn-sm btn-success" title="Qualify → Sales" onClick={() => handleQualify(l)}>
-                          <ArrowUpRight size={13} />
+                        <button className="action-icon-btn text-success" title="Qualify → Sales" onClick={() => handleQualify(l)}>
+                          <ArrowUpRight size={15} />
                         </button>
                       )}
-                      <button className="btn btn-sm btn-light text-danger" onClick={() => handleDelete(l.id)}><Trash2 size={13} /></button>
+                      <button className="action-icon-btn text-danger" title="Delete" onClick={() => handleDelete(l.id)}><Trash2 size={15} /></button>
                     </div>
                   </td>
                 </tr>
@@ -252,10 +252,10 @@ export default function Leads() {
                       <span className={scoreBadgeClass(l.score)}>{l.score}</span>
                     </div>
                     {l.company && <div className="text-muted" style={{ fontSize: 11 }}>{l.company}</div>}
-                    <div className="d-flex gap-1 mt-2">
-                      <button className="btn btn-sm btn-light py-0 px-1" onClick={() => openEdit(l)}><Edit size={12} /></button>
+                    <div className="d-flex gap-1 mt-2 align-items-center">
+                      <button className="action-icon-btn text-info" style={{ opacity: 1 }} title="Edit" onClick={() => openEdit(l)}><Edit size={14} /></button>
                       {stage !== 'Qualified' && stage !== 'Disqualified' && (
-                        <button className="btn btn-sm btn-success py-0 px-1" onClick={() => handleQualify(l)}><ArrowUpRight size={12} /></button>
+                        <button className="action-icon-btn text-success" style={{ opacity: 1 }} title="Qualify → Sales" onClick={() => handleQualify(l)}><ArrowUpRight size={14} /></button>
                       )}
                     </div>
                   </div>

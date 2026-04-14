@@ -161,10 +161,10 @@ export default function Company() {
                     <div className="fw-bold fs-6">{c.name}</div>
                     {c.industry && <div className="text-muted small">{c.industry}{c.size ? ` · ${c.size} employees` : ''}</div>}
                   </div>
-                  <div className="d-flex gap-2">
-                    <button className="btn btn-sm btn-light" onClick={() => openEdit(c)}><Edit size={14} /></button>
-                    <button className="btn btn-sm btn-success" title="Convert to Contact" onClick={() => handleConvertToContact(c)}><ArrowUpRight size={14} /></button>
-                    <button className="btn btn-sm btn-light text-danger" onClick={() => handleDelete(c.id)}><Trash2 size={14} /></button>
+                  <div className="d-flex gap-1 align-items-center">
+                    <button className="action-icon-btn text-info" style={{ opacity: 1 }} title="Edit" onClick={() => openEdit(c)}><Edit size={15} /></button>
+                    <button className="action-icon-btn text-success" style={{ opacity: 1 }} title="Convert to Contact" onClick={() => handleConvertToContact(c)}><ArrowUpRight size={15} /></button>
+                    <button className="action-icon-btn text-danger" style={{ opacity: 1 }} title="Delete" onClick={() => handleDelete(c.id)}><Trash2 size={15} /></button>
                   </div>
                 </div>
                 <div className="mt-2 d-flex flex-wrap gap-2">

@@ -202,6 +202,17 @@
   transform: translateY(-1px);
 }
 
+.pt-action-btn.pt-action-purple {
+  background: rgba(139, 92, 246, 0.08) !important;
+  border-color: rgba(139, 92, 246, 0.25) !important;
+  color: #7C3AED !important;
+}
+.pt-action-btn.pt-action-purple:hover {
+  background: rgba(139, 92, 246, 0.15) !important;
+  border-color: rgba(139, 92, 246, 0.4) !important;
+  transform: translateY(-1px);
+}
+
 /* --- Dropdown Menu Override --- */
 .pt-dropdown-menu {
   min-width: 200px;

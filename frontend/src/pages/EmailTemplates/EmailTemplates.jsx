@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { emailTemplateService } from '../../services/emailTemplateService';
-import { FaEnvelope, FaPlus, FaPen, FaTrash } from 'react-icons/fa6';
+import { FaPen, FaTrash } from 'react-icons/fa6';
+import { Plus } from 'lucide-react';
 import { Modal, Form, Button } from 'react-bootstrap';
+import PageToolbar from '../../components/PageToolbar/PageToolbar';
 
 const emptyForm = { name: '', subject: '', body: '', variables: '' };
 
@@ -36,24 +38,22 @@ export default function EmailTemplates() {
     };
 
     return (
-        <div style={{ padding: '20px' }}>
-            <div className="d-flex align-items-center justify-content-between mb-3">
-                <div className="d-flex align-items-center gap-2">
-                    <FaEnvelope size={20} style={{ color: '#3b82f6' }} />
-                    <h4 className="m-0 fw-bold" style={{ color: '#0f172a' }}>Email Templates</h4>
-                </div>
-                <button onClick={openCreate} className="btn btn-sm d-flex align-items-center gap-1" style={{ background: '#3b82f6', color: '#fff', borderRadius: '8px' }}><FaPlus size={12} /> New Template</button>
-            </div>
+        <div style={{ padding: '0 16px 24px' }}>
+            <PageToolbar
+                title="Email Templates"
+                itemCount={templates.length}
+                actions={[{ label: 'New Template', icon: <Plus size={16} />, variant: 'primary', onClick: openCreate }]}
+            />
             {loading ? <div className="text-center p-4"><div className="spinner-border text-primary" /></div> : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
                     {templates.length === 0 ? <p className="text-muted">No templates yet. Create one to get started.</p> :
                         templates.map(t => (
-                            <div key={t.id} style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}>
+                            <div key={t.id} style={{ background: '#FFFFFF', border: '1px solid #E1E8F4', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(15,23,42,0.05)' }}>
                                 <div className="d-flex justify-content-between align-items-start mb-2">
                                     <h6 className="fw-bold m-0" style={{ color: '#0f172a' }}>{t.name}</h6>
                                     <div className="d-flex gap-1">
-                                        <button onClick={() => openEdit(t)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer' }}><FaPen size={12} /></button>
-                                        <button onClick={() => handleDelete(t.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><FaTrash size={12} /></button>
+                                        <button className="action-icon-btn text-info" style={{ opacity: 1 }} title="Edit" onClick={() => openEdit(t)}><FaPen size={12} /></button>
+                                        <button className="action-icon-btn text-danger" style={{ opacity: 1 }} title="Delete" onClick={() => handleDelete(t.id)}><FaTrash size={12} /></button>
                                     </div>
                                 </div>
                                 <p style={{ fontSize: '0.85rem', color: '#475569', margin: 0 }}><strong>Subject:</strong> {t.subject}</p>
