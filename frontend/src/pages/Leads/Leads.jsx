@@ -8,6 +8,7 @@ import { projectService } from '../../services/api';
 import { useToast } from '../../components/Toast/ToastContext';
 import PageToolbar from '../../components/PageToolbar/PageToolbar';
 import StatsGrid from '../../components/StatsGrid/StatsGrid';
+import AuditPanel from '../../components/AuditPanel/AuditPanel';
 import './Leads.css';
 
 const KANBAN_STAGES = ['New', 'Contacted', 'Qualified', 'Disqualified'];
@@ -221,14 +222,14 @@ export default function Leads() {
                   </td>
                   <td>{l.expectedValue ? `${l.expectedValue}` : '—'}</td>
                   <td>
-                    <div className="d-flex gap-1">
-                      <button className="btn btn-sm btn-light" onClick={() => openEdit(l)}><Edit size={13} /></button>
+                    <div className="d-flex gap-1 align-items-center">
+                      <button className="action-icon-btn text-info" title="Edit" onClick={() => openEdit(l)}><Edit size={15} /></button>
                       {l.stage !== 'Qualified' && l.stage !== 'Disqualified' && (
-                        <button className="btn btn-sm btn-success" title="Qualify → Sales" onClick={() => handleQualify(l)}>
-                          <ArrowUpRight size={13} />
+                        <button className="action-icon-btn text-success" title="Qualify → Sales" onClick={() => handleQualify(l)}>
+                          <ArrowUpRight size={15} />
                         </button>
                       )}
-                      <button className="btn btn-sm btn-light text-danger" onClick={() => handleDelete(l.id)}><Trash2 size={13} /></button>
+                      <button className="action-icon-btn text-danger" title="Delete" onClick={() => handleDelete(l.id)}><Trash2 size={15} /></button>
                     </div>
                   </td>
                 </tr>
@@ -252,10 +253,10 @@ export default function Leads() {
                       <span className={scoreBadgeClass(l.score)}>{l.score}</span>
                     </div>
                     {l.company && <div className="text-muted" style={{ fontSize: 11 }}>{l.company}</div>}
-                    <div className="d-flex gap-1 mt-2">
-                      <button className="btn btn-sm btn-light py-0 px-1" onClick={() => openEdit(l)}><Edit size={12} /></button>
+                    <div className="d-flex gap-1 mt-2 align-items-center">
+                      <button className="action-icon-btn text-info" style={{ opacity: 1 }} title="Edit" onClick={() => openEdit(l)}><Edit size={14} /></button>
                       {stage !== 'Qualified' && stage !== 'Disqualified' && (
-                        <button className="btn btn-sm btn-success py-0 px-1" onClick={() => handleQualify(l)}><ArrowUpRight size={12} /></button>
+                        <button className="action-icon-btn text-success" style={{ opacity: 1 }} title="Qualify → Sales" onClick={() => handleQualify(l)}><ArrowUpRight size={14} /></button>
                       )}
                     </div>
                   </div>
@@ -315,6 +316,12 @@ export default function Leads() {
               <Form.Control as="textarea" rows={2} size="sm" value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} />
             </div>
           </div>
+          {editing?.id && (
+            <div style={{ marginTop: 16, borderTop: '1px solid #E1E8F4', paddingTop: 12 }}>
+              <div className="small fw-bold mb-2" style={{ fontSize: 11, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Change History</div>
+              <AuditPanel entityName="Lead" entityId={editing.id} />
+            </div>
+          )}
         </Modal.Body>
         <Modal.Footer className="border-0 pt-0">
           <Button variant="secondary" size="sm" onClick={() => setShowModal(false)}>Cancel</Button>

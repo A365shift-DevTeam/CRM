@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { reportService } from '../../services/reportService';
-import { FaChartPie } from 'react-icons/fa6';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import PageToolbar from '../../components/PageToolbar/PageToolbar';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 const monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -47,18 +47,17 @@ export default function Reports() {
     }, [preset]);
 
     return (
-        <div style={{ padding: '20px' }}>
-            <div className="d-flex align-items-center justify-content-between mb-3">
-                <div className="d-flex align-items-center gap-2">
-                    <FaChartPie size={20} style={{ color: '#3b82f6' }} />
-                    <h4 className="m-0 fw-bold" style={{ color: '#0f172a' }}>Reports</h4>
-                </div>
-                <div className="d-flex gap-2">
-                    {presets.map((p, i) => (
-                        <button key={i} onClick={() => setPreset(i)} className="btn btn-sm" style={{ border: preset === i ? '1px solid #3b82f6' : '1px solid #e2e8f0', color: preset === i ? '#3b82f6' : '#64748b', borderRadius: '8px', fontSize: '0.8rem', fontWeight: preset === i ? 600 : 400 }}>{p.label}</button>
-                    ))}
-                </div>
-            </div>
+        <div style={{ padding: '0 16px 24px' }}>
+            <PageToolbar
+                title="Reports"
+                extraControls={
+                    <div className="pt-period-toggle">
+                        {presets.map((p, i) => (
+                            <button key={i} onClick={() => setPreset(i)} className={`pt-period-btn${preset === i ? ' active' : ''}`}>{p.label}</button>
+                        ))}
+                    </div>
+                }
+            />
             {loading ? <div className="text-center p-5"><div className="spinner-border text-primary" /></div> : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '16px' }}>
                     <div className="card p-4 border-0">

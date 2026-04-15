@@ -1,3 +1,4 @@
+using A365ShiftTracker.Application.Common;
 using A365ShiftTracker.Domain.Common;
 using A365ShiftTracker.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -6,7 +7,13 @@ namespace A365ShiftTracker.Infrastructure.Data;
 
 public class AppDbContext : DbContext
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+    private readonly ICurrentUserService? _currentUser;
+
+    public AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserService? currentUser = null)
+        : base(options)
+    {
+        _currentUser = currentUser;
+    }
 
     public DbSet<User> Users => Set<User>();
     public DbSet<Role> Roles => Set<Role>();
@@ -38,6 +45,11 @@ public class AppDbContext : DbContext
     public DbSet<Document> Documents => Set<Document>();
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<Lead> Leads => Set<Lead>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<LegalAgreement> LegalAgreements => Set<LegalAgreement>();
+    public DbSet<Ticket> Tickets => Set<Ticket>();
+    public DbSet<TicketComment> TicketComments => Set<TicketComment>();
+    public DbSet<Invoice> Invoices => Set<Invoice>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -360,6 +372,61 @@ public class AppDbContext : DbContext
             e.HasIndex(l => l.Stage);
         });
 
+        // ─── Audit Logs ──────────────────────────────────
+        modelBuilder.Entity<AuditLog>(e =>
+        {
+            e.ToTable("audit_logs");
+            e.HasIndex(a => new { a.EntityName, a.EntityId });
+            e.HasIndex(a => a.ChangedAt);
+            e.HasIndex(a => a.ChangedByUserId);
+        });
+
+        // ─── Legal Agreements ─────────────────────────────
+        modelBuilder.Entity<LegalAgreement>(e =>
+        {
+            e.ToTable("legal_agreements");
+            e.HasIndex(l => l.UserId);
+            e.HasIndex(l => l.Status);
+            e.HasIndex(l => l.Type);
+            e.HasIndex(l => l.ExpiryDate);
+        });
+
+        // ─── Tickets ─────────────────────────────────────
+        modelBuilder.Entity<Ticket>(e =>
+        {
+            e.ToTable("tickets");
+            e.HasIndex(t => t.UserId);
+            e.HasIndex(t => t.Status);
+            e.HasIndex(t => t.Priority);
+            e.HasIndex(t => t.TicketNumber).IsUnique();
+            e.HasMany(t => t.Comments).WithOne(c => c.Ticket)
+                .HasForeignKey(c => c.TicketId).OnDelete(DeleteBehavior.Cascade);
+            e.Property(t => t.AiConfidence).HasColumnType("decimal(4,3)");
+        });
+
+        modelBuilder.Entity<TicketComment>(e =>
+        {
+            e.ToTable("ticket_comments");
+            e.HasIndex(c => c.TicketId);
+        });
+
+        // ─── Invoices ─────────────────────────────────────
+        modelBuilder.Entity<Invoice>(e =>
+        {
+            e.ToTable("invoices");
+            e.HasIndex(i => i.UserId);
+            e.HasIndex(i => i.InvoiceNumber).IsUnique();
+            e.HasIndex(i => i.ProjectFinanceId);
+            e.HasIndex(i => i.Status);
+            e.HasOne(i => i.ProjectFinance).WithMany()
+                .HasForeignKey(i => i.ProjectFinanceId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(i => i.Milestone).WithMany()
+                .HasForeignKey(i => i.MilestoneId).OnDelete(DeleteBehavior.Restrict);
+            e.Property(i => i.SubTotal).HasColumnType("decimal(18,2)");
+            e.Property(i => i.TaxAmount).HasColumnType("decimal(18,2)");
+            e.Property(i => i.TotalAmount).HasColumnType("decimal(18,2)");
+        });
+
         // ─── Snake case column naming convention ───────────
         foreach (var entity in modelBuilder.Model.GetEntityTypes())
         {
@@ -370,22 +437,118 @@ public class AppDbContext : DbContext
         }
     }
 
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         NormalizeDateTimeKinds();
 
+        var now = DateTime.UtcNow;
+        var userId = _currentUser?.UserId;
+        var userName = _currentUser?.UserName ?? "System";
+        var ipAddress = _currentUser?.IpAddress;
+
+        var auditEntries = new List<AuditLog>();
+
         foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
         {
-            if (entry.State == EntityState.Modified)
-                entry.Entity.UpdatedAt = DateTime.UtcNow;
-            else if (entry.State == EntityState.Added)
+            if (entry.State == EntityState.Added)
             {
-                entry.Entity.CreatedAt = DateTime.UtcNow;
-                entry.Entity.UpdatedAt = DateTime.UtcNow;
+                entry.Entity.CreatedAt = now;
+                entry.Entity.UpdatedAt = now;
+                if (userId.HasValue)
+                {
+                    entry.Entity.CreatedByUserId = userId;
+                    entry.Entity.CreatedByName = userName;
+                    entry.Entity.UpdatedByUserId = userId;
+                    entry.Entity.UpdatedByName = userName;
+                }
+
+                auditEntries.Add(new AuditLog
+                {
+                    EntityName = entry.Entity.GetType().Name,
+                    EntityId = 0, // updated after save
+                    FieldName = "_record",
+                    OldValue = null,
+                    NewValue = "created",
+                    Action = "Created",
+                    ChangedByUserId = userId ?? 0,
+                    ChangedByName = userName,
+                    ChangedAt = now,
+                    IpAddress = ipAddress
+                });
+            }
+            else if (entry.State == EntityState.Modified)
+            {
+                entry.Entity.UpdatedAt = now;
+                if (userId.HasValue)
+                {
+                    entry.Entity.UpdatedByUserId = userId;
+                    entry.Entity.UpdatedByName = userName;
+                }
+
+                var skipFields = new HashSet<string> { "UpdatedAt", "UpdatedByUserId", "UpdatedByName" };
+
+                foreach (var prop in entry.Properties
+                    .Where(p => p.IsModified && !skipFields.Contains(p.Metadata.Name)))
+                {
+                    var oldVal = prop.OriginalValue?.ToString();
+                    var newVal = prop.CurrentValue?.ToString();
+                    if (oldVal == newVal) continue;
+
+                    auditEntries.Add(new AuditLog
+                    {
+                        EntityName = entry.Entity.GetType().Name,
+                        EntityId = entry.Entity.Id,
+                        FieldName = prop.Metadata.Name,
+                        OldValue = oldVal,
+                        NewValue = newVal,
+                        Action = "Updated",
+                        ChangedByUserId = userId ?? 0,
+                        ChangedByName = userName,
+                        ChangedAt = now,
+                        IpAddress = ipAddress
+                    });
+                }
+            }
+            else if (entry.State == EntityState.Deleted)
+            {
+                auditEntries.Add(new AuditLog
+                {
+                    EntityName = entry.Entity.GetType().Name,
+                    EntityId = entry.Entity.Id,
+                    FieldName = "_record",
+                    OldValue = "existed",
+                    NewValue = null,
+                    Action = "Deleted",
+                    ChangedByUserId = userId ?? 0,
+                    ChangedByName = userName,
+                    ChangedAt = now,
+                    IpAddress = ipAddress
+                });
             }
         }
 
-        return base.SaveChangesAsync(cancellationToken);
+        // Snapshot Added entries before save so we can fix EntityIds after
+        var addedSnapshots = ChangeTracker.Entries<AuditableEntity>()
+            .Where(e => e.State == EntityState.Added)
+            .Select(e => (entry: e, log: auditEntries.FirstOrDefault(l => l.Action == "Created" && l.EntityName == e.Entity.GetType().Name && l.EntityId == 0)))
+            .Where(x => x.log != null)
+            .ToList();
+
+        var result = await base.SaveChangesAsync(cancellationToken);
+
+        // Fix EntityId for newly-inserted records
+        foreach (var (entry, log) in addedSnapshots)
+        {
+            if (log != null) log.EntityId = entry.Entity.Id;
+        }
+
+        if (auditEntries.Count > 0)
+        {
+            AuditLogs.AddRange(auditEntries);
+            await base.SaveChangesAsync(cancellationToken);
+        }
+
+        return result;
     }
 
     private void NormalizeDateTimeKinds()

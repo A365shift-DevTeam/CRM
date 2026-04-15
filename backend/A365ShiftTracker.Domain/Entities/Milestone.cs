@@ -2,7 +2,7 @@ using A365ShiftTracker.Domain.Common;
 
 namespace A365ShiftTracker.Domain.Entities;
 
-public class Milestone : BaseEntity
+public class Milestone : AuditableEntity
 {
     public int ProjectFinanceId { get; set; }
     public string? Name { get; set; }
@@ -12,8 +12,6 @@ public class Milestone : BaseEntity
     public DateTime? PaidDate { get; set; }
     public bool IsCustomName { get; set; } = false;
     public int Order { get; set; } = 0;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
     // Navigation
     public ProjectFinance ProjectFinance { get; set; } = null!;
 }

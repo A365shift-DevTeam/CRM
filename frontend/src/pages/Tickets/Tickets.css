@@ -1,0 +1,214 @@
+/* Tickets Module */
+
+/* Status badge color extensions (supplement global badge-enterprise) */
+.badge-orange { background: rgba(245,158,11,0.12); color: #B45309; }
+.badge-red    { background: rgba(244,63,94,0.12);  color: #E11D48; }
+
+/* Priority color dots */
+.ticket-priority-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+.priority-critical { background: #F43F5E; }
+.priority-high     { background: #F59E0B; }
+.priority-medium   { background: #4361EE; }
+.priority-low      { background: #94A3B8; }
+
+/* Priority badges */
+.ticket-priority-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.tpb-critical { background: rgba(244,63,94,0.10); color: #E11D48; }
+.tpb-high     { background: rgba(245,158,11,0.10); color: #B45309; }
+.tpb-medium   { background: rgba(67,97,238,0.10);  color: #4361EE; }
+.tpb-low      { background: #F1F5F9; color: #64748B; }
+
+/* Type badges */
+.ticket-type-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.ttb-client  { background: rgba(6,182,212,0.10); color: #0891B2; }
+.ttb-bug     { background: rgba(239,68,68,0.10); color: #DC2626; }
+.ttb-internal { background: rgba(139,92,246,0.10); color: #7C3AED; }
+
+/* AI Badge */
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(67,97,238,0.12), rgba(139,92,246,0.12));
+  color: #7C3AED;
+  border: 1px solid rgba(139,92,246,0.2);
+}
+
+/* Kanban */
+.ticket-kanban {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.kanban-col {
+  background: #F8FAFC;
+  border: 1px solid #E1E8F4;
+  border-radius: 12px;
+  padding: 12px;
+  min-height: 200px;
+}
+
+.kanban-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #E1E8F4;
+}
+
+.kanban-col-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.kanban-count {
+  font-size: 11px;
+  font-weight: 700;
+  background: #E1E8F4;
+  color: #64748B;
+  padding: 1px 8px;
+  border-radius: 999px;
+}
+
+.kanban-card {
+  background: #FFF;
+  border: 1px solid #E1E8F4;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: box-shadow 0.15s, transform 0.15s;
+  box-shadow: 0 1px 4px rgba(15,23,42,0.04);
+}
+
+.kanban-card:hover {
+  box-shadow: 0 4px 12px rgba(15,23,42,0.10);
+  transform: translateY(-1px);
+}
+
+.kanban-card-number {
+  font-size: 10.5px;
+  color: #94A3B8;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.kanban-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0F172A;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.kanban-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* AI Modal */
+.ai-modal-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.ai-step-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.ai-step-dot.active { background: #4361EE; color: #FFF; }
+.ai-step-dot.done   { background: #10B981; color: #FFF; }
+.ai-step-dot.pending { background: #E1E8F4; color: #94A3B8; }
+
+.ai-step-line {
+  flex: 1;
+  height: 2px;
+  background: #E1E8F4;
+}
+
+.ai-step-line.done { background: #10B981; }
+
+.ai-textarea-raw {
+  width: 100%;
+  min-height: 160px;
+  resize: vertical;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.ai-confidence-bar {
+  height: 4px;
+  border-radius: 999px;
+  background: #E1E8F4;
+  margin-top: 4px;
+}
+
+.ai-confidence-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s;
+}
+
+/* Comment thread */
+.comment-thread { display: flex; flex-direction: column; gap: 10px; }
+
+.comment-item {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #F8FAFC;
+  border: 1px solid #E1E8F4;
+}
+
+.comment-item.internal {
+  background: rgba(245,158,11,0.06);
+  border-color: rgba(245,158,11,0.2);
+}
+
+.comment-author { font-size: 12px; font-weight: 700; color: #334155; }
+.comment-time   { font-size: 11px; color: #94A3B8; }
+.comment-body   { font-size: 13px; color: #475569; margin-top: 4px; line-height: 1.5; }
+.comment-internal-label { font-size: 10px; font-weight: 700; color: #B45309; text-transform: uppercase; }

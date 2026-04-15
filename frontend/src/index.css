@@ -536,6 +536,82 @@ html, body {
   }
 }
 
+/* ═══════════════════════════════════════════════════
+   Global Shared — Action Icon Button (Design System)
+   ═══════════════════════════════════════════════════
+   Use: <button class="action-icon-btn text-info|danger|success|primary|warning">
+        <Icon size={15} />
+        </button>
+*/
+.action-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.12s, opacity 0.15s;
+  padding: 0;
+  opacity: 0.55;
+  flex-shrink: 0;
+}
+.action-icon-btn:hover {
+  transform: translateY(-1px);
+  opacity: 1 !important;
+}
+.action-icon-btn.text-primary  { color: var(--accent-primary, #4361EE); }
+.action-icon-btn.text-primary:hover  { background: rgba(67,97,238,0.1); }
+.action-icon-btn.text-info     { color: #06B6D4; }
+.action-icon-btn.text-info:hover     { background: rgba(6,182,212,0.1); }
+.action-icon-btn.text-danger   { color: var(--accent-danger, #F43F5E); }
+.action-icon-btn.text-danger:hover   { background: rgba(244,63,94,0.1); }
+.action-icon-btn.text-success  { color: var(--accent-success, #10B981); }
+.action-icon-btn.text-success:hover  { background: rgba(16,185,129,0.1); }
+.action-icon-btn.text-warning  { color: var(--accent-warning, #F59E0B); }
+.action-icon-btn.text-warning:hover  { background: rgba(245,158,11,0.1); }
+
+/* Row/card hover reveals action buttons at full opacity */
+tr:hover .action-icon-btn,
+.company-card:hover .action-icon-btn,
+.lead-card:hover .action-icon-btn { opacity: 1; }
+
+/* ═══════════════════════════════════════════════════
+   Global Shared — Toolbar Time-Period Toggle
+   ═══════════════════════════════════════════════════ */
+.pt-period-toggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: #F4F7FD;
+  border-radius: 10px;
+  border: 1px solid #E1E8F4;
+}
+.pt-period-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 12px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: #64748B;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  font-family: var(--font-family, 'DM Sans', sans-serif);
+  white-space: nowrap;
+}
+.pt-period-btn:hover { color: #0F172A; background: rgba(255,255,255,0.7); }
+.pt-period-btn.active {
+  background: #FFFFFF !important;
+  color: var(--accent-primary, #4361EE) !important;
+  box-shadow: 0 1px 6px rgba(15, 23, 42, 0.08);
+}
+
 @keyframes layout-alert-pop-fade {
   0% {
     opacity: 0;

@@ -34,5 +34,10 @@ public interface IUnitOfWork : IDisposable
     IRepository<Document> Documents { get; }
     IRepository<Company> Companies { get; }
     IRepository<Lead> Leads { get; }
+    IRepository<AuditLog> AuditLogs { get; }
+    IRepository<LegalAgreement> LegalAgreements { get; }
+    IRepository<Ticket> Tickets { get; }
+    IRepository<TicketComment> TicketComments { get; }
+    IRepository<Invoice> Invoices { get; }
     Task<int> SaveChangesAsync();
 }

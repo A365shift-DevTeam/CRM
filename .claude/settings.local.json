@@ -46,7 +46,18 @@
       "Bash(curl -s http://localhost:5231/api/auth/login -X POST -H \"Content-Type: application/json\" -d '{\"email\":\"admin@a365.com\",\"password\":\"Admin@123\"}')",
       "mcp__plugin_playwright_playwright__browser_network_requests",
       "mcp__plugin_playwright_playwright__browser_handle_dialog",
-      "mcp__plugin_playwright_playwright__browser_evaluate"
+      "mcp__plugin_playwright_playwright__browser_evaluate",
+      "Bash(git:*)",
+      "Bash(psql -U postgres -d a365shift_tracker -c \"\\\\dt task*\")",
+      "Bash(kill %1)",
+      "Bash(PGPASSWORD=postgres /c/Program Files/PostgreSQL/16/bin/psql.exe:*)",
+      "Bash(dotnet restore:*)",
+      "Bash(taskkill /PID 27128 /F)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(cmd.exe:*)",
+      "Bash(powershell.exe:*)",
+      "Bash(grep -c \"CreateTable\\\\|legal_agreements\\\\|tickets\\\\|ticket_comments\\\\|invoices\" \"E:/Arul/PROJECTS/CRM/backend/A365ShiftTracker.Infrastructure/Migrations/\"*AddLegalAgreements*.cs)",
+      "Bash(npm run:*)"
     ]
   }
 }

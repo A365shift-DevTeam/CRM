@@ -462,10 +462,10 @@ const Finance = () => {
         onSortChange={(sb, so) => { setSortBy(sb); setSortOrder(so) }}
         onManageColumns={() => setShowSettingsModal(true)}
         extraControls={
-          <div className="btn-group">
-            <button className={`btn btn-sm ${viewMode === 'month' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setViewMode('month')}>Month</button>
-            <button className={`btn btn-sm ${viewMode === 'year' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setViewMode('year')}>Year</button>
-            <button className={`btn btn-sm ${viewMode === 'all' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setViewMode('all')}>All</button>
+          <div className="pt-period-toggle">
+            <button className={`pt-period-btn${viewMode === 'month' ? ' active' : ''}`} onClick={() => setViewMode('month')}>Month</button>
+            <button className={`pt-period-btn${viewMode === 'year' ? ' active' : ''}`} onClick={() => setViewMode('year')}>Year</button>
+            <button className={`pt-period-btn${viewMode === 'all' ? ' active' : ''}`} onClick={() => setViewMode('all')}>All</button>
           </div>
         }
         actions={[
@@ -559,21 +559,21 @@ const Finance = () => {
                           <td>
                             <div className="d-flex align-items-center gap-1">
                               <button
-                                className="fin-action-btn view"
+                                className="action-icon-btn text-info"
                                 onClick={() => { setViewingItem(item); setViewingType(item.type); setShowDetailModal(true); }}
                                 title="View Details"
                               >
                                 <Eye size={15} />
                               </button>
                               <button
-                                className="fin-action-btn edit"
+                                className="action-icon-btn text-primary"
                                 onClick={() => isExpense ? handleEditExpense(item) : handleEditIncome(item)}
                                 title="Edit"
                               >
                                 <Edit size={15} />
                               </button>
                               <button
-                                className="fin-action-btn del"
+                                className="action-icon-btn text-danger"
                                 onClick={() => {
                                   if (window.confirm(`Delete this ${item.type}?`)) {
                                     isExpense ? handleDeleteExpense(item.id) : handleDeleteIncome(item.id)

@@ -67,6 +67,7 @@ export default function MainLayout() {
         { path: '/company',  icon: <FaUserGroup size={14} />,   label: 'Company',   permission: 'contacts.view' },
         { path: '/contact',  icon: <FaUserGroup size={14} />,   label: 'Contacts',  permission: 'contacts.view' },
         { path: '/leads',    icon: <FaUserGroup size={14} />,   label: 'Leads',     permission: 'sales.view' },
+        { path: '/tickets',  icon: <FaListCheck size={14} />,   label: 'Tickets',   permission: 'dashboard.view' },
         { path: '/sales',    icon: <FaChartColumn size={14} />, label: 'Sales',     permission: 'sales.view' },
       ],
     },
@@ -81,9 +82,10 @@ export default function MainLayout() {
     {
       title: 'Operations',
       items: [
-        { path: '/finance',   icon: <FaMoneyBillWave size={14} />, label: 'Finance',   permission: 'finance.view' },
-        { path: '/invoice',   icon: <FaFileInvoice size={14} />,   label: 'Invoice',   permission: 'invoice.view' },
-        { path: '/documents', icon: <FaFileInvoice size={14} />,   label: 'Documents', permission: 'dashboard.view' },
+        { path: '/finance',   icon: <FaMoneyBillWave size={14} />, label: 'Finance',      permission: 'finance.view' },
+        { path: '/invoice',   icon: <FaFileInvoice size={14} />,   label: 'Deal Finance', permission: 'invoice.view' },
+        { path: '/legal',     icon: <FaFileInvoice size={14} />,   label: 'Legal',        permission: 'invoice.view' },
+        { path: '/documents', icon: <FaFileInvoice size={14} />,   label: 'Documents',    permission: 'dashboard.view' },
         { path: '/calendar',  icon: <FaHouse size={14} />,         label: 'Calendar',  permission: 'dashboard.view' },
       ],
     },
