@@ -124,16 +124,16 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
 
     return (
         <div className="sales-card">
-            {/* Title Row */}
-            <div className="sales-card-title">{title || 'Untitled Project'}</div>
-
             {/* Contact / Company row */}
             {(clientName || brandingName) && (
-                <div className="d-flex gap-2 mb-1" style={{ fontSize: 11, color: '#64748B' }}>
-                    {clientName && <span>👤 {clientName}</span>}
+                <div className="d-flex justify-content-center gap-2 mb-1 mt-1" style={{ fontSize: 11, color: '#64748B', fontWeight: 600 }}>
                     {brandingName && brandingName !== 'A365Shift' && <span>🏢 {brandingName}</span>}
+                    {clientName && <span>👤 {clientName}</span>}
                 </div>
             )}
+
+            {/* Title Row */}
+            <div className="sales-card-title">{title || 'Untitled Project'}</div>
 
             {/* Header Row: ID + Meta + Icons */}
             <div className="d-flex justify-content-between align-items-center mb-2">
@@ -186,20 +186,20 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
             </div>
 
             {/* Main Row: Branding — Pipeline — Client */}
-            <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '52px', gap: '8px' }}>
+            <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '52px', gap: '4px' }}>
 
                 {/* Left: Branding */}
-                <div className="branding-section d-flex align-items-center gap-2">
+                <div className="branding-section d-flex align-items-center gap-1" style={{ transform: 'translateY(11px)' }}>
                     <span className="branding-name">
                         {brandingName && brandingName !== 'A365Shift' ? brandingName : (
                             <><span style={{ color: '#0F172A' }}>A365</span><span style={{ color: '#F43F5E' }}>Shift</span></>
                         )}
                     </span>
-                    <div style={{ width: 16, height: 2, background: '#E1E8F4', borderRadius: 1 }} />
+                    <div style={{ width: 14, height: 2, background: '#E1E8F4', borderRadius: 1 }} />
                 </div>
 
                 {/* Center: Pipeline */}
-                <div className="d-flex align-items-center" style={{ overflowX: 'auto', padding: '28px 4px 4px' }}>
+                <div className="d-flex align-items-center" style={{ overflowX: 'auto', padding: '26px 4px 4px', scrollbarWidth: 'none' }}>
                     <div className="pipeline-wrapper">
                         {stages.map((stage, index) => {
                             const isLast = index === stages.length - 1;
@@ -207,7 +207,14 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
                             const isPast = index < activeStage;
 
                             let isOverdue = false;
-                            if (isActive && history && history.length > 0) {
+                            if (stage.endDate) {
+                                const todayStr = new Date().toISOString().split('T')[0];
+                                if (todayStr > stage.endDate) {
+                                    if (!stage.actualDate || stage.actualDate > stage.endDate) {
+                                        isOverdue = true;
+                                    }
+                                }
+                            } else if (isActive && history && history.length > 0) {
                                 const sorted = [...history].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                                 const lastUpdate = new Date(sorted[0].timestamp);
                                 const daysInStage = Math.ceil(Math.abs(new Date() - lastUpdate) / 86400000);
@@ -215,6 +222,7 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
                             }
 
                             const stageClass = isPast ? 'past' : isActive ? 'active' : 'future';
+                            const overdueClass = isOverdue ? ' stage-overdue' : '';
                             const ageingClass = isPast ? 'past-badge' : isActive ? `active-badge${isOverdue ? ' overdue' : ''}` : 'future-badge';
 
                             return (
@@ -226,7 +234,7 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
                                             </div>
                                         )}
                                         <div
-                                            className={`stage-card d-flex align-items-center justify-content-center px-3 ${stageClass}`}
+                                            className={`stage-card d-flex align-items-center justify-content-center px-3 ${stageClass}${overdueClass}`}
                                             onClick={() => handleStageClick(index)}
                                             onDragOver={handleDragOver}
                                             onDrop={(e) => handleDrop(e, index)}
@@ -249,8 +257,8 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
                 </div>
 
                 {/* Right: Client */}
-                <div className="client-section d-flex align-items-center gap-2">
-                    <div style={{ width: 16, height: 2, background: '#E1E8F4', borderRadius: 1 }} />
+                <div className="client-section d-flex align-items-center gap-1" style={{ transform: 'translateY(11px)' }}>
+                    <div style={{ width: 14, height: 2, background: '#E1E8F4', borderRadius: 1 }} />
                     <span className="client-name" style={{ color: client.color }}>{client.name}</span>
                 </div>
             </div>
@@ -349,7 +357,16 @@ function Sales() {
         const p = projects.find(proj => proj.id === projectId);
         if (!p) return;
 
-        const currentStages = getProjectStages(p)
+        const currentStages = [...getProjectStages(p)];
+        const savedStageIndex = logData?.savedStageIndex !== undefined ? logData.savedStageIndex : p.activeStage;
+        
+        currentStages[savedStageIndex] = {
+            ...currentStages[savedStageIndex],
+            startDate: logData?.startDate || currentStages[savedStageIndex].startDate,
+            endDate: logData?.endDate || currentStages[savedStageIndex].endDate,
+            actualDate: logData?.actualDate || currentStages[savedStageIndex].actualDate
+        };
+
         const oldStageLabel = currentStages[p.activeStage]?.label || 'Unknown'
         const newStageLabel = currentStages[newStageIndex]?.label || 'Unknown'
         const transitionStr = `${oldStageLabel} to ${newStageLabel}`
@@ -359,15 +376,20 @@ function Sales() {
             transition: transitionStr,
             amount: logData?.amount || 0,
             currency: logData?.currency || 'USD',
+            totalInr: logData?.totalInr,
             description: logData?.description || `Moved to ${newStageLabel}`,
-            targetDate: logData?.targetDate
+            targetDate: logData?.targetDate,
+            startDate: logData?.startDate,
+            endDate: logData?.endDate,
+            actualDate: logData?.actualDate
         }
 
         const updatedHistory = [newEntry, ...(p.history || [])];
 
         const uiUpdates = {
             activeStage: newStageIndex,
-            history: updatedHistory
+            history: updatedHistory,
+            stages: currentStages
         };
 
         // Send ALL fields the backend expects (UpdateProjectRequest extends CreateProjectRequest)

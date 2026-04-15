@@ -457,38 +457,72 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
         <Modal.Body className="p-0">
           <div className="wizard-layout">
 
-            {/* ── Sidebar ── */}
-            <div className="wizard-sidebar">
-              <button className="wizard-sidebar-close" onClick={closeWizard} aria-label="Close">✕</button>
-              <div className="wizard-brand">New Company</div>
-              <div className="wizard-brand-sub">CRM Setup Wizard</div>
-              <div className="wizard-steps-list">
+            {/* ══ Progress Header ══ */}
+            <div className="wizard-progress-header">
+              <button className="wizard-progress-close" onClick={closeWizard} aria-label="Close">✕</button>
+              <div className="wizard-progress-title">Create Your Profile</div>
+
+              {/* ── Horizontal Stepper ── */}
+              <div className="wizard-stepper">
                 {[
-                  { n: 1, label: 'Company', hint: 'Name, industry & tax info' },
-                  { n: 2, label: 'Contact',  hint: 'Primary point of contact' },
-                  { n: 3, label: 'Lead',     hint: 'Opportunity details' },
-                ].map(s => (
-                  <div key={s.n} className={`wizard-step-item${wizardStep === s.n ? ' active' : wizardStep > s.n ? ' done' : ''}`}>
-                    <div className="wizard-step-dot">
-                      {wizardStep > s.n ? '✓' : s.n}
+                  { n: 1, label: 'Company' },
+                  { n: 2, label: 'Contact' },
+                  { n: 3, label: 'Lead' },
+                ].map((s, idx, arr) => {
+                  const stepClass = wizardStep === s.n ? 'active' : wizardStep > s.n ? 'done' : '';
+                  return (
+                    <div key={s.n} className="wizard-stepper-step-group" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+                      <div className={`wizard-stepper-step ${stepClass}`}>
+                        {/* Businessman SVG icon above circle */}
+                        <div className="wizard-stepper-icon-wrapper">
+                          <svg className="wizard-businessman-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="32" cy="18" r="10" fill={stepClass === 'active' ? '#2ecc71' : stepClass === 'done' ? '#27ae60' : '#c5cad3'} opacity="0.85"/>
+                            <path d="M16 54c0-8.837 7.163-16 16-16s16 7.163 16 16" stroke={stepClass === 'active' ? '#2ecc71' : stepClass === 'done' ? '#27ae60' : '#c5cad3'} strokeWidth="4" strokeLinecap="round" fill={stepClass === 'active' ? '#d5f5e3' : stepClass === 'done' ? '#d5f5e3' : '#eef1f5'}/>
+                            <rect x="26" y="26" width="12" height="14" rx="2" fill={stepClass === 'active' ? '#2ecc71' : stepClass === 'done' ? '#27ae60' : '#c5cad3'} opacity="0.6"/>
+                            <path d="M30 26v-3a2 2 0 012-2h0a2 2 0 012 2v3" stroke={stepClass === 'active' ? '#1a9c54' : stepClass === 'done' ? '#1a9c54' : '#b0b8c9'} strokeWidth="1.5"/>
+                            <circle cx="29" cy="16" r="1.2" fill="#fff"/>
+                            <circle cx="35" cy="16" r="1.2" fill="#fff"/>
+                          </svg>
+                        </div>
+
+                        {/* Number Circle */}
+                        <div className="wizard-stepper-circle">
+                          <span className="wizard-stepper-check">✓</span>
+                          <span className="wizard-stepper-number">{s.n}</span>
+                        </div>
+
+                        {/* Label */}
+                        <div className="wizard-stepper-label">{s.label}</div>
+                      </div>
+
+                      {/* Connector Line */}
+                      {idx < arr.length - 1 && (
+                        <div
+                          className={`wizard-stepper-connector${wizardStep > s.n ? ' completed' : ''}`}
+                          style={{
+                            position: 'absolute',
+                            top: '55px',
+                            left: '50%',
+                            width: '100%',
+                            height: '3px',
+                            zIndex: 1,
+                          }}
+                        />
+                      )}
                     </div>
-                    <div className="wizard-step-text">
-                      <div className="wizard-step-label">{s.label}</div>
-                      <div className="wizard-step-hint">{s.hint}</div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
-            {/* ── Content ── */}
+            {/* ══ Content Panel ══ */}
             <div className="wizard-content">
               <div className="wizard-content-scroll">
 
                 {/* Step 1 — Company Details */}
                 {wizardStep === 1 && <>
-                  <div className="wizard-step-title">Company Details</div>
-                  <div className="wizard-step-desc">Tell us about the organisation you're adding.</div>
+                  <div className="wizard-step-title">Company Information</div>
+                  <div className="wizard-step-desc">Provide the necessary details to register your company with us</div>
                   <div className="row g-0">
                     <div className="col-12 wizard-field">
                       <label className="wizard-label">Company Name *</label>
@@ -570,8 +604,8 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
 
                 {/* Step 2 — Contact Details */}
                 {wizardStep === 2 && <>
-                  <div className="wizard-step-title">Contact Details</div>
-                  <div className="wizard-step-desc">Add the primary person at this company.</div>
+                  <div className="wizard-step-title">Contact Information</div>
+                  <div className="wizard-step-desc">Add the primary point of contact at this company</div>
                   <div className="row g-0">
                     <div className="col-12 wizard-field">
                       <label className="wizard-label">Full Name *</label>
@@ -619,8 +653,8 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
 
                 {/* Step 3 — Lead Details */}
                 {wizardStep === 3 && <>
-                  <div className="wizard-step-title">Lead Details</div>
-                  <div className="wizard-step-desc">Capture the opportunity tied to this company.</div>
+                  <div className="wizard-step-title">Lead Information</div>
+                  <div className="wizard-step-desc">Capture the opportunity tied to this company</div>
                   <div className="row g-0">
                     <div className="col-6 pe-3 wizard-field">
                       <label className="wizard-label">Contact Name</label>
@@ -686,11 +720,10 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
 
               {/* ── Footer ── */}
               <div className="wizard-footer">
-                <button className="wizard-btn wizard-btn-ghost" onClick={closeWizard}>Cancel</button>
+                <button className="wizard-btn wizard-btn-back" onClick={wizardStep > 1 ? handleWizardBack : closeWizard} style={{ color: '#2ecc71' }}>
+                  {wizardStep > 1 ? '‹ Previous' : 'Cancel'}
+                </button>
                 <div className="wizard-footer-spacer" />
-                {wizardStep > 1 && (
-                  <button className="wizard-btn wizard-btn-back" onClick={handleWizardBack}>← Back</button>
-                )}
                 {wizardStep === 2 && (
                   <button className="wizard-btn wizard-btn-skip" onClick={handleWizardSkip}>Skip contact</button>
                 )}
@@ -698,7 +731,7 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
                   <button className="wizard-btn wizard-btn-skip" onClick={handleWizardSkipLead}>Skip lead</button>
                 )}
                 {wizardStep < 3 && (
-                  <button className="wizard-btn wizard-btn-primary" onClick={handleWizardNext}>Next →</button>
+                  <button className="wizard-btn wizard-btn-primary" onClick={handleWizardNext}>Next ›</button>
                 )}
                 {wizardStep === 3 && (
                   <button className="wizard-btn wizard-btn-save" onClick={handleWizardSave}>

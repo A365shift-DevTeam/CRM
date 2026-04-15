@@ -238,6 +238,15 @@
   border: 1px solid #E1E8F4 !important;
 }
 
+.stage-card.stage-overdue {
+  background: #FEF2F2 !important;
+  color: #B91C1C !important;
+  border: 2px solid #EF4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+  font-weight: 800 !important;
+  z-index: 5;
+}
+
 /* Stage connector */
 .stage-connector {
   display: flex;
