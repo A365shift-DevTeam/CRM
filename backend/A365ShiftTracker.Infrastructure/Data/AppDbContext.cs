@@ -571,7 +571,7 @@ public class AppDbContext : DbContext
                 {
                     if (property.CurrentValue is DateTime dtNullable)
                     {
-                        property.CurrentValue = NormalizeDateTime(dtNullable);
+                        property.CurrentValue = (DateTime?)NormalizeDateTime(dtNullable);
                     }
                 }
             }

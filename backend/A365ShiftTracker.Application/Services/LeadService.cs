@@ -31,7 +31,7 @@ public class LeadService : ILeadService
             Notes = request.Notes,
             Type = request.Type,
             ExpectedValue = request.ExpectedValue,
-            ExpectedCloseDate = request.ExpectedCloseDate,
+            ExpectedCloseDate = ToUtc(request.ExpectedCloseDate),
         };
 
         await _uow.Leads.AddAsync(entity);
@@ -57,7 +57,7 @@ public class LeadService : ILeadService
         entity.Notes = request.Notes;
         entity.Type = request.Type;
         entity.ExpectedValue = request.ExpectedValue;
-        entity.ExpectedCloseDate = request.ExpectedCloseDate;
+        entity.ExpectedCloseDate = ToUtc(request.ExpectedCloseDate);
 
         await _uow.Leads.UpdateAsync(entity);
         await _uow.SaveChangesAsync();
@@ -75,6 +75,9 @@ public class LeadService : ILeadService
         await _uow.Leads.DeleteAsync(entity);
         await _uow.SaveChangesAsync();
     }
+
+    private static DateTime? ToUtc(DateTime? dt) =>
+        dt.HasValue ? DateTime.SpecifyKind(dt.Value, DateTimeKind.Utc) : null;
 
     private static LeadDto MapToDto(Lead l) => new()
     {
