@@ -244,22 +244,16 @@ export const ContactModal = ({ show, onHide, contact, columns = [], onSave, onDe
     return columns.filter(col => col && col.id && col.id !== 'type')
   }, [columns])
 
-  const indiaTaxFields = ['gstin', 'pan', 'cin', 'msmeStatus', 'tdsSection', 'tdsRate']
-  const isIndia = formData.clientCountry === 'India'
-
   const categorizeFields = (cols) => {
     const categories = {
-      basic: [], company: [], classification: [],
-      taxIndia: [], taxInternational: [], additional: []
+      basic: [], company: [], classification: [], additional: []
     }
     cols.forEach(col => {
       const fieldId = col.id
       if (['name', 'jobTitle', 'email', 'phone', 'linkedin'].includes(fieldId)) categories.basic.push(col)
       else if (['company', 'location', 'clientAddress', 'clientCountry'].includes(fieldId)) categories.company.push(col)
       else if (['status', 'category'].includes(fieldId) ||
-        (col.type === 'choice' && fieldId !== 'type' && !indiaTaxFields.includes(fieldId) && fieldId !== 'msmeStatus')) categories.classification.push(col)
-      else if (indiaTaxFields.includes(fieldId)) categories.taxIndia.push(col)
-      else if (fieldId === 'internationalTaxId') categories.taxInternational.push(col)
+        (col.type === 'choice' && fieldId !== 'type')) categories.classification.push(col)
       else categories.additional.push(col)
     })
     return categories

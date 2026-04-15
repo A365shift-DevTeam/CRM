@@ -258,11 +258,6 @@ const Contacts = () => {
   }
 
   // --- Handlers ---
-  const handleCreateContact = () => {
-    setEditingContact(null)
-    setShowContactModal(true)
-  }
-
   const handleEditContact = (contact) => {
     setEditingContact(contact)
     setShowContactModal(true)

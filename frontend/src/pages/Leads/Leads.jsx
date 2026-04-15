@@ -282,7 +282,7 @@ export default function Leads() {
 
       <Modal show={showModal} onHide={() => setShowModal(false)} centered size="lg">
         <Modal.Header closeButton className="border-0 pb-0">
-          <Modal.Title className="h6 fw-bold">{editing ? 'Edit Lead' : 'Add Lead'}</Modal.Title>
+          <Modal.Title className="h6 fw-bold">Edit Lead</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <div className="row g-3">
@@ -338,7 +338,7 @@ export default function Leads() {
         </Modal.Body>
         <Modal.Footer className="border-0 pt-0">
           <Button variant="secondary" size="sm" onClick={() => setShowModal(false)}>Cancel</Button>
-          <Button variant="primary" size="sm" onClick={handleSave}>{editing ? 'Update' : 'Create'} Lead</Button>
+          <Button variant="primary" size="sm" onClick={handleSave}>Update Lead</Button>
         </Modal.Footer>
       </Modal>
 

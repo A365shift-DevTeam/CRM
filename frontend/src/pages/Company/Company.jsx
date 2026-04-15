@@ -125,6 +125,7 @@ export default function Company() {
       toast.success(`Contact created from "${convertingCompany.name}"`);
       setShowConvertContactModal(false);
       setConvertingCompany(null);
+      setConvertContactForm({});
       loadCompanies();
     } catch (e) {
       toast.error(e.message || 'Failed to create contact');
