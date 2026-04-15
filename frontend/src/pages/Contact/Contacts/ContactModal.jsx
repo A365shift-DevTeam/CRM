@@ -313,8 +313,6 @@ export const ContactModal = ({ show, onHide, contact, columns = [], onSave, onDe
       {renderCategorySection('Basic Information', fieldCategories.basic)}
       {renderCategorySection('Company & Location', fieldCategories.company)}
       {renderCategorySection('Classification', fieldCategories.classification)}
-      {renderCategorySection('Tax & Financial Information', fieldCategories.taxIndia, isIndia)}
-      {renderCategorySection('Tax Information', fieldCategories.taxInternational, !isIndia)}
       {renderCategorySection('Additional Information', fieldCategories.additional)}
       {contact?.id && (
         <div style={{ marginTop: 16, borderTop: '1px solid #E1E8F4', paddingTop: 12 }}>

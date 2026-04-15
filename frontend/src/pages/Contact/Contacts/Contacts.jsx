@@ -53,13 +53,6 @@ const Contacts = () => {
     { id: 'location', name: 'Location', type: 'location', visible: true },
     { id: 'clientAddress', name: 'Client Address', type: 'text', visible: true },
     { id: 'clientCountry', name: 'Country', type: 'text', visible: true },
-    { id: 'gstin', name: 'GSTIN', type: 'text', visible: false },
-    { id: 'pan', name: 'PAN', type: 'text', visible: false },
-    { id: 'cin', name: 'CIN', type: 'text', visible: false },
-    { id: 'internationalTaxId', name: 'Intl Tax ID (VAT/EIN)', type: 'text', visible: false },
-    { id: 'msmeStatus', name: 'MSME Status', type: 'text', visible: false },
-    { id: 'tdsSection', name: 'TDS Section', type: 'text', visible: false },
-    { id: 'tdsRate', name: 'TDS Rate', type: 'number', visible: false },
     { id: 'type', name: 'Entity Type', type: 'choice', visible: true, config: { options: [{ label: 'Company', color: '#3b82f6' }, { label: 'Individual', color: '#8b5cf6' }, { label: 'Vendor', color: '#10b981' }] } },
     { id: 'status', name: 'Status', type: 'choice', visible: true, config: { options: [{ label: 'Active', color: '#10b981' }, { label: 'Inactive', color: '#94a3b8' }, { label: 'Lead', color: '#3b82f6' }, { label: 'Customer', color: '#06b6d4' }] } }
   ])

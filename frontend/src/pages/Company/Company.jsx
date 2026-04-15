@@ -14,7 +14,9 @@ const SIZES = ['1-10', '11-50', '51-200', '201-500', '500+'];
 
 const EMPTY_FORM = {
   name: '', industry: '', size: '', website: '',
-  address: '', country: '', gstin: '', tags: ''
+  address: '', country: '', gstin: '', tags: '',
+  pan: '', cin: '', msmeStatus: 'NON MSME',
+  tdsSection: '', tdsRate: '', internationalTaxId: ''
 };
 
 export default function Company() {
@@ -198,10 +200,9 @@ export default function Company() {
               { label: 'Website', key: 'website', type: 'text', col: 6 },
               { label: 'Country', key: 'country', type: 'text', col: 6 },
               { label: 'Address', key: 'address', type: 'text', col: 12 },
-              { label: 'GSTIN / Tax ID', key: 'gstin', type: 'text', col: 6 },
               { label: 'Tags (comma separated)', key: 'tags', type: 'text', col: 6 },
             ].map(f => (
-              <div key={f.key} className={`col-${f.col}`}>
+              <div key={f.key} className={`col-${f.key === 'name' || f.key === 'address' ? '12' : '6'}`}>
                 <Form.Label className="small fw-semibold mb-1">{f.label}</Form.Label>
                 <Form.Control size="sm" type={f.type} value={form[f.key] || ''} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} />
               </div>
@@ -220,6 +221,40 @@ export default function Company() {
                 {SIZES.map(s => <option key={s}>{s}</option>)}
               </Form.Select>
             </div>
+
+            {/* Tax & Financial — India */}
+            {(form.country === 'India' || !form.country) && <>
+              <div className="col-12">
+                <div className="small fw-bold text-muted mt-2 mb-1" style={{ textTransform: 'uppercase', fontSize: 11, letterSpacing: '0.05em' }}>Tax & Financial Information</div>
+              </div>
+              {[
+                { label: 'GSTIN / Tax ID', key: 'gstin', col: 6 },
+                { label: 'PAN', key: 'pan', col: 6 },
+                { label: 'CIN', key: 'cin', col: 6 },
+                { label: 'TDS Section', key: 'tdsSection', col: 6 },
+                { label: 'TDS Rate', key: 'tdsRate', col: 6 },
+              ].map(f => (
+                <div key={f.key} className={`col-${f.col}`}>
+                  <Form.Label className="small fw-semibold mb-1">{f.label}</Form.Label>
+                  <Form.Control size="sm" type="text" value={form[f.key] || ''} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} />
+                </div>
+              ))}
+              <div className="col-6">
+                <Form.Label className="small fw-semibold mb-1">MSME Status</Form.Label>
+                <Form.Select size="sm" value={form.msmeStatus || 'NON MSME'} onChange={e => setForm(p => ({ ...p, msmeStatus: e.target.value }))}>
+                  <option value="NON MSME">NON MSME</option>
+                  <option value="MSME">MSME</option>
+                </Form.Select>
+              </div>
+            </>}
+
+            {/* Tax — International */}
+            {form.country && form.country !== 'India' && (
+              <div className="col-6">
+                <Form.Label className="small fw-semibold mb-1">Intl Tax ID (VAT/EIN)</Form.Label>
+                <Form.Control size="sm" type="text" value={form.internationalTaxId || ''} onChange={e => setForm(p => ({ ...p, internationalTaxId: e.target.value }))} />
+              </div>
+            )}
           </div>
         </Modal.Body>
         <Modal.Footer className="border-0 pt-0">
