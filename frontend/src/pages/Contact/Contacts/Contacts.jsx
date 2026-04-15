@@ -72,10 +72,6 @@ const Contacts = () => {
   const [convertingContact, setConvertingContact] = useState(null)
   const [convertLeadForm, setConvertLeadForm] = useState({})
 
-  // Global Labels
-  const productLabel = localStorage.getItem('app_product_label') || 'Products'
-  const serviceLabel = localStorage.getItem('app_service_label') || 'Services'
-
   useEffect(() => {
     loadContacts()
     loadColumns()
@@ -353,7 +349,6 @@ const Contacts = () => {
     setConvertingContact(contact)
     setConvertLeadForm({
       contactName: contact.name || '',
-      contactId: contact.id,
       company: contact.company || '',
       source: 'Inbound',
       score: 'Warm',
@@ -369,6 +364,10 @@ const Contacts = () => {
 
   const handleConfirmConvert = async () => {
     if (!convertingContact) return
+    if (!convertLeadForm.contactName?.trim()) {
+      toast.error('Contact name is required')
+      return
+    }
     try {
       await leadService.createLead({
         ...convertLeadForm,
@@ -379,6 +378,7 @@ const Contacts = () => {
       toast.success(`Contact "${convertingContact.name}" converted to a Lead!`)
       setShowConvertModal(false)
       setConvertingContact(null)
+      loadContacts()
     } catch (error) {
       console.error('Error converting contact to lead:', error)
       toast.error('Failed to convert contact. Please try again.')
@@ -674,7 +674,7 @@ const Contacts = () => {
         onHide={() => setShowAIAssist(false)}
         contacts={contacts}
         onApplyFilters={handleAIFilterApply}
-        onCreateContact={() => { setShowAIAssist(false); handleCreateContact(); }}
+        onCreateContact={() => setShowAIAssist(false)}
       />
 
       {/* Column Manager Modal */}
