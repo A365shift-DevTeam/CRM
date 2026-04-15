@@ -3,7 +3,6 @@ import { Button, Modal, Form } from 'react-bootstrap';
 import { User, Building, Target, Edit, Trash2, ArrowUpRight, List, Columns } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { leadService } from '../../services/leadService';
-import { contactService } from '../../services/contactService';
 import { projectService } from '../../services/api';
 import { useToast } from '../../components/Toast/ToastContext';
 import PageToolbar from '../../components/PageToolbar/PageToolbar';
@@ -14,6 +13,17 @@ import './Leads.css';
 const KANBAN_STAGES = ['New', 'Contacted', 'Qualified', 'Disqualified'];
 const SOURCES = ['Inbound', 'Referral', 'Campaign', 'Cold'];
 const SCORES = ['Hot', 'Warm', 'Cold'];
+
+const STAGE_STORAGE_KEYS = { Product: 'sales_stages_product', Service: 'sales_stages_service' };
+const DEFAULT_SALES_STAGES = [
+  { id: 0, label: 'Demo', color: 'cyan', ageing: 7 },
+  { id: 1, label: 'Proposal', color: 'gray', ageing: 15 },
+  { id: 2, label: 'Negotiation', color: 'gray', ageing: 30 },
+  { id: 3, label: 'Approval', color: 'gray', ageing: 15 },
+  { id: 4, label: 'Won', color: 'green', ageing: 30 },
+  { id: 5, label: 'Closed', color: 'green', ageing: 90 },
+  { id: 6, label: 'Lost', color: 'orange', ageing: 60 },
+];
 
 const EMPTY_FORM = {
   contactId: '', contactName: '', company: '',
@@ -49,7 +59,6 @@ export default function Leads() {
     }
   };
 
-  const openAdd = () => { setEditing(null); setForm(EMPTY_FORM); setShowModal(true); };
   const openEdit = (l) => { setEditing(l); setForm({ ...EMPTY_FORM, ...l }); setShowModal(true); };
 
   const handleSave = async () => {
@@ -123,17 +132,7 @@ export default function Leads() {
     }
     const lead = qualifyingLead;
 
-    const STAGE_STORAGE_KEYS = { Product: 'sales_stages_product', Service: 'sales_stages_service' };
-    const defaultStages = [
-      { id: 0, label: 'Demo', color: 'cyan', ageing: 7 },
-      { id: 1, label: 'Proposal', color: 'gray', ageing: 15 },
-      { id: 2, label: 'Negotiation', color: 'gray', ageing: 30 },
-      { id: 3, label: 'Approval', color: 'gray', ageing: 15 },
-      { id: 4, label: 'Won', color: 'green', ageing: 30 },
-      { id: 5, label: 'Closed', color: 'green', ageing: 90 },
-      { id: 6, label: 'Lost', color: 'orange', ageing: 60 },
-    ];
-    let initialStages = defaultStages;
+    let initialStages = DEFAULT_SALES_STAGES;
     try {
       const stored = localStorage.getItem(STAGE_STORAGE_KEYS[qualifyForm.type]);
       if (stored) initialStages = JSON.parse(stored);
