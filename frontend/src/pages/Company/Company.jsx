@@ -66,8 +66,7 @@ export default function Company() {
     }
   };
 
-  const openAdd = () => { setEditing(null); setForm(EMPTY_FORM); setShowModal(true); };
-  const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setShowModal(true); };
+const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setShowModal(true); };
 
   const openWizard  = () => { setWizardForm({}); setWizardStep(1); setShowWizard(true); };
   const closeWizard = () => { setShowWizard(false); setWizardStep(1); setWizardForm({}); };
@@ -96,6 +95,7 @@ export default function Company() {
   const handleWizardBack = () => setWizardStep(s => s - 1);
 
   const handleWizardSkip = async () => {
+    if (!wizardForm.company_name?.trim()) { toast.error('Company name is required'); return; }
     try {
       await companyService.createCompany(buildCompanyPayload(wizardForm));
       toast.success('Company created');
@@ -107,6 +107,8 @@ export default function Company() {
   };
 
   const handleWizardSave = async () => {
+    if (!wizardForm.company_name?.trim())  { toast.error('Company name is required'); return; }
+    if (!wizardForm.contact_name?.trim())  { toast.error('Contact name is required'); return; }
     try {
       const company = await companyService.createCompany(buildCompanyPayload(wizardForm));
 
