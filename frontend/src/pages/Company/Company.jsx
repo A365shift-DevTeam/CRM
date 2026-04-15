@@ -95,6 +95,8 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
   const handleWizardBack = () => setWizardStep(s => s - 1);
 
   const handleWizardSkipLead = async () => {
+    if (!wizardForm.company_name?.trim())  { toast.error('Company name is required'); return; }
+    if (!wizardForm.contact_name?.trim())  { toast.error('Contact name is required'); return; }
     try {
       const company = await companyService.createCompany(buildCompanyPayload(wizardForm));
       await contactService.createContact({
