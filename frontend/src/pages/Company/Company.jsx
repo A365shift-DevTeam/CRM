@@ -107,6 +107,7 @@ export default function Company() {
       clientCountry: company.country || '',
       type: 'Company',
       entityType: 'Company',
+      // Tax fields (gstin, pan, etc.) intentionally excluded — owned by Company, not Contact
     });
     setShowConvertContactModal(true);
   };
@@ -124,6 +125,7 @@ export default function Company() {
       toast.success(`Contact created from "${convertingCompany.name}"`);
       setShowConvertContactModal(false);
       setConvertingCompany(null);
+      loadCompanies();
     } catch (e) {
       toast.error(e.message || 'Failed to create contact');
     }
@@ -268,7 +270,7 @@ export default function Company() {
       </Modal>
 
       {/* CONVERT COMPANY → CONTACT MODAL */}
-      <Modal show={showConvertContactModal} onHide={() => setShowConvertContactModal(false)} centered size="lg">
+      <Modal show={showConvertContactModal} onHide={() => { setShowConvertContactModal(false); setConvertingCompany(null); }} centered size="lg">
         <Modal.Header closeButton className="border-0 pb-0">
           <Modal.Title className="h6 fw-bold">
             Convert to Contact — {convertingCompany?.name}
@@ -316,7 +318,7 @@ export default function Company() {
           </div>
         </Modal.Body>
         <Modal.Footer className="border-0 pt-0">
-          <Button variant="secondary" size="sm" onClick={() => setShowConvertContactModal(false)}>Cancel</Button>
+          <Button variant="secondary" size="sm" onClick={() => { setShowConvertContactModal(false); setConvertingCompany(null); }}>Cancel</Button>
           <Button variant="success" size="sm" onClick={handleSaveConvertContact}>
             <ArrowUpRight size={14} className="me-1" /> Create Contact
           </Button>
