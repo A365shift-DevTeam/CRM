@@ -5,6 +5,7 @@ namespace A365ShiftTracker.Domain.Entities;
 public class Contact : AuditableEntity, IOwnedByUser
 {
     public int UserId { get; set; }
+    public int? CompanyId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? JobTitle { get; set; }
     public string? Phone { get; set; }

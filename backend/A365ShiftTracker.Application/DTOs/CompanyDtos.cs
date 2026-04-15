@@ -10,6 +10,12 @@ public class CompanyDto
     public string? Address { get; set; }
     public string? Country { get; set; }
     public string? Gstin { get; set; }
+    public string? Pan { get; set; }
+    public string? Cin { get; set; }
+    public string? MsmeStatus { get; set; }
+    public string? TdsSection { get; set; }
+    public decimal? TdsRate { get; set; }
+    public string? InternationalTaxId { get; set; }
     public string? Tags { get; set; }
     public DateTime CreatedAt { get; set; }
 }
@@ -23,6 +29,12 @@ public class CreateCompanyRequest
     public string? Address { get; set; }
     public string? Country { get; set; }
     public string? Gstin { get; set; }
+    public string? Pan { get; set; }
+    public string? Cin { get; set; }
+    public string? MsmeStatus { get; set; }
+    public string? TdsSection { get; set; }
+    public decimal? TdsRate { get; set; }
+    public string? InternationalTaxId { get; set; }
     public string? Tags { get; set; }
 }
 

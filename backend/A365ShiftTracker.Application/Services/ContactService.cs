@@ -319,7 +319,7 @@ public class ContactService : IContactService
 
     private static ContactDto MapToDto(Contact c) => new()
     {
-        Id = c.Id, Name = c.Name, JobTitle = c.JobTitle, Phone = c.Phone,
+        Id = c.Id, CompanyId = c.CompanyId, Name = c.Name, JobTitle = c.JobTitle, Phone = c.Phone,
         Email = c.Email, Company = c.Company, Location = c.Location,
         ClientAddress = c.ClientAddress, ClientCountry = c.ClientCountry,
         Gstin = c.Gstin, Pan = c.Pan, Cin = c.Cin,
@@ -334,6 +334,7 @@ public class ContactService : IContactService
 
     private static Contact MapFromRequest(Contact c, CreateContactRequest req)
     {
+        c.CompanyId = req.CompanyId;
         c.Name = req.Name; c.JobTitle = req.JobTitle; c.Phone = req.Phone;
         c.Email = req.Email; c.Company = req.Company; c.Location = req.Location;
         c.ClientAddress = req.ClientAddress; c.ClientCountry = req.ClientCountry;

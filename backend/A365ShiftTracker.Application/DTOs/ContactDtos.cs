@@ -3,6 +3,7 @@ namespace A365ShiftTracker.Application.DTOs;
 public class ContactDto
 {
     public int Id { get; set; }
+    public int? CompanyId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? JobTitle { get; set; }
     public string? Phone { get; set; }
@@ -35,6 +36,7 @@ public class ContactDto
 
 public class CreateContactRequest
 {
+    public int? CompanyId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? JobTitle { get; set; }
     public string? Phone { get; set; }

@@ -28,6 +28,12 @@ public class CompanyService : ICompanyService
             Address = request.Address,
             Country = request.Country,
             Gstin = request.Gstin,
+            Pan = request.Pan,
+            Cin = request.Cin,
+            MsmeStatus = request.MsmeStatus,
+            TdsSection = request.TdsSection,
+            TdsRate = request.TdsRate,
+            InternationalTaxId = request.InternationalTaxId,
             Tags = request.Tags,
         };
 
@@ -51,6 +57,12 @@ public class CompanyService : ICompanyService
         entity.Address = request.Address;
         entity.Country = request.Country;
         entity.Gstin = request.Gstin;
+        entity.Pan = request.Pan;
+        entity.Cin = request.Cin;
+        entity.MsmeStatus = request.MsmeStatus;
+        entity.TdsSection = request.TdsSection;
+        entity.TdsRate = request.TdsRate;
+        entity.InternationalTaxId = request.InternationalTaxId;
         entity.Tags = request.Tags;
 
         await _uow.Companies.UpdateAsync(entity);
@@ -74,6 +86,8 @@ public class CompanyService : ICompanyService
     {
         Id = c.Id, Name = c.Name, Industry = c.Industry, Size = c.Size,
         Website = c.Website, Address = c.Address, Country = c.Country,
-        Gstin = c.Gstin, Tags = c.Tags, CreatedAt = c.CreatedAt,
+        Gstin = c.Gstin, Pan = c.Pan, Cin = c.Cin, MsmeStatus = c.MsmeStatus,
+        TdsSection = c.TdsSection, TdsRate = c.TdsRate,
+        InternationalTaxId = c.InternationalTaxId, Tags = c.Tags, CreatedAt = c.CreatedAt,
     };
 }
