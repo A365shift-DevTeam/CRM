@@ -70,9 +70,7 @@ const Contacts = () => {
   // Convert to Sales State
   const [showConvertModal, setShowConvertModal] = useState(false)
   const [convertingContact, setConvertingContact] = useState(null)
-  const [convertType, setConvertType] = useState('Product')
-  const [convertBranding, setConvertBranding] = useState('')
-  const [convertClient, setConvertClient] = useState('')
+  const [convertLeadForm, setConvertLeadForm] = useState({})
 
   // Global Labels
   const productLabel = localStorage.getItem('app_product_label') || 'Products'
@@ -353,29 +351,32 @@ const Contacts = () => {
   // --- Convert to Lead ---
   const handleConvertToSales = (contact) => {
     setConvertingContact(contact)
-    setConvertBranding(contact.company || '')
-    setConvertClient(contact.name || '')
+    setConvertLeadForm({
+      contactName: contact.name || '',
+      contactId: contact.id,
+      company: contact.company || '',
+      source: 'Inbound',
+      score: 'Warm',
+      stage: 'New',
+      type: 'Product',
+      assignedTo: '',
+      expectedValue: '',
+      expectedCloseDate: '',
+      notes: '',
+    })
     setShowConvertModal(true)
   }
 
   const handleConfirmConvert = async () => {
     if (!convertingContact) return
-    const c = convertingContact
     try {
       await leadService.createLead({
-        contactId: c.id,
-        contactName: convertClient || c.name,
-        company: convertBranding || c.company || '',
-        source: 'Inbound',
-        score: 'Warm',
-        stage: 'New',
-        notes: '',
-        type: convertType,
-        expectedValue: null,
-        expectedCloseDate: null,
-        assignedTo: '',
+        ...convertLeadForm,
+        contactId: convertingContact.id,
+        expectedValue: convertLeadForm.expectedValue !== '' ? parseFloat(convertLeadForm.expectedValue) : null,
+        expectedCloseDate: convertLeadForm.expectedCloseDate || null,
       })
-      toast.success(`Contact "${c.name}" converted to a Lead!`)
+      toast.success(`Contact "${convertingContact.name}" converted to a Lead!`)
       setShowConvertModal(false)
       setConvertingContact(null)
     } catch (error) {
@@ -440,7 +441,6 @@ const Contacts = () => {
         activeView={viewMode}
         onViewChange={setViewMode}
         actions={[
-          { label: 'Contact', icon: <Plus size={16} />, variant: 'success', onClick: handleCreateContact },
           { label: 'AI', icon: <span>✨</span>, variant: 'purple', onClick: () => setShowAIAssist(true) }
         ]}
       />
@@ -601,62 +601,70 @@ const Contacts = () => {
         </Modal.Footer>
       </Modal>
 
-      {/* CONVERT TO SALES MODAL */}
-      <Modal show={showConvertModal} onHide={() => setShowConvertModal(false)} centered size="sm">
+      {/* CONVERT CONTACT → LEAD MODAL */}
+      <Modal show={showConvertModal} onHide={() => { setShowConvertModal(false); setConvertingContact(null); }} centered size="lg">
         <Modal.Header closeButton className="border-0 pb-0">
-          <Modal.Title className="h6 fw-bold">Convert to Lead</Modal.Title>
+          <Modal.Title className="h6 fw-bold">
+            Convert to Lead — {convertingContact?.name}
+          </Modal.Title>
         </Modal.Header>
-        <Modal.Body className="pt-3">
-          {convertingContact && (
-            <div className="mb-3">
-              <div className="d-flex align-items-center gap-2 mb-3 p-2 bg-light rounded-3">
-                <div className="rounded-circle bg-success bg-opacity-10 text-success d-flex align-items-center justify-content-center fw-bold" style={{ width: 36, height: 36, fontSize: 14 }}>
-                  {convertingContact.name?.substring(0, 2).toUpperCase()}
-                </div>
-                <div>
-                  <div className="fw-bold small">{convertingContact.name}</div>
-                  <div className="text-muted" style={{ fontSize: 11 }}>{convertingContact.company || 'No Company'}</div>
-                </div>
-              </div>
-
-              <Form.Group className="mb-2">
-                <Form.Label className="small text-muted fw-bold">Client Name</Form.Label>
-                <Form.Control
-                  type="text"
-                  size="sm"
-                  value={convertClient}
-                  onChange={(e) => setConvertClient(e.target.value)}
-                />
-              </Form.Group>
-
-              <Form.Group className="mb-2">
-                <Form.Label className="small text-muted fw-bold">Branding Name</Form.Label>
-                <Form.Control
-                  type="text"
-                  size="sm"
-                  value={convertBranding}
-                  onChange={(e) => setConvertBranding(e.target.value)}
-                />
-              </Form.Group>
-
-              <Form.Group>
-                <Form.Label className="small text-muted fw-bold">Project Type</Form.Label>
-                <Form.Select
-                  size="sm"
-                  value={convertType}
-                  onChange={(e) => setConvertType(e.target.value)}
-                >
-                  <option value="Product">{productLabel}</option>
-                  <option value="Service">{serviceLabel}</option>
-                </Form.Select>
-              </Form.Group>
+        <Modal.Body>
+          <div className="row g-3">
+            <div className="col-6">
+              <Form.Label className="small fw-semibold mb-1">Contact Name *</Form.Label>
+              <Form.Control size="sm" type="text" value={convertLeadForm.contactName || ''} onChange={e => setConvertLeadForm(p => ({ ...p, contactName: e.target.value }))} />
             </div>
-          )}
+            <div className="col-6">
+              <Form.Label className="small fw-semibold mb-1">Company</Form.Label>
+              <Form.Control size="sm" type="text" value={convertLeadForm.company || ''} onChange={e => setConvertLeadForm(p => ({ ...p, company: e.target.value }))} />
+            </div>
+            <div className="col-6">
+              <Form.Label className="small fw-semibold mb-1">Source</Form.Label>
+              <Form.Select size="sm" value={convertLeadForm.source || 'Inbound'} onChange={e => setConvertLeadForm(p => ({ ...p, source: e.target.value }))}>
+                {['Inbound', 'Referral', 'Campaign', 'Cold'].map(s => <option key={s}>{s}</option>)}
+              </Form.Select>
+            </div>
+            <div className="col-6">
+              <Form.Label className="small fw-semibold mb-1">Score</Form.Label>
+              <Form.Select size="sm" value={convertLeadForm.score || 'Warm'} onChange={e => setConvertLeadForm(p => ({ ...p, score: e.target.value }))}>
+                {['Hot', 'Warm', 'Cold'].map(s => <option key={s}>{s}</option>)}
+              </Form.Select>
+            </div>
+            <div className="col-6">
+              <Form.Label className="small fw-semibold mb-1">Stage</Form.Label>
+              <Form.Select size="sm" value={convertLeadForm.stage || 'New'} onChange={e => setConvertLeadForm(p => ({ ...p, stage: e.target.value }))}>
+                {['New', 'Contacted', 'Qualified', 'Disqualified'].map(s => <option key={s}>{s}</option>)}
+              </Form.Select>
+            </div>
+            <div className="col-6">
+              <Form.Label className="small fw-semibold mb-1">Project Type</Form.Label>
+              <Form.Select size="sm" value={convertLeadForm.type || 'Product'} onChange={e => setConvertLeadForm(p => ({ ...p, type: e.target.value }))}>
+                <option value="Product">{localStorage.getItem('app_product_label') || 'Products'}</option>
+                <option value="Service">{localStorage.getItem('app_service_label') || 'Services'}</option>
+              </Form.Select>
+            </div>
+            <div className="col-6">
+              <Form.Label className="small fw-semibold mb-1">Expected Value</Form.Label>
+              <Form.Control size="sm" type="number" value={convertLeadForm.expectedValue || ''} onChange={e => setConvertLeadForm(p => ({ ...p, expectedValue: e.target.value }))} />
+            </div>
+            <div className="col-6">
+              <Form.Label className="small fw-semibold mb-1">Expected Close Date</Form.Label>
+              <Form.Control size="sm" type="date" value={convertLeadForm.expectedCloseDate || ''} onChange={e => setConvertLeadForm(p => ({ ...p, expectedCloseDate: e.target.value }))} />
+            </div>
+            <div className="col-12">
+              <Form.Label className="small fw-semibold mb-1">Assigned To</Form.Label>
+              <Form.Control size="sm" type="text" value={convertLeadForm.assignedTo || ''} onChange={e => setConvertLeadForm(p => ({ ...p, assignedTo: e.target.value }))} />
+            </div>
+            <div className="col-12">
+              <Form.Label className="small fw-semibold mb-1">Notes</Form.Label>
+              <Form.Control as="textarea" rows={2} size="sm" value={convertLeadForm.notes || ''} onChange={e => setConvertLeadForm(p => ({ ...p, notes: e.target.value }))} />
+            </div>
+          </div>
         </Modal.Body>
         <Modal.Footer className="border-0 pt-0">
-          <Button variant="light" size="sm" onClick={() => setShowConvertModal(false)}>Cancel</Button>
+          <Button variant="light" size="sm" onClick={() => { setShowConvertModal(false); setConvertingContact(null); }}>Cancel</Button>
           <Button variant="success" size="sm" onClick={handleConfirmConvert} className="d-flex align-items-center gap-1">
-            <ArrowUpRight size={14} /> Convert
+            <ArrowUpRight size={14} /> Convert to Lead
           </Button>
         </Modal.Footer>
       </Modal>
