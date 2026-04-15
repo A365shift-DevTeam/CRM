@@ -223,7 +223,7 @@ export default function Company() {
             </div>
 
             {/* Tax & Financial — India */}
-            {(form.country === 'India' || !form.country) && <>
+            {(form.country?.trim().toLowerCase() === 'india' || !form.country) && <>
               <div className="col-12">
                 <div className="small fw-bold text-muted mt-2 mb-1" style={{ textTransform: 'uppercase', fontSize: 11, letterSpacing: '0.05em' }}>Tax & Financial Information</div>
               </div>
@@ -232,11 +232,11 @@ export default function Company() {
                 { label: 'PAN', key: 'pan', col: 6 },
                 { label: 'CIN', key: 'cin', col: 6 },
                 { label: 'TDS Section', key: 'tdsSection', col: 6 },
-                { label: 'TDS Rate', key: 'tdsRate', col: 6 },
+                { label: 'TDS Rate', key: 'tdsRate', type: 'number', col: 6 },
               ].map(f => (
                 <div key={f.key} className={`col-${f.col}`}>
                   <Form.Label className="small fw-semibold mb-1">{f.label}</Form.Label>
-                  <Form.Control size="sm" type="text" value={form[f.key] || ''} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} />
+                  <Form.Control size="sm" type={f.type || 'text'} value={form[f.key] || ''} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} />
                 </div>
               ))}
               <div className="col-6">
@@ -249,7 +249,7 @@ export default function Company() {
             </>}
 
             {/* Tax — International */}
-            {form.country && form.country !== 'India' && (
+            {form.country && form.country.trim().toLowerCase() !== 'india' && (
               <div className="col-6">
                 <Form.Label className="small fw-semibold mb-1">Intl Tax ID (VAT/EIN)</Form.Label>
                 <Form.Control size="sm" type="text" value={form.internationalTaxId || ''} onChange={e => setForm(p => ({ ...p, internationalTaxId: e.target.value }))} />
