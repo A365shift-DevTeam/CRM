@@ -94,6 +94,30 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
 
   const handleWizardBack = () => setWizardStep(s => s - 1);
 
+  const handleWizardSkipLead = async () => {
+    try {
+      const company = await companyService.createCompany(buildCompanyPayload(wizardForm));
+      await contactService.createContact({
+        name:          wizardForm.contact_name          || '',
+        email:         wizardForm.contact_email         || '',
+        phone:         wizardForm.contact_phone         || '',
+        jobTitle:      wizardForm.contact_jobTitle      || '',
+        status:        wizardForm.contact_status        || 'Active',
+        location:      wizardForm.contact_location      || '',
+        clientCountry: wizardForm.contact_clientCountry || '',
+        clientAddress: wizardForm.contact_clientAddress || '',
+        company:       wizardForm.company_name          || '',
+        entityType:    'Company',
+        companyId:     company.id,
+      });
+      toast.success('Company & Contact created');
+      closeWizard();
+      loadCompanies();
+    } catch (e) {
+      toast.error(e.message || 'Failed to save — please try again');
+    }
+  };
+
   const handleWizardSkip = async () => {
     if (!wizardForm.company_name?.trim()) { toast.error('Company name is required'); return; }
     try {
@@ -452,7 +476,7 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
                   </span>
                 </div>
                 {i < 2 && (
-                  <div style={{ width: 60, height: 2, background: wizardStep > s.n ? '#0d6efd' : '#e2e8f0', margin: '0 8px', marginBottom: 20, transition: 'all 0.2s' }} />
+                  <div style={{ width: 60, height: 2, background: wizardStep > s.n ? '#0d6efd' : '#e2e8f0', margin: '0 8px', alignSelf: 'flex-start', marginTop: 13, transition: 'all 0.2s' }} />
                 )}
               </div>
             ))}
@@ -637,6 +661,9 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
           )}
           {wizardStep === 2 && (
             <Button variant="outline-secondary" size="sm" onClick={handleWizardSkip}>Skip</Button>
+          )}
+          {wizardStep === 3 && (
+            <Button variant="outline-secondary" size="sm" onClick={handleWizardSkipLead}>Skip Lead</Button>
           )}
           {wizardStep < 3 && (
             <Button variant="primary" size="sm" onClick={handleWizardNext}>Next →</Button>
