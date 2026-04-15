@@ -31,6 +31,9 @@ export default function Leads() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [showQualifyModal, setShowQualifyModal] = useState(false);
+  const [qualifyingLead, setQualifyingLead] = useState(null);
+  const [qualifyForm, setQualifyForm] = useState({});
 
   useEffect(() => { loadLeads(); }, []);
 
@@ -92,17 +95,7 @@ export default function Leads() {
     }
   };
 
-  const handleQualify = async (lead) => {
-    const result = await Swal.fire({
-      title: 'Qualify lead?',
-      text: `Qualify "${lead.contactName}" and create a Sales deal?`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, qualify',
-      cancelButtonText: 'Cancel',
-      reverseButtons: true,
-    });
-    if (!result.isConfirmed) return;
+  const handleQualify = (lead) => {
     const today = new Date();
     const date = String(today.getDate()).padStart(2, '0');
     const year = String(today.getFullYear()).slice(-2);
@@ -110,10 +103,26 @@ export default function Leads() {
     const clientCode = (lead.contactName || 'C').slice(-1).toUpperCase();
     const customId = `${date}${brandCode}${clientCode}${year}`;
 
-    // Use the lead's type (Product/Service), default to 'Product' if not set
-    const projectType = lead.type || 'Product';
+    setQualifyingLead(lead);
+    setQualifyForm({
+      title: `${lead.contactName} - ${lead.company || 'Direct'}`,
+      clientName: lead.contactName || '',
+      type: lead.type || 'Product',
+      customId,
+      dealValue: lead.expectedValue || '',
+      expectedCloseDate: lead.expectedCloseDate || '',
+    });
+    setShowQualifyModal(true);
+  };
 
-    // Load default stages for this project type from localStorage (same as Sales page)
+  const handleConfirmQualify = async () => {
+    if (!qualifyingLead) return;
+    if (!qualifyForm.title?.trim()) {
+      toast.error('Deal title is required');
+      return;
+    }
+    const lead = qualifyingLead;
+
     const STAGE_STORAGE_KEYS = { Product: 'sales_stages_product', Service: 'sales_stages_service' };
     const defaultStages = [
       { id: 0, label: 'Demo', color: 'cyan', ageing: 7 },
@@ -126,7 +135,7 @@ export default function Leads() {
     ];
     let initialStages = defaultStages;
     try {
-      const stored = localStorage.getItem(STAGE_STORAGE_KEYS[projectType]);
+      const stored = localStorage.getItem(STAGE_STORAGE_KEYS[qualifyForm.type]);
       if (stored) initialStages = JSON.parse(stored);
     } catch (e) { /* use defaults */ }
 
@@ -134,15 +143,20 @@ export default function Leads() {
       await projectService.create({
         activeStage: 0,
         history: [],
-        type: projectType,
+        type: qualifyForm.type,
         delay: 0,
-        title: `${lead.contactName} - ${lead.company || 'Direct'}`,
-        clientName: lead.contactName,
-        customId,
+        title: qualifyForm.title,
+        clientName: qualifyForm.clientName,
+        customId: qualifyForm.customId,
+        dealValue: qualifyForm.dealValue !== '' ? parseFloat(qualifyForm.dealValue) : null,
+        expectedCloseDate: qualifyForm.expectedCloseDate || null,
         stages: initialStages,
+        leadId: lead.id,
       });
       await leadService.updateLead(lead.id, { ...lead, stage: 'Qualified' });
       toast.success(`Lead qualified — Sales deal created for ${lead.contactName}`);
+      setShowQualifyModal(false);
+      setQualifyingLead(null);
       loadLeads();
     } catch (e) {
       toast.error('Failed to qualify lead');
@@ -191,7 +205,7 @@ export default function Leads() {
         ]}
         activeView={viewMode}
         onViewChange={setViewMode}
-        actions={[{ label: 'Add Lead', variant: 'primary', onClick: openAdd }]}
+        actions={[]}
       />
 
       {isLoading ? (
@@ -326,6 +340,52 @@ export default function Leads() {
         <Modal.Footer className="border-0 pt-0">
           <Button variant="secondary" size="sm" onClick={() => setShowModal(false)}>Cancel</Button>
           <Button variant="primary" size="sm" onClick={handleSave}>{editing ? 'Update' : 'Create'} Lead</Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* QUALIFY LEAD → SALES MODAL */}
+      <Modal show={showQualifyModal} onHide={() => { setShowQualifyModal(false); setQualifyingLead(null); }} centered size="lg">
+        <Modal.Header closeButton className="border-0 pb-0">
+          <Modal.Title className="h6 fw-bold">
+            Qualify Lead → Sales Deal
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div className="row g-3">
+            <div className="col-12">
+              <Form.Label className="small fw-semibold mb-1">Deal Title *</Form.Label>
+              <Form.Control size="sm" type="text" value={qualifyForm.title || ''} onChange={e => setQualifyForm(p => ({ ...p, title: e.target.value }))} />
+            </div>
+            <div className="col-6">
+              <Form.Label className="small fw-semibold mb-1">Client Name</Form.Label>
+              <Form.Control size="sm" type="text" value={qualifyForm.clientName || ''} onChange={e => setQualifyForm(p => ({ ...p, clientName: e.target.value }))} />
+            </div>
+            <div className="col-6">
+              <Form.Label className="small fw-semibold mb-1">Custom ID</Form.Label>
+              <Form.Control size="sm" type="text" value={qualifyForm.customId || ''} onChange={e => setQualifyForm(p => ({ ...p, customId: e.target.value }))} />
+            </div>
+            <div className="col-6">
+              <Form.Label className="small fw-semibold mb-1">Project Type</Form.Label>
+              <Form.Select size="sm" value={qualifyForm.type || 'Product'} onChange={e => setQualifyForm(p => ({ ...p, type: e.target.value }))}>
+                <option value="Product">{localStorage.getItem('app_product_label') || 'Products'}</option>
+                <option value="Service">{localStorage.getItem('app_service_label') || 'Services'}</option>
+              </Form.Select>
+            </div>
+            <div className="col-6">
+              <Form.Label className="small fw-semibold mb-1">Deal Value</Form.Label>
+              <Form.Control size="sm" type="number" value={qualifyForm.dealValue || ''} onChange={e => setQualifyForm(p => ({ ...p, dealValue: e.target.value }))} />
+            </div>
+            <div className="col-6">
+              <Form.Label className="small fw-semibold mb-1">Expected Close Date</Form.Label>
+              <Form.Control size="sm" type="date" value={qualifyForm.expectedCloseDate || ''} onChange={e => setQualifyForm(p => ({ ...p, expectedCloseDate: e.target.value }))} />
+            </div>
+          </div>
+        </Modal.Body>
+        <Modal.Footer className="border-0 pt-0">
+          <Button variant="secondary" size="sm" onClick={() => { setShowQualifyModal(false); setQualifyingLead(null); }}>Cancel</Button>
+          <Button variant="success" size="sm" onClick={handleConfirmQualify} className="d-flex align-items-center gap-1">
+            <ArrowUpRight size={14} /> Create Sales Deal
+          </Button>
         </Modal.Footer>
       </Modal>
     </div>
