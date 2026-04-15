@@ -27,6 +27,9 @@ export default function Company() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [showConvertContactModal, setShowConvertContactModal] = useState(false);
+  const [convertingCompany, setConvertingCompany] = useState(null);
+  const [convertContactForm, setConvertContactForm] = useState({});
 
   useEffect(() => { loadCompanies(); }, []);
 
@@ -90,38 +93,39 @@ export default function Company() {
     }
   };
 
-  const handleConvertToContact = async (company) => {
-    const result = await Swal.fire({
-      title: 'Convert company?',
-      text: `Do you want to convert "${company.name}" into a Contact person?`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, convert',
-      cancelButtonText: 'Cancel',
-      reverseButtons: true,
+  const handleConvertToContact = (company) => {
+    setConvertingCompany(company);
+    setConvertContactForm({
+      name: company.name || '',
+      company: company.name || '',
+      email: '',
+      phone: '',
+      jobTitle: '',
+      status: 'Active',
+      location: company.country || '',
+      clientAddress: company.address || '',
+      clientCountry: company.country || '',
+      type: 'Company',
+      entityType: 'Company',
     });
+    setShowConvertContactModal(true);
+  };
 
-    if (result.isConfirmed) {
-      try {
-        await contactService.createContact({
-          name: company.name,
-          company: company.name,
-          type: 'Company',
-          entityType: 'Company',
-          status: 'Active',
-          clientAddress: company.address || null,
-          clientCountry: company.country || null,
-          gstin: company.gstin || null,
-          phone: null,
-          email: null,
-          jobTitle: null,
-          location: company.country || null,
-        });
-        toast.success(`"${company.name}" converted to Contact`);
-      } catch (e) {
-        console.error('Error converting company to contact:', e);
-        toast.error('Failed to convert company to contact');
-      }
+  const handleSaveConvertContact = async () => {
+    if (!convertContactForm.name?.trim()) {
+      toast.error('Contact name is required');
+      return;
+    }
+    try {
+      await contactService.createContact({
+        ...convertContactForm,
+        companyId: convertingCompany.id,
+      });
+      toast.success(`Contact created from "${convertingCompany.name}"`);
+      setShowConvertContactModal(false);
+      setConvertingCompany(null);
+    } catch (e) {
+      toast.error(e.message || 'Failed to create contact');
     }
   };
 
@@ -260,6 +264,62 @@ export default function Company() {
         <Modal.Footer className="border-0 pt-0">
           <Button variant="secondary" size="sm" onClick={() => setShowModal(false)}>Cancel</Button>
           <Button variant="primary" size="sm" onClick={handleSave}>{editing ? 'Update' : 'Create'} Company</Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* CONVERT COMPANY → CONTACT MODAL */}
+      <Modal show={showConvertContactModal} onHide={() => setShowConvertContactModal(false)} centered size="lg">
+        <Modal.Header closeButton className="border-0 pb-0">
+          <Modal.Title className="h6 fw-bold">
+            Convert to Contact — {convertingCompany?.name}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div className="row g-3">
+            <div className="col-12">
+              <Form.Label className="small fw-semibold mb-1">Name *</Form.Label>
+              <Form.Control size="sm" type="text" value={convertContactForm.name || ''} onChange={e => setConvertContactForm(p => ({ ...p, name: e.target.value }))} />
+            </div>
+            <div className="col-6">
+              <Form.Label className="small fw-semibold mb-1">Email</Form.Label>
+              <Form.Control size="sm" type="email" value={convertContactForm.email || ''} onChange={e => setConvertContactForm(p => ({ ...p, email: e.target.value }))} />
+            </div>
+            <div className="col-6">
+              <Form.Label className="small fw-semibold mb-1">Phone</Form.Label>
+              <Form.Control size="sm" type="text" value={convertContactForm.phone || ''} onChange={e => setConvertContactForm(p => ({ ...p, phone: e.target.value }))} />
+            </div>
+            <div className="col-6">
+              <Form.Label className="small fw-semibold mb-1">Job Title</Form.Label>
+              <Form.Select size="sm" value={convertContactForm.jobTitle || ''} onChange={e => setConvertContactForm(p => ({ ...p, jobTitle: e.target.value }))}>
+                <option value="">Select title</option>
+                {['CEO', 'CTO', 'Manager', 'Software Engineer', 'Product Manager', 'Sales Representative', 'Designer', 'HR Manager', 'Accountant', 'Consultant', 'Director', 'Other'].map(t => <option key={t}>{t}</option>)}
+              </Form.Select>
+            </div>
+            <div className="col-6">
+              <Form.Label className="small fw-semibold mb-1">Status</Form.Label>
+              <Form.Select size="sm" value={convertContactForm.status || 'Active'} onChange={e => setConvertContactForm(p => ({ ...p, status: e.target.value }))}>
+                {['Active', 'Inactive', 'Lead', 'Customer'].map(s => <option key={s}>{s}</option>)}
+              </Form.Select>
+            </div>
+            <div className="col-6">
+              <Form.Label className="small fw-semibold mb-1">Location</Form.Label>
+              <Form.Control size="sm" type="text" value={convertContactForm.location || ''} onChange={e => setConvertContactForm(p => ({ ...p, location: e.target.value }))} />
+            </div>
+            <div className="col-6">
+              <Form.Label className="small fw-semibold mb-1">Country</Form.Label>
+              <Form.Control size="sm" type="text" value={convertContactForm.clientCountry || ''} onChange={e => setConvertContactForm(p => ({ ...p, clientCountry: e.target.value }))} />
+            </div>
+            <div className="col-12">
+              <Form.Label className="small fw-semibold mb-1">Address</Form.Label>
+              <Form.Control size="sm" type="text" value={convertContactForm.clientAddress || ''} onChange={e => setConvertContactForm(p => ({ ...p, clientAddress: e.target.value }))} />
+            </div>
+          </div>
+        </Modal.Body>
+        <Modal.Footer className="border-0 pt-0">
+          <Button variant="secondary" size="sm" onClick={() => setShowConvertContactModal(false)}>Cancel</Button>
+          <Button variant="success" size="sm" onClick={handleSaveConvertContact}>
+            <ArrowUpRight size={14} className="me-1" /> Create Contact
+          </Button>
         </Modal.Footer>
       </Modal>
     </div>
