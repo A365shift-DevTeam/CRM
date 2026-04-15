@@ -4,6 +4,7 @@ import { Building, Globe, MapPin, Edit, Trash2, Users, Briefcase, ArrowUpRight }
 import Swal from 'sweetalert2';
 import { companyService } from '../../services/companyService';
 import { contactService } from '../../services/contactService';
+import { leadService } from '../../services/leadService';
 import { useToast } from '../../components/Toast/ToastContext';
 import PageToolbar from '../../components/PageToolbar/PageToolbar';
 import StatsGrid from '../../components/StatsGrid/StatsGrid';
@@ -19,6 +20,23 @@ const EMPTY_FORM = {
   tdsSection: '', tdsRate: '', internationalTaxId: ''
 };
 
+const buildCompanyPayload = (wf) => ({
+  name:               wf.company_name || '',
+  industry:           wf.company_industry || '',
+  size:               wf.company_size || '',
+  website:            wf.company_website || '',
+  address:            wf.company_address || '',
+  country:            wf.company_country || '',
+  gstin:              wf.company_gstin || '',
+  pan:                wf.company_pan || '',
+  cin:                wf.company_cin || '',
+  msmeStatus:         wf.company_msmeStatus || 'NON MSME',
+  tdsSection:         wf.company_tdsSection || '',
+  tdsRate:            wf.company_tdsRate || '',
+  internationalTaxId: wf.company_internationalTaxId || '',
+  tags:               wf.company_tags || '',
+});
+
 export default function Company() {
   const toast = useToast();
   const [companies, setCompanies] = useState([]);
@@ -30,6 +48,9 @@ export default function Company() {
   const [showConvertContactModal, setShowConvertContactModal] = useState(false);
   const [convertingCompany, setConvertingCompany] = useState(null);
   const [convertContactForm, setConvertContactForm] = useState({});
+  const [showWizard, setShowWizard]   = useState(false);
+  const [wizardStep, setWizardStep]   = useState(1);
+  const [wizardForm, setWizardForm]   = useState({});
 
   useEffect(() => { loadCompanies(); }, []);
 
@@ -47,6 +68,83 @@ export default function Company() {
 
   const openAdd = () => { setEditing(null); setForm(EMPTY_FORM); setShowModal(true); };
   const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setShowModal(true); };
+
+  const openWizard  = () => { setWizardForm({}); setWizardStep(1); setShowWizard(true); };
+  const closeWizard = () => { setShowWizard(false); setWizardStep(1); setWizardForm({}); };
+
+  const handleWizardNext = () => {
+    if (wizardStep === 1) {
+      if (!wizardForm.company_name?.trim()) { toast.error('Company name is required'); return; }
+      setWizardForm(p => ({
+        ...p,
+        contact_name:          p.contact_name          || p.company_name    || '',
+        contact_clientCountry: p.contact_clientCountry || p.company_country || '',
+        contact_clientAddress: p.contact_clientAddress || p.company_address || '',
+      }));
+      setWizardStep(2);
+    } else if (wizardStep === 2) {
+      if (!wizardForm.contact_name?.trim()) { toast.error('Contact name is required'); return; }
+      setWizardForm(p => ({
+        ...p,
+        lead_contactName: p.lead_contactName || p.contact_name  || '',
+        lead_company:     p.lead_company     || p.company_name  || '',
+      }));
+      setWizardStep(3);
+    }
+  };
+
+  const handleWizardBack = () => setWizardStep(s => s - 1);
+
+  const handleWizardSkip = async () => {
+    try {
+      await companyService.createCompany(buildCompanyPayload(wizardForm));
+      toast.success('Company created');
+      closeWizard();
+      loadCompanies();
+    } catch (e) {
+      toast.error(e.message || 'Failed to create company');
+    }
+  };
+
+  const handleWizardSave = async () => {
+    try {
+      const company = await companyService.createCompany(buildCompanyPayload(wizardForm));
+
+      const contact = await contactService.createContact({
+        name:          wizardForm.contact_name          || '',
+        email:         wizardForm.contact_email         || '',
+        phone:         wizardForm.contact_phone         || '',
+        jobTitle:      wizardForm.contact_jobTitle      || '',
+        status:        wizardForm.contact_status        || 'Active',
+        location:      wizardForm.contact_location      || '',
+        clientCountry: wizardForm.contact_clientCountry || '',
+        clientAddress: wizardForm.contact_clientAddress || '',
+        company:       wizardForm.company_name          || '',
+        entityType:    'Company',
+        companyId:     company.id,
+      });
+
+      await leadService.createLead({
+        contactName:       wizardForm.lead_contactName || wizardForm.contact_name || '',
+        company:           wizardForm.lead_company     || wizardForm.company_name  || '',
+        source:            wizardForm.lead_source      || 'Inbound',
+        score:             wizardForm.lead_score       || 'Warm',
+        stage:             wizardForm.lead_stage       || 'New',
+        type:              wizardForm.lead_type        || 'Product',
+        expectedValue:     wizardForm.lead_expectedValue !== '' ? parseFloat(wizardForm.lead_expectedValue) || null : null,
+        expectedCloseDate: wizardForm.lead_expectedCloseDate || null,
+        assignedTo:        wizardForm.lead_assignedTo  || '',
+        notes:             wizardForm.lead_notes       || '',
+        contactId:         contact.id,
+      });
+
+      toast.success('Company, Contact & Lead created');
+      closeWizard();
+      loadCompanies();
+    } catch (e) {
+      toast.error(e.message || 'Failed to save — please try again');
+    }
+  };
 
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Company name is required'); return; }
@@ -153,7 +251,7 @@ export default function Company() {
         itemCount={filtered.length}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        actions={[{ label: 'Add Company', variant: 'primary', onClick: openAdd }]}
+        actions={[{ label: 'Add Company', variant: 'primary', onClick: openWizard }]}
       />
 
       {isLoading ? (
