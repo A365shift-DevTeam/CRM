@@ -425,6 +425,229 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {/* COMPANY CREATION WIZARD */}
+      <Modal show={showWizard} onHide={closeWizard} centered size="lg">
+        <Modal.Header closeButton className="border-0 pb-0">
+          <Modal.Title className="h6 fw-bold">New Company</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+
+          {/* ── Step indicator ── */}
+          <div className="d-flex align-items-center justify-content-center mb-4">
+            {[{ n: 1, label: 'Company' }, { n: 2, label: 'Contact' }, { n: 3, label: 'Lead' }].map((s, i) => (
+              <div key={s.n} className="d-flex align-items-center">
+                <div className="d-flex flex-column align-items-center">
+                  <div style={{
+                    width: 28, height: 28, borderRadius: '50%', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600,
+                    background: wizardStep >= s.n ? '#0d6efd' : '#e2e8f0',
+                    color: wizardStep >= s.n ? '#fff' : '#94a3b8',
+                    transition: 'all 0.2s',
+                  }}>
+                    {wizardStep > s.n ? '✓' : s.n}
+                  </div>
+                  <span style={{ fontSize: 11, marginTop: 4, fontWeight: wizardStep === s.n ? 600 : 400, color: wizardStep >= s.n ? '#0d6efd' : '#94a3b8' }}>
+                    {s.label}
+                  </span>
+                </div>
+                {i < 2 && (
+                  <div style={{ width: 60, height: 2, background: wizardStep > s.n ? '#0d6efd' : '#e2e8f0', margin: '0 8px', marginBottom: 20, transition: 'all 0.2s' }} />
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* ── Step 1: Company Details ── */}
+          {wizardStep === 1 && (
+            <div className="row g-3">
+              <div className="col-12">
+                <Form.Label className="small fw-semibold mb-1">Company Name *</Form.Label>
+                <Form.Control size="sm" type="text" value={wizardForm.company_name || ''} onChange={e => setWizardForm(p => ({ ...p, company_name: e.target.value }))} />
+              </div>
+              <div className="col-6">
+                <Form.Label className="small fw-semibold mb-1">Website</Form.Label>
+                <Form.Control size="sm" type="text" value={wizardForm.company_website || ''} onChange={e => setWizardForm(p => ({ ...p, company_website: e.target.value }))} />
+              </div>
+              <div className="col-6">
+                <Form.Label className="small fw-semibold mb-1">Country</Form.Label>
+                <Form.Control size="sm" type="text" value={wizardForm.company_country || ''} onChange={e => setWizardForm(p => ({ ...p, company_country: e.target.value }))} />
+              </div>
+              <div className="col-12">
+                <Form.Label className="small fw-semibold mb-1">Address</Form.Label>
+                <Form.Control size="sm" type="text" value={wizardForm.company_address || ''} onChange={e => setWizardForm(p => ({ ...p, company_address: e.target.value }))} />
+              </div>
+              <div className="col-6">
+                <Form.Label className="small fw-semibold mb-1">Industry</Form.Label>
+                <Form.Select size="sm" value={wizardForm.company_industry || ''} onChange={e => setWizardForm(p => ({ ...p, company_industry: e.target.value }))}>
+                  <option value="">Select industry</option>
+                  {INDUSTRIES.map(i => <option key={i}>{i}</option>)}
+                </Form.Select>
+              </div>
+              <div className="col-6">
+                <Form.Label className="small fw-semibold mb-1">Company Size</Form.Label>
+                <Form.Select size="sm" value={wizardForm.company_size || ''} onChange={e => setWizardForm(p => ({ ...p, company_size: e.target.value }))}>
+                  <option value="">Select size</option>
+                  {SIZES.map(s => <option key={s}>{s}</option>)}
+                </Form.Select>
+              </div>
+              <div className="col-12">
+                <Form.Label className="small fw-semibold mb-1">Tags (comma separated)</Form.Label>
+                <Form.Control size="sm" type="text" value={wizardForm.company_tags || ''} onChange={e => setWizardForm(p => ({ ...p, company_tags: e.target.value }))} />
+              </div>
+              {(wizardForm.company_country?.trim().toLowerCase() === 'india' || !wizardForm.company_country) && <>
+                <div className="col-12">
+                  <div className="small fw-bold text-muted mt-2 mb-1" style={{ textTransform: 'uppercase', fontSize: 11, letterSpacing: '0.05em' }}>Tax & Financial Information</div>
+                </div>
+                {[
+                  { label: 'GSTIN / Tax ID', key: 'company_gstin' },
+                  { label: 'PAN',            key: 'company_pan' },
+                  { label: 'CIN',            key: 'company_cin' },
+                  { label: 'TDS Section',    key: 'company_tdsSection' },
+                ].map(f => (
+                  <div key={f.key} className="col-6">
+                    <Form.Label className="small fw-semibold mb-1">{f.label}</Form.Label>
+                    <Form.Control size="sm" type="text" value={wizardForm[f.key] || ''} onChange={e => setWizardForm(p => ({ ...p, [f.key]: e.target.value }))} />
+                  </div>
+                ))}
+                <div className="col-6">
+                  <Form.Label className="small fw-semibold mb-1">TDS Rate</Form.Label>
+                  <Form.Control size="sm" type="number" value={wizardForm.company_tdsRate || ''} onChange={e => setWizardForm(p => ({ ...p, company_tdsRate: e.target.value }))} />
+                </div>
+                <div className="col-6">
+                  <Form.Label className="small fw-semibold mb-1">MSME Status</Form.Label>
+                  <Form.Select size="sm" value={wizardForm.company_msmeStatus || 'NON MSME'} onChange={e => setWizardForm(p => ({ ...p, company_msmeStatus: e.target.value }))}>
+                    <option value="NON MSME">NON MSME</option>
+                    <option value="MSME">MSME</option>
+                  </Form.Select>
+                </div>
+              </>}
+              {wizardForm.company_country && wizardForm.company_country.trim().toLowerCase() !== 'india' && (
+                <div className="col-6">
+                  <Form.Label className="small fw-semibold mb-1">Intl Tax ID (VAT/EIN)</Form.Label>
+                  <Form.Control size="sm" type="text" value={wizardForm.company_internationalTaxId || ''} onChange={e => setWizardForm(p => ({ ...p, company_internationalTaxId: e.target.value }))} />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Step 2: Contact Details ── */}
+          {wizardStep === 2 && (
+            <div className="row g-3">
+              <div className="col-12">
+                <Form.Label className="small fw-semibold mb-1">Name *</Form.Label>
+                <Form.Control size="sm" type="text" value={wizardForm.contact_name || ''} onChange={e => setWizardForm(p => ({ ...p, contact_name: e.target.value }))} />
+              </div>
+              <div className="col-6">
+                <Form.Label className="small fw-semibold mb-1">Email</Form.Label>
+                <Form.Control size="sm" type="email" value={wizardForm.contact_email || ''} onChange={e => setWizardForm(p => ({ ...p, contact_email: e.target.value }))} />
+              </div>
+              <div className="col-6">
+                <Form.Label className="small fw-semibold mb-1">Phone</Form.Label>
+                <Form.Control size="sm" type="text" value={wizardForm.contact_phone || ''} onChange={e => setWizardForm(p => ({ ...p, contact_phone: e.target.value }))} />
+              </div>
+              <div className="col-6">
+                <Form.Label className="small fw-semibold mb-1">Job Title</Form.Label>
+                <Form.Select size="sm" value={wizardForm.contact_jobTitle || ''} onChange={e => setWizardForm(p => ({ ...p, contact_jobTitle: e.target.value }))}>
+                  <option value="">Select title</option>
+                  {['CEO', 'CTO', 'Manager', 'Software Engineer', 'Product Manager', 'Sales Representative', 'Designer', 'HR Manager', 'Accountant', 'Consultant', 'Director', 'Other'].map(t => <option key={t}>{t}</option>)}
+                </Form.Select>
+              </div>
+              <div className="col-6">
+                <Form.Label className="small fw-semibold mb-1">Status</Form.Label>
+                <Form.Select size="sm" value={wizardForm.contact_status || 'Active'} onChange={e => setWizardForm(p => ({ ...p, contact_status: e.target.value }))}>
+                  {['Active', 'Inactive', 'Lead', 'Customer'].map(s => <option key={s}>{s}</option>)}
+                </Form.Select>
+              </div>
+              <div className="col-6">
+                <Form.Label className="small fw-semibold mb-1">Location</Form.Label>
+                <Form.Control size="sm" type="text" value={wizardForm.contact_location || ''} onChange={e => setWizardForm(p => ({ ...p, contact_location: e.target.value }))} />
+              </div>
+              <div className="col-6">
+                <Form.Label className="small fw-semibold mb-1">Country</Form.Label>
+                <Form.Control size="sm" type="text" value={wizardForm.contact_clientCountry || ''} onChange={e => setWizardForm(p => ({ ...p, contact_clientCountry: e.target.value }))} />
+              </div>
+              <div className="col-12">
+                <Form.Label className="small fw-semibold mb-1">Address</Form.Label>
+                <Form.Control size="sm" type="text" value={wizardForm.contact_clientAddress || ''} onChange={e => setWizardForm(p => ({ ...p, contact_clientAddress: e.target.value }))} />
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 3: Lead Details ── */}
+          {wizardStep === 3 && (
+            <div className="row g-3">
+              <div className="col-6">
+                <Form.Label className="small fw-semibold mb-1">Contact Name</Form.Label>
+                <Form.Control size="sm" type="text" value={wizardForm.lead_contactName || ''} onChange={e => setWizardForm(p => ({ ...p, lead_contactName: e.target.value }))} />
+              </div>
+              <div className="col-6">
+                <Form.Label className="small fw-semibold mb-1">Company</Form.Label>
+                <Form.Control size="sm" type="text" value={wizardForm.lead_company || ''} onChange={e => setWizardForm(p => ({ ...p, lead_company: e.target.value }))} />
+              </div>
+              <div className="col-6">
+                <Form.Label className="small fw-semibold mb-1">Source</Form.Label>
+                <Form.Select size="sm" value={wizardForm.lead_source || 'Inbound'} onChange={e => setWizardForm(p => ({ ...p, lead_source: e.target.value }))}>
+                  {['Inbound', 'Referral', 'Campaign', 'Cold'].map(s => <option key={s}>{s}</option>)}
+                </Form.Select>
+              </div>
+              <div className="col-6">
+                <Form.Label className="small fw-semibold mb-1">Score</Form.Label>
+                <Form.Select size="sm" value={wizardForm.lead_score || 'Warm'} onChange={e => setWizardForm(p => ({ ...p, lead_score: e.target.value }))}>
+                  {['Hot', 'Warm', 'Cold'].map(s => <option key={s}>{s}</option>)}
+                </Form.Select>
+              </div>
+              <div className="col-6">
+                <Form.Label className="small fw-semibold mb-1">Stage</Form.Label>
+                <Form.Select size="sm" value={wizardForm.lead_stage || 'New'} onChange={e => setWizardForm(p => ({ ...p, lead_stage: e.target.value }))}>
+                  {['New', 'Contacted', 'Qualified', 'Disqualified'].map(s => <option key={s}>{s}</option>)}
+                </Form.Select>
+              </div>
+              <div className="col-6">
+                <Form.Label className="small fw-semibold mb-1">Project Type</Form.Label>
+                <Form.Select size="sm" value={wizardForm.lead_type || 'Product'} onChange={e => setWizardForm(p => ({ ...p, lead_type: e.target.value }))}>
+                  <option value="Product">{localStorage.getItem('app_product_label') || 'Products'}</option>
+                  <option value="Service">{localStorage.getItem('app_service_label') || 'Services'}</option>
+                </Form.Select>
+              </div>
+              <div className="col-6">
+                <Form.Label className="small fw-semibold mb-1">Expected Value</Form.Label>
+                <Form.Control size="sm" type="number" value={wizardForm.lead_expectedValue || ''} onChange={e => setWizardForm(p => ({ ...p, lead_expectedValue: e.target.value }))} />
+              </div>
+              <div className="col-6">
+                <Form.Label className="small fw-semibold mb-1">Expected Close Date</Form.Label>
+                <Form.Control size="sm" type="date" value={wizardForm.lead_expectedCloseDate || ''} onChange={e => setWizardForm(p => ({ ...p, lead_expectedCloseDate: e.target.value }))} />
+              </div>
+              <div className="col-12">
+                <Form.Label className="small fw-semibold mb-1">Assigned To</Form.Label>
+                <Form.Control size="sm" type="text" value={wizardForm.lead_assignedTo || ''} onChange={e => setWizardForm(p => ({ ...p, lead_assignedTo: e.target.value }))} />
+              </div>
+              <div className="col-12">
+                <Form.Label className="small fw-semibold mb-1">Notes</Form.Label>
+                <Form.Control as="textarea" rows={2} size="sm" value={wizardForm.lead_notes || ''} onChange={e => setWizardForm(p => ({ ...p, lead_notes: e.target.value }))} />
+              </div>
+            </div>
+          )}
+
+        </Modal.Body>
+        <Modal.Footer className="border-0 pt-0">
+          <Button variant="secondary" size="sm" onClick={closeWizard}>Cancel</Button>
+          {wizardStep > 1 && (
+            <Button variant="light" size="sm" onClick={handleWizardBack}>← Back</Button>
+          )}
+          {wizardStep === 2 && (
+            <Button variant="outline-secondary" size="sm" onClick={handleWizardSkip}>Skip</Button>
+          )}
+          {wizardStep < 3 && (
+            <Button variant="primary" size="sm" onClick={handleWizardNext}>Next →</Button>
+          )}
+          {wizardStep === 3 && (
+            <Button variant="success" size="sm" onClick={handleWizardSave} className="d-flex align-items-center gap-1">
+              <ArrowUpRight size={14} /> Save All
+            </Button>
+          )}
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }
