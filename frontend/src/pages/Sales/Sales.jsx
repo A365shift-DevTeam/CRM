@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User, Mail, Contact, Settings, Plus, CheckCircle, Trash2, Briefcase, DollarSign, Timer, Flag, AlertTriangle, ArrowUpRight, Search, Monitor, Phone, FileText, MessageSquare, Edit, Clock, ChevronLeft, ChevronRight, GripVertical, Palette } from 'lucide-react'
+import { User, Mail, Contact, Settings, Plus, CheckCircle, Trash2, Briefcase, DollarSign, Timer, Flag, AlertTriangle, ArrowUpRight, Search, Monitor, Phone, FileText, MessageSquare, Edit, Clock, ChevronLeft, ChevronRight, GripVertical, Palette, Scale } from 'lucide-react'
 import { FaWhatsapp } from 'react-icons/fa6'
 import { Button, Modal, Form, Dropdown } from 'react-bootstrap'
 import PageToolbar from '../../components/PageToolbar/PageToolbar'
@@ -12,6 +12,9 @@ import { incomeService } from '../../services/incomeService'
 import { projectFinanceService } from '../../services/projectFinanceService'
 import { useToast } from '../../components/Toast/ToastContext'
 import { useTheme } from '../../context/ThemeContext'
+import Swal from 'sweetalert2'
+import LegalModal from '../Legal/LegalModal'
+import { legalService } from '../../services/legalService'
 
 const getDefaultStages = () => [
     { id: 0, label: 'Demo', color: 'cyan', ageing: 7 },
@@ -30,10 +33,22 @@ const STAGE_STORAGE_KEYS = {
 
 const normalizeProjectKey = (value) => String(value || '').trim().toLowerCase()
 
+// Fix #3: validate parsed stages so corrupted localStorage data falls back gracefully
+const isValidStagesSchema = (stages) =>
+    Array.isArray(stages) &&
+    stages.length > 0 &&
+    stages.every(s => typeof s === 'object' && s !== null && typeof s.label === 'string')
+
 const getStoredStages = (type) => {
     try {
         const stored = localStorage.getItem(STAGE_STORAGE_KEYS[type])
-        return stored ? JSON.parse(stored) : getDefaultStages()
+        if (!stored) return getDefaultStages()
+        const parsed = JSON.parse(stored)
+        if (!isValidStagesSchema(parsed)) {
+            console.warn('Stored stages failed schema check — using defaults')
+            return getDefaultStages()
+        }
+        return parsed
     } catch (e) {
         console.error('Failed to load stages', e)
         return getDefaultStages()
@@ -46,41 +61,30 @@ const GenerateCustomId = (brandingName, clientName) => {
     const year = String(today.getFullYear()).slice(-2);
     const brandCode = (brandingName || 'A3').substring(0, 2).toUpperCase();
     const clientCode = (clientName || 'C').slice(-1).toUpperCase();
-    return `${date}${brandCode}${clientCode}${year}`;
+    // Fix #13: append a 3-char random suffix to prevent collisions on same day/client/brand
+    const suffix = Math.random().toString(36).slice(2, 5).toUpperCase();
+    return `${date}${brandCode}${clientCode}${year}-${suffix}`;
 }
 
-const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onDelete, onEdit, onInvoice, onTimesheet, delay, clientName, brandingName, title, history = [] }) => {
+// Fix #7: deterministic color from client name — removes hardcoded mock client list
+const CLIENT_COLORS = ['#10b981', '#e879f9', '#f59e0b', '#3b82f6', '#6366f1', '#ef4444', '#8b5cf6', '#0ea5e9']
+const getClientColor = (name) => {
+    let hash = 0
+    const str = String(name || '')
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash)
+    }
+    return CLIENT_COLORS[Math.abs(hash) % CLIENT_COLORS.length]
+}
+
+const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onDelete, onEdit, onInvoice, onTimesheet, onLegal, delay, clientName, brandingName, title, history = [] }) => {
     const toast = useToast()
     const { themeColor } = useTheme()
     const [showNotification, setShowNotification] = useState(false)
     const [stageTransition, setStageTransition] = useState({ from: '', to: '' })
     const [iconsExpanded, setIconsExpanded] = useState(false)
 
-    const getClientData = (id) => {
-        const clients = [
-            { name: 'Lucs TVS', color: '#10b981' },
-            { name: 'Action Board', color: '#e879f9' },
-            { name: 'Ask Invest', color: '#f59e0b' },
-            { name: 'Tech Corp', color: '#3b82f6' },
-            { name: 'Global Systems', color: '#6366f1' }
-        ];
-        // Handle numeric or string ID
-        let hash = 0;
-        const strId = String(id);
-        for (let i = 0; i < strId.length; i++) {
-            hash = strId.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        return clients[Math.abs(hash) % clients.length];
-    }
-
-    // Use prop if available, else mock
-    // If clientName is passed as prop, we try to match a color or generate one?
-    // For now, if passed, we just use a default color or hash it.
-    const mockClient = getClientData(projectId);
-
-    // Determine display Client
-    const displayClient = clientName ? { name: clientName, color: mockClient.color } : mockClient;
-    const client = displayClient;
+    const client = { name: clientName || 'Unknown Client', color: getClientColor(clientName || projectId) }
 
     // Calculate Progress Percentage
     const maxStageIndex = stages.length > 0 ? stages.length - 1 : 1;
@@ -162,6 +166,9 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
                             <div className="icon-outline" onClick={(e) => { e.stopPropagation(); onInvoice(); }} title="Invoice">
                                 <FileText size={15} strokeWidth={1.5} />
                             </div>
+                            <div className="icon-outline" onClick={(e) => { e.stopPropagation(); onLegal(); }} title="Add Legal Agreement" style={{ color: '#7c3aed' }}>
+                                <Scale size={15} strokeWidth={1.5} />
+                            </div>
                             <div className="icon-outline icon-whatsapp" onClick={(e) => {
                                 e.stopPropagation();
                                 const phone = project.phone || '';
@@ -170,9 +177,19 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
                             }} title="WhatsApp">
                                 <FaWhatsapp size={15} />
                             </div>
-                            <div className="icon-outline icon-delete" onClick={(e) => {
+                            <div className="icon-outline icon-delete" onClick={async (e) => {
                                 e.stopPropagation();
-                                if (window.confirm('Delete this project?')) onDelete();
+                                // Fix #11: consistent delete confirmation using SweetAlert2
+                                const result = await Swal.fire({
+                                    title: 'Delete project?',
+                                    text: "This action cannot be undone.",
+                                    icon: 'warning',
+                                    showCancelButton: true,
+                                    confirmButtonColor: '#ef4444',
+                                    cancelButtonColor: '#64748b',
+                                    confirmButtonText: 'Yes, delete it!'
+                                });
+                                if (result.isConfirmed) onDelete();
                             }} title="Delete">
                                 <Trash2 size={15} strokeWidth={1.5} />
                             </div>
@@ -318,6 +335,29 @@ function Sales() {
     const [showWonDialog, setShowWonDialog] = useState(false)
     const [wonProject, setWonProject] = useState(null)
 
+    // Legal agreement entry from Sales card
+    const [showLegalModal, setShowLegalModal] = useState(false)
+    const [legalProject, setLegalProject] = useState(null)
+
+    const handleOpenLegal = (project) => {
+        setLegalProject(project)
+        setShowLegalModal(true)
+    }
+
+    const handleLegalSaved = async (payload) => {
+        try {
+            await legalService.create({
+                ...payload,
+                projectId: legalProject?.id ?? null,
+            })
+            toast.success('Legal agreement created')
+            setShowLegalModal(false)
+            setLegalProject(null)
+        } catch (e) {
+            toast.error(e.message || 'Failed to create legal agreement')
+        }
+    }
+
     // Helper to get correct stages based on type
     const getStagesByType = (type) => type === 'Product' ? productStages : serviceStages
 
@@ -326,6 +366,9 @@ function Sales() {
         if (type === 'Product') setProductStages(newStages)
         else setServiceStages(newStages)
     }
+
+    // Fix #5: lock set to prevent duplicate finance entries from rapid double-clicks
+    const stageLockRef = useRef(new Set())
 
     // Fetch data on mount
     useEffect(() => {
@@ -353,9 +396,14 @@ function Sales() {
     }
 
     const updateProjectStage = async (projectId, newStageIndex, logData) => {
+        // Fix #5: prevent duplicate finance entries from rapid double-clicks or network lag
+        const lockKey = `${projectId}-${newStageIndex}`
+        if (stageLockRef.current.has(lockKey)) return
+        stageLockRef.current.add(lockKey)
+
         // Find current project
         const p = projects.find(proj => proj.id === projectId);
-        if (!p) return;
+        if (!p) { stageLockRef.current.delete(lockKey); return; }
 
         const currentStages = [...getProjectStages(p)];
         const savedStageIndex = logData?.savedStageIndex !== undefined ? logData.savedStageIndex : p.activeStage;
@@ -563,18 +611,21 @@ function Sales() {
                 console.error('Failed to create stage income:', err);
             });
         }
+
+        // Fix #5: release lock after all fire-and-forget calls are initiated
+        stageLockRef.current.delete(lockKey)
     }
 
     const [showAddModal, setShowAddModal] = useState(false)
-    const [newProjectData, setNewProjectData] = useState({ clientName: '', brandingName: 'A365Shift', type: 'Product', phone: '' })
+    const [newProjectData, setNewProjectData] = useState({ clientName: '', brandingName: 'A365Shift', type: 'Product', phone: '', startDate: '', endDate: '' })
 
     // Edit Project State
     const [showEditModal, setShowEditModal] = useState(false)
     const [editingProject, setEditingProject] = useState(null)
-    const [editProjectData, setEditProjectData] = useState({ title: '', clientName: '', brandingName: '', type: 'Product', status: '', phone: '', stages: [] })
+    const [editProjectData, setEditProjectData] = useState({ title: '', clientName: '', brandingName: '', type: 'Product', status: '', phone: '', startDate: '', endDate: '', stages: [] })
 
     const handleAddProject = () => {
-        setNewProjectData({ clientName: '', brandingName: 'A365Shift', type: activeTab })
+        setNewProjectData({ clientName: '', brandingName: 'A365Shift', type: activeTab, phone: '', startDate: '', endDate: '' })
         setShowAddModal(true)
     }
 
@@ -592,6 +643,8 @@ function Sales() {
             clientName: newProjectData.clientName || 'New Client',
             brandingName: newProjectData.brandingName || 'A365Shift',
             phone: newProjectData.phone || '',
+            startDate: newProjectData.startDate || null,
+            endDate: newProjectData.endDate || null,
             customId: GenerateCustomId(newProjectData.brandingName, newProjectData.clientName),
             stages: initialStages
         }
@@ -647,6 +700,8 @@ function Sales() {
             type: project.type || 'Product',
             status: project.status || '',
             phone: project.phone || '',
+            startDate: project.startDate ? project.startDate.split('T')[0] : '',
+            endDate: project.endDate ? project.endDate.split('T')[0] : '',
             stages: projectStages.map((s, i) => ({ ...s, id: s.id ?? i }))
         })
         setShowEditModal(true)
@@ -657,6 +712,12 @@ function Sales() {
 
         // Use the per-project custom stages from the edit form
         const customStages = editProjectData.stages || []
+
+        // Fix #16: prevent saving with zero stages — breaks pipeline progress calculation
+        if (customStages.length === 0) {
+            toast.error('At least one pipeline stage is required');
+            return;
+        }
 
         // Determine activeStage: may change if status is set to Won/Lost
         let newActiveStage = editingProject.activeStage || 0;
@@ -681,6 +742,8 @@ function Sales() {
             type: editProjectData.type,
             status: editProjectData.status,
             phone: editProjectData.phone,
+            startDate: editProjectData.startDate || null,
+            endDate: editProjectData.endDate || null,
             activeStage: newActiveStage,
             stages: customStages
         }
@@ -690,6 +753,10 @@ function Sales() {
             customId: editingProject.customId || '',
             title: editProjectData.title || '',
             clientName: editProjectData.clientName || '',
+            brandingName: editProjectData.brandingName || '',
+            phone: editProjectData.phone || '',
+            startDate: editProjectData.startDate || null,
+            endDate: editProjectData.endDate || null,
             activeStage: newActiveStage,
             delay: editingProject.delay || 0,
             type: editProjectData.type || 'Product',
@@ -746,12 +813,13 @@ function Sales() {
         // 1. Type Filter
         if (p.type !== activeTab) return false;
 
-        // 2. Search Filter
+        // 2. Search Filter — Fix #6: search across ID, client name, and title
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
             const matchesId = p.id.toString().toLowerCase().includes(query);
-            // Only ID search for now as that's visible, can expand later
-            if (!matchesId) return false;
+            const matchesClient = (p.clientName || '').toLowerCase().includes(query);
+            const matchesTitle = (p.title || '').toLowerCase().includes(query);
+            if (!matchesId && !matchesClient && !matchesTitle) return false;
         }
 
         // 3. Custom Filter (Stage)
@@ -868,7 +936,7 @@ function Sales() {
                     itemCount={totalProjects}
                     searchQuery={searchQuery}
                     onSearchChange={setSearchQuery}
-                    searchPlaceholder="Search Project ID..."
+                    searchPlaceholder="Search by ID, client, or title..."
                     filters={[
                         { id: 'stage', name: 'Stage' },
                         { id: 'status', name: 'Status' }
@@ -952,6 +1020,7 @@ function Sales() {
                         onEdit={() => handleEditProject(project)}
                         onInvoice={() => handleInvoice(project)}
                         onTimesheet={() => handleTimesheet(project)}
+                        onLegal={() => handleOpenLegal(project)}
                     />
                 ))}
             </div>
@@ -1003,6 +1072,28 @@ function Sales() {
                                 <option value="Service">{serviceLabel}</option>
                             </Form.Select>
                         </Form.Group>
+                        <div className="row">
+                            <div className="col-6">
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="fw-semibold small text-muted">Start Date</Form.Label>
+                                    <Form.Control
+                                        type="date"
+                                        value={newProjectData.startDate}
+                                        onChange={(e) => setNewProjectData({ ...newProjectData, startDate: e.target.value })}
+                                    />
+                                </Form.Group>
+                            </div>
+                            <div className="col-6">
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="fw-semibold small text-muted">End Date</Form.Label>
+                                    <Form.Control
+                                        type="date"
+                                        value={newProjectData.endDate}
+                                        onChange={(e) => setNewProjectData({ ...newProjectData, endDate: e.target.value })}
+                                    />
+                                </Form.Group>
+                            </div>
+                        </div>
                     </Form>
                 </Modal.Body>
                 <Modal.Footer>
@@ -1034,7 +1125,7 @@ function Sales() {
                                         type="text"
                                         placeholder="Enter project title"
                                         value={editProjectData.title}
-                                        onChange={(e) => setEditProjectData({ ...editProjectData, title: e.target.value })}
+                                        onChange={(e) => setEditProjectData(prev => ({ ...prev, title: e.target.value }))}
                                     />
                                 </Form.Group>
                             </div>
@@ -1045,7 +1136,7 @@ function Sales() {
                                         type="text"
                                         placeholder="e.g. A365Shift"
                                         value={editProjectData.brandingName}
-                                        onChange={(e) => setEditProjectData({ ...editProjectData, brandingName: e.target.value })}
+                                        onChange={(e) => setEditProjectData(prev => ({ ...prev, brandingName: e.target.value }))}
                                     />
                                 </Form.Group>
                             </div>
@@ -1058,7 +1149,7 @@ function Sales() {
                                         type="text"
                                         placeholder="Enter client name"
                                         value={editProjectData.clientName}
-                                        onChange={(e) => setEditProjectData({ ...editProjectData, clientName: e.target.value })}
+                                        onChange={(e) => setEditProjectData(prev => ({ ...prev, clientName: e.target.value }))}
                                     />
                                 </Form.Group>
                             </div>
@@ -1069,7 +1160,7 @@ function Sales() {
                                         type="text"
                                         placeholder="Enter client phone"
                                         value={editProjectData.phone}
-                                        onChange={(e) => setEditProjectData({ ...editProjectData, phone: e.target.value })}
+                                        onChange={(e) => setEditProjectData(prev => ({ ...prev, phone: e.target.value }))}
                                     />
                                 </Form.Group>
                             </div>
@@ -1080,7 +1171,7 @@ function Sales() {
                                     <Form.Label className="fw-semibold small text-muted">Project Type</Form.Label>
                                     <Form.Select
                                         value={editProjectData.type}
-                                        onChange={(e) => setEditProjectData({ ...editProjectData, type: e.target.value })}
+                                        onChange={(e) => setEditProjectData(prev => ({ ...prev, type: e.target.value }))}
                                     >
                                         <option value="Product">{productLabel}</option>
                                         <option value="Service">{serviceLabel}</option>
@@ -1092,12 +1183,34 @@ function Sales() {
                                     <Form.Label className="fw-semibold small text-muted">Status</Form.Label>
                                     <Form.Select
                                         value={editProjectData.status}
-                                        onChange={(e) => setEditProjectData({ ...editProjectData, status: e.target.value })}
+                                        onChange={(e) => setEditProjectData(prev => ({ ...prev, status: e.target.value }))}
                                     >
                                         <option value="">Select Status</option>
                                         <option value="Won">Won</option>
                                         <option value="Lost">Lost</option>
                                     </Form.Select>
+                                </Form.Group>
+                            </div>
+                        </div>
+                        <div className="row">
+                            <div className="col-md-6">
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="fw-semibold small text-muted">Start Date</Form.Label>
+                                    <Form.Control
+                                        type="date"
+                                        value={editProjectData.startDate}
+                                        onChange={(e) => setEditProjectData(prev => ({ ...prev, startDate: e.target.value }))}
+                                    />
+                                </Form.Group>
+                            </div>
+                            <div className="col-md-6">
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="fw-semibold small text-muted">End Date</Form.Label>
+                                    <Form.Control
+                                        type="date"
+                                        value={editProjectData.endDate}
+                                        onChange={(e) => setEditProjectData(prev => ({ ...prev, endDate: e.target.value }))}
+                                    />
                                 </Form.Group>
                             </div>
                         </div>
@@ -1117,11 +1230,10 @@ function Sales() {
                                         variant="outline-secondary"
                                         size="sm"
                                         onClick={() => {
-                                            const defaultStages = getStagesByType(editProjectData.type)
-                                            setEditProjectData({
-                                                ...editProjectData,
-                                                stages: defaultStages.map((s, i) => ({ ...s, id: i }))
-                                            })
+                                            setEditProjectData(prev => ({
+                                                ...prev,
+                                                stages: getStagesByType(prev.type).map((s, i) => ({ ...s, id: i }))
+                                            }))
                                         }}
                                         title="Reset stages to type defaults"
                                         style={{ fontSize: '0.8rem' }}
@@ -1131,15 +1243,14 @@ function Sales() {
                                     <Button
                                         size="sm"
                                         onClick={() => {
-                                            const newStage = {
-                                                id: (editProjectData.stages?.length || 0),
-                                                label: '',
-                                                color: 'gray',
-                                                ageing: 7
-                                            }
-                                            setEditProjectData({
-                                                ...editProjectData,
-                                                stages: [...(editProjectData.stages || []), newStage]
+                                            setEditProjectData(prev => {
+                                                const newStage = {
+                                                    id: (prev.stages?.length || 0),
+                                                    label: '',
+                                                    color: 'gray',
+                                                    ageing: 7
+                                                }
+                                                return { ...prev, stages: [...(prev.stages || []), newStage] }
                                             })
                                         }}
                                         style={{ background: '#10b981', borderColor: '#10b981', fontSize: '0.8rem', fontWeight: 600 }}
@@ -1172,9 +1283,12 @@ function Sales() {
                                             placeholder="Stage name"
                                             value={stage.label}
                                             onChange={(e) => {
-                                                const updated = [...editProjectData.stages]
-                                                updated[idx] = { ...updated[idx], label: e.target.value }
-                                                setEditProjectData({ ...editProjectData, stages: updated })
+                                                const val = e.target.value
+                                                setEditProjectData(prev => {
+                                                    const updated = [...prev.stages]
+                                                    updated[idx] = { ...updated[idx], label: val }
+                                                    return { ...prev, stages: updated }
+                                                })
                                             }}
                                             style={{ maxWidth: '200px', fontSize: '0.85rem' }}
                                         />
@@ -1188,9 +1302,12 @@ function Sales() {
                                                 min={1}
                                                 value={stage.ageing}
                                                 onChange={(e) => {
-                                                    const updated = [...editProjectData.stages]
-                                                    updated[idx] = { ...updated[idx], ageing: parseInt(e.target.value) || 1 }
-                                                    setEditProjectData({ ...editProjectData, stages: updated })
+                                                    const val = parseInt(e.target.value) || 1
+                                                    setEditProjectData(prev => {
+                                                        const updated = [...prev.stages]
+                                                        updated[idx] = { ...updated[idx], ageing: val }
+                                                        return { ...prev, stages: updated }
+                                                    })
                                                 }}
                                                 style={{ width: '70px', fontSize: '0.85rem' }}
                                                 title="Aging days"
@@ -1205,9 +1322,12 @@ function Sales() {
                                                 size="sm"
                                                 value={stage.color || 'gray'}
                                                 onChange={(e) => {
-                                                    const updated = [...editProjectData.stages]
-                                                    updated[idx] = { ...updated[idx], color: e.target.value }
-                                                    setEditProjectData({ ...editProjectData, stages: updated })
+                                                    const val = e.target.value
+                                                    setEditProjectData(prev => {
+                                                        const updated = [...prev.stages]
+                                                        updated[idx] = { ...updated[idx], color: val }
+                                                        return { ...prev, stages: updated }
+                                                    })
                                                 }}
                                                 style={{ width: '110px', fontSize: '0.8rem' }}
                                             >
@@ -1229,9 +1349,11 @@ function Sales() {
                                                 className="p-0 text-muted"
                                                 disabled={idx === 0}
                                                 onClick={() => {
-                                                    const updated = [...editProjectData.stages]
-                                                    ;[updated[idx - 1], updated[idx]] = [updated[idx], updated[idx - 1]]
-                                                    setEditProjectData({ ...editProjectData, stages: updated })
+                                                    setEditProjectData(prev => {
+                                                        const updated = [...prev.stages]
+                                                        ;[updated[idx - 1], updated[idx]] = [updated[idx], updated[idx - 1]]
+                                                        return { ...prev, stages: updated }
+                                                    })
                                                 }}
                                                 title="Move up"
                                                 style={{ lineHeight: 1 }}
@@ -1244,9 +1366,11 @@ function Sales() {
                                                 className="p-0 text-muted"
                                                 disabled={idx === (editProjectData.stages?.length || 0) - 1}
                                                 onClick={() => {
-                                                    const updated = [...editProjectData.stages]
-                                                    ;[updated[idx], updated[idx + 1]] = [updated[idx + 1], updated[idx]]
-                                                    setEditProjectData({ ...editProjectData, stages: updated })
+                                                    setEditProjectData(prev => {
+                                                        const updated = [...prev.stages]
+                                                        ;[updated[idx], updated[idx + 1]] = [updated[idx + 1], updated[idx]]
+                                                        return { ...prev, stages: updated }
+                                                    })
                                                 }}
                                                 title="Move down"
                                                 style={{ lineHeight: 1 }}
@@ -1261,8 +1385,10 @@ function Sales() {
                                             size="sm"
                                             className="p-0 text-danger ms-auto"
                                             onClick={() => {
-                                                const updated = editProjectData.stages.filter((_, i) => i !== idx)
-                                                setEditProjectData({ ...editProjectData, stages: updated })
+                                                setEditProjectData(prev => ({
+                                                    ...prev,
+                                                    stages: prev.stages.filter((_, i) => i !== idx)
+                                                }))
                                             }}
                                             title="Remove stage"
                                         >
@@ -1301,6 +1427,20 @@ function Sales() {
                     serviceLabel={serviceLabel}
                 />
             )}
+
+            {/* Legal Agreement — opened from Sales card */}
+            <LegalModal
+                show={showLegalModal}
+                onHide={() => { setShowLegalModal(false); setLegalProject(null); }}
+                editing={null}
+                onSaved={handleLegalSaved}
+                initialValues={{
+                    projectId: legalProject?.id ?? '',
+                    title: legalProject
+                        ? `${[legalProject.clientName, legalProject.title].filter(Boolean).join(' – ')} Agreement`
+                        : '',
+                }}
+            />
 
             {/* Won → Invoice Dialog */}
             <Modal show={showWonDialog} onHide={() => setShowWonDialog(false)} centered size="sm">

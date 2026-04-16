@@ -36,7 +36,11 @@ public class ProjectService : IProjectService
             Delay = request.Delay,
             Type = request.Type,
             History = request.History is not null ? JsonSerializer.Serialize(request.History) : "[]",
-            Stages = request.Stages is not null ? JsonSerializer.Serialize(request.Stages) : null
+            Stages = request.Stages is not null ? JsonSerializer.Serialize(request.Stages) : null,
+            Phone = request.Phone,
+            BrandingName = request.BrandingName,
+            StartDate = ToUtc(request.StartDate),
+            EndDate = ToUtc(request.EndDate)
         };
 
         await _uow.Projects.AddAsync(entity);
@@ -62,6 +66,10 @@ public class ProjectService : IProjectService
             entity.History = JsonSerializer.Serialize(request.History);
         if (request.Stages is not null)
             entity.Stages = JsonSerializer.Serialize(request.Stages);
+        entity.Phone = request.Phone;
+        entity.BrandingName = request.BrandingName;
+        entity.StartDate = ToUtc(request.StartDate);
+        entity.EndDate = ToUtc(request.EndDate);
 
         await _uow.Projects.UpdateAsync(entity);
         await _uow.SaveChangesAsync();
@@ -80,6 +88,9 @@ public class ProjectService : IProjectService
         await _uow.SaveChangesAsync();
     }
 
+    private static DateTime? ToUtc(DateTime? dt) =>
+        dt.HasValue ? DateTime.SpecifyKind(dt.Value, DateTimeKind.Utc) : null;
+
     private static ProjectDto MapToDto(Project p) => new()
     {
         Id = p.Id,
@@ -90,6 +101,10 @@ public class ProjectService : IProjectService
         Delay = p.Delay,
         Type = p.Type,
         History = p.History is not null ? JsonSerializer.Deserialize<object>(p.History) : null,
-        Stages = p.Stages is not null ? JsonSerializer.Deserialize<object>(p.Stages) : null
+        Stages = p.Stages is not null ? JsonSerializer.Deserialize<object>(p.Stages) : null,
+        Phone = p.Phone,
+        BrandingName = p.BrandingName,
+        StartDate = p.StartDate,
+        EndDate = p.EndDate
     };
 }

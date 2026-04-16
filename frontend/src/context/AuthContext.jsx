@@ -12,25 +12,19 @@ export function AuthProvider({ children }) {
     const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Restore user from localStorage on mount
+    // Restore user profile from localStorage on mount.
+    // The actual session validity is enforced by the httpOnly cookie + JWT on the server.
     useEffect(() => {
         const stored = getStoredUser();
-        const loginTime = localStorage.getItem('auth_login_timestamp');
-        const ONE_HOUR = 60 * 60 * 1000;
-
-        if (stored && loginTime && (Date.now() - parseInt(loginTime) <= ONE_HOUR)) {
+        if (stored) {
             setCurrentUser(stored);
-        } else if (stored) {
-            console.log('Session expired, clearing stored auth.');
-            clearToken();
-            setCurrentUser(null);
         }
         setLoading(false);
     }, []);
 
     async function signup(email, password, displayName) {
         const data = await apiClient.post('/auth/register', { email, password, displayName });
-        setToken(data.token);
+        // Token is set as httpOnly cookie by the server — not stored in JS
         const user = {
             id: data.id,
             email: data.email,
@@ -39,14 +33,13 @@ export function AuthProvider({ children }) {
             permissions: data.permissions || []
         };
         setStoredUser(user);
-        localStorage.setItem('auth_login_timestamp', Date.now().toString());
         setCurrentUser(user);
         return user;
     }
 
     async function login(email, password) {
         const data = await apiClient.post('/auth/login', { email, password });
-        setToken(data.token);
+        // Token is set as httpOnly cookie by the server — not stored in JS
         const user = {
             id: data.id,
             email: data.email,
@@ -55,12 +48,17 @@ export function AuthProvider({ children }) {
             permissions: data.permissions || []
         };
         setStoredUser(user);
-        localStorage.setItem('auth_login_timestamp', Date.now().toString());
         setCurrentUser(user);
         return user;
     }
 
-    function logout() {
+    async function logout() {
+        try {
+            // Ask the server to delete the httpOnly cookie
+            await apiClient.post('/auth/logout', {});
+        } catch {
+            // Ignore errors — clear local state regardless
+        }
         clearToken();
         setCurrentUser(null);
     }
@@ -86,20 +84,8 @@ export function AuthProvider({ children }) {
         return currentUser?.role === 'Admin';
     }
 
-    // Periodic check for expiration (every minute)
-    useEffect(() => {
-        const interval = setInterval(() => {
-            const loginTime = localStorage.getItem('auth_login_timestamp');
-            if (!loginTime) return;
-            const ONE_HOUR = 60 * 60 * 1000;
-            if (Date.now() - parseInt(loginTime) > ONE_HOUR) {
-                console.log('Session expired (periodic check), logging out.');
-                logout();
-            }
-        }, 60000);
-
-        return () => clearInterval(interval);
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // Session expiry is now managed by the httpOnly cookie TTL on the server.
+    // A 401 from any API call will redirect to /login via apiClient.js.
 
     const value = {
         currentUser,

@@ -13,6 +13,9 @@ import './Company.css';
 const INDUSTRIES = ['Technology', 'Finance', 'Healthcare', 'Manufacturing', 'Retail', 'Education', 'Real Estate', 'Consulting', 'Other'];
 const SIZES = ['1-10', '11-50', '51-200', '201-500', '500+'];
 
+// Fix #14: centralise India-country check used in both Edit modal and Wizard
+const isIndia = (country) => !country || country.trim().toLowerCase() === 'india';
+
 const EMPTY_FORM = {
   name: '', industry: '', size: '', website: '',
   address: '', country: '', gstin: '', tags: '',
@@ -51,6 +54,9 @@ export default function Company() {
   const [showWizard, setShowWizard]   = useState(false);
   const [wizardStep, setWizardStep]   = useState(1);
   const [wizardForm, setWizardForm]   = useState({});
+  // Fix #15: read labels once into state instead of calling localStorage inside JSX
+  const [productLabel] = useState(() => localStorage.getItem('app_product_label') || 'Products');
+  const [serviceLabel] = useState(() => localStorage.getItem('app_service_label') || 'Services');
 
   useEffect(() => { loadCompanies(); }, []);
 
@@ -74,19 +80,23 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
   const handleWizardNext = () => {
     if (wizardStep === 1) {
       if (!wizardForm.company_name?.trim()) { toast.error('Company name is required'); return; }
+      // Fix #9: always re-derive from current company fields so going Back then changing
+      // company data properly propagates — only pre-fill if the contact field is still blank
       setWizardForm(p => ({
         ...p,
         contact_name:          p.contact_name          || p.company_name    || '',
-        contact_clientCountry: p.contact_clientCountry || p.company_country || '',
-        contact_clientAddress: p.contact_clientAddress || p.company_address || '',
+        contact_clientCountry: p.company_country || '',
+        contact_clientAddress: p.company_address || '',
       }));
       setWizardStep(2);
     } else if (wizardStep === 2) {
       if (!wizardForm.contact_name?.trim()) { toast.error('Contact name is required'); return; }
+      // Fix #9: always use the latest contact_name / company_name so editing on step 2
+      // and going back then forward does not carry stale values into step 3
       setWizardForm(p => ({
         ...p,
-        lead_contactName: p.lead_contactName || p.contact_name  || '',
-        lead_company:     p.lead_company     || p.company_name  || '',
+        lead_contactName: p.contact_name  || '',
+        lead_company:     p.company_name  || '',
       }));
       setWizardStep(3);
     }
@@ -97,8 +107,10 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
   const handleWizardSkipLead = async () => {
     if (!wizardForm.company_name?.trim())  { toast.error('Company name is required'); return; }
     if (!wizardForm.contact_name?.trim())  { toast.error('Contact name is required'); return; }
+    // Fix #1: track created entities for rollback on partial failure
+    let createdCompany = null;
     try {
-      const company = await companyService.createCompany(buildCompanyPayload(wizardForm));
+      createdCompany = await companyService.createCompany(buildCompanyPayload(wizardForm));
       await contactService.createContact({
         name:          wizardForm.contact_name          || '',
         email:         wizardForm.contact_email         || '',
@@ -110,12 +122,16 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
         clientAddress: wizardForm.contact_clientAddress || '',
         company:       wizardForm.company_name          || '',
         entityType:    'Company',
-        companyId:     company.id,
+        companyId:     createdCompany.id,
       });
       toast.success('Company & Contact created');
       closeWizard();
       loadCompanies();
     } catch (e) {
+      // Rollback: delete company if contact creation failed
+      if (createdCompany?.id) {
+        try { await companyService.deleteCompany(createdCompany.id); } catch {}
+      }
       toast.error(e.message || 'Failed to save — please try again');
     }
   };
@@ -135,10 +151,13 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
   const handleWizardSave = async () => {
     if (!wizardForm.company_name?.trim())  { toast.error('Company name is required'); return; }
     if (!wizardForm.contact_name?.trim())  { toast.error('Contact name is required'); return; }
+    // Fix #1: track each created entity so we can roll back on partial failure
+    let createdCompany = null;
+    let createdContact = null;
     try {
-      const company = await companyService.createCompany(buildCompanyPayload(wizardForm));
+      createdCompany = await companyService.createCompany(buildCompanyPayload(wizardForm));
 
-      const contact = await contactService.createContact({
+      createdContact = await contactService.createContact({
         name:          wizardForm.contact_name          || '',
         email:         wizardForm.contact_email         || '',
         phone:         wizardForm.contact_phone         || '',
@@ -149,7 +168,7 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
         clientAddress: wizardForm.contact_clientAddress || '',
         company:       wizardForm.company_name          || '',
         entityType:    'Company',
-        companyId:     company.id,
+        companyId:     createdCompany.id,
       });
 
       await leadService.createLead({
@@ -163,13 +182,20 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
         expectedCloseDate: wizardForm.lead_expectedCloseDate || null,
         assignedTo:        wizardForm.lead_assignedTo  || '',
         notes:             wizardForm.lead_notes       || '',
-        contactId:         contact.id,
+        contactId:         createdContact.id,
       });
 
       toast.success('Company, Contact & Lead created');
       closeWizard();
       loadCompanies();
     } catch (e) {
+      // Rollback in reverse order: contact first, then company
+      if (createdContact?.id) {
+        try { await contactService.deleteContact(createdContact.id); } catch {}
+      }
+      if (createdCompany?.id) {
+        try { await companyService.deleteCompany(createdCompany.id); } catch {}
+      }
       toast.error(e.message || 'Failed to save — please try again');
     }
   };
@@ -356,7 +382,7 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
             </div>
 
             {/* Tax & Financial — India */}
-            {(form.country?.trim().toLowerCase() === 'india' || !form.country) && <>
+            {isIndia(form.country) && <>
               <div className="col-12">
                 <div className="small fw-bold text-muted mt-2 mb-1" style={{ textTransform: 'uppercase', fontSize: 11, letterSpacing: '0.05em' }}>Tax & Financial Information</div>
               </div>
@@ -382,7 +408,7 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
             </>}
 
             {/* Tax — International */}
-            {form.country && form.country.trim().toLowerCase() !== 'india' && (
+            {form.country && !isIndia(form.country) && (
               <div className="col-6">
                 <Form.Label className="small fw-semibold mb-1">Intl Tax ID (VAT/EIN)</Form.Label>
                 <Form.Control size="sm" type="text" value={form.internationalTaxId || ''} onChange={e => setForm(p => ({ ...p, internationalTaxId: e.target.value }))} />
@@ -563,7 +589,7 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
                       <input className="wizard-input" type="text" placeholder="enterprise, saas, partner" value={wizardForm.company_tags || ''} onChange={e => setWizardForm(p => ({ ...p, company_tags: e.target.value }))} />
                     </div>
 
-                    {(wizardForm.company_country?.trim().toLowerCase() === 'india' || !wizardForm.company_country) && <>
+                    {isIndia(wizardForm.company_country) && <>
                       <div className="col-12">
                         <div className="wizard-section-divider">Tax &amp; Financial Information</div>
                       </div>
@@ -593,7 +619,7 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
                       </div>
                     </>}
 
-                    {wizardForm.company_country && wizardForm.company_country.trim().toLowerCase() !== 'india' && (
+                    {wizardForm.company_country && !isIndia(wizardForm.company_country) && (
                       <div className="col-6 wizard-field">
                         <label className="wizard-label">Intl Tax ID (VAT / EIN)</label>
                         <input className="wizard-input" type="text" placeholder="VAT / EIN number" value={wizardForm.company_internationalTaxId || ''} onChange={e => setWizardForm(p => ({ ...p, company_internationalTaxId: e.target.value }))} />
@@ -692,8 +718,8 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
                       <label className="wizard-label">Project Type</label>
                       <div className="wizard-select-wrapper">
                         <select className="wizard-select" value={wizardForm.lead_type || 'Product'} onChange={e => setWizardForm(p => ({ ...p, lead_type: e.target.value }))}>
-                          <option value="Product">{localStorage.getItem('app_product_label') || 'Products'}</option>
-                          <option value="Service">{localStorage.getItem('app_service_label') || 'Services'}</option>
+                          <option value="Product">{productLabel}</option>
+                          <option value="Service">{serviceLabel}</option>
                         </select>
                       </div>
                     </div>

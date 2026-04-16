@@ -16,7 +16,9 @@ const emptyForm = {
   fileUrl: '', fileName: '', notes: ''
 };
 
-export default function LegalModal({ show, onHide, editing, onSaved }) {
+// initialValues: optional pre-fill for new agreements (e.g. from Sales card).
+// Does NOT trigger "Edit" mode — modal still shows "New Legal Agreement".
+export default function LegalModal({ show, onHide, editing, onSaved, initialValues }) {
   const [form, setForm] = useState(emptyForm);
   const [tab, setTab] = useState('details');
   const [uploading, setUploading] = useState(false);
@@ -45,10 +47,11 @@ export default function LegalModal({ show, onHide, editing, onSaved }) {
         notes: editing.notes ?? ''
       });
     } else {
-      setForm(emptyForm);
+      // Merge any pre-fill values (e.g. projectId from Sales card) into the blank form
+      setForm({ ...emptyForm, ...(initialValues ?? {}) });
     }
     setTab('details');
-  }, [editing, show]);
+  }, [editing, show]); // intentionally excludes initialValues — applied only on open
 
   const set = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 

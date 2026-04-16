@@ -57,7 +57,18 @@
       "Bash(cmd.exe:*)",
       "Bash(powershell.exe:*)",
       "Bash(grep -c \"CreateTable\\\\|legal_agreements\\\\|tickets\\\\|ticket_comments\\\\|invoices\" \"E:/Arul/PROJECTS/CRM/backend/A365ShiftTracker.Infrastructure/Migrations/\"*AddLegalAgreements*.cs)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(coderabbit --version)",
+      "Bash(curl -fsSL https://cli.coderabbit.ai/install.sh)",
+      "Bash(sh)",
+      "Bash(npm install *)",
+      "Bash(winget search *)",
+      "Bash(curl -s https://api.github.com/repos/coderabbitai/coderabbit-cli/releases/latest)",
+      "Bash(python -c \"import sys,json; data=json.load\\(sys.stdin\\); print\\(data.get\\('tag_name','none'\\)\\); [print\\(a['browser_download_url']\\) for a in data.get\\('assets',[]\\)]\")",
+      "Bash(curl -sI https://cli.coderabbit.ai/)",
+      "Bash(curl -s https://cli.coderabbit.ai/)",
+      "Bash(python -c \"import sys; print\\(sys.stdin.read\\(\\)[:2000]\\)\")",
+      "Bash(xargs cat *)"
     ]
   }
 }

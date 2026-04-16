@@ -13,4 +13,8 @@ public class Project : AuditableEntity, IOwnedByUser
     public string? Type { get; set; }
     public string? History { get; set; } // JSON string
     public string? Stages { get; set; } // JSON string — per-project custom stages
+    public string? Phone { get; set; }
+    public string? BrandingName { get; set; }
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
 }

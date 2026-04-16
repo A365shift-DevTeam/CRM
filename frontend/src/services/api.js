@@ -1,5 +1,10 @@
 import { apiClient } from './apiClient';
 
+export const auditLogService = {
+    getByEntity: async (entityName, entityId, page = 1, pageSize = 30) =>
+        apiClient.get(`/audit-logs?entityName=${entityName}&entityId=${entityId}&page=${page}&pageSize=${pageSize}`),
+};
+
 export const projectService = {
     getAll: async () => {
         return await apiClient.get('/projects');

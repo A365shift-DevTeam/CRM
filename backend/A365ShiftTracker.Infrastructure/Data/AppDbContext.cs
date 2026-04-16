@@ -1,18 +1,22 @@
 using A365ShiftTracker.Application.Common;
 using A365ShiftTracker.Domain.Common;
 using A365ShiftTracker.Domain.Entities;
+using A365ShiftTracker.Infrastructure.Converters;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace A365ShiftTracker.Infrastructure.Data;
 
 public class AppDbContext : DbContext
 {
     private readonly ICurrentUserService? _currentUser;
+    private readonly IConfiguration? _configuration;
 
-    public AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserService? currentUser = null)
+    public AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserService? currentUser = null, IConfiguration? configuration = null)
         : base(options)
     {
         _currentUser = currentUser;
+        _configuration = configuration;
     }
 
     public DbSet<User> Users => Set<User>();
@@ -54,6 +58,12 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // ─── Encryption converters ─────────────────────────
+        var encKey = _configuration?["Encryption:Key"] ?? string.Empty;
+        var strConv = new EncryptedStringConverter(encKey);
+        var decConv = new EncryptedDecimalConverter(encKey);
+        var decNullConv = new EncryptedNullableDecimalConverter(encKey);
 
         // ─── Users ─────────────────────────────────────────
         modelBuilder.Entity<User>(e =>
@@ -183,6 +193,10 @@ public class AppDbContext : DbContext
             e.HasIndex(c => c.Status);
             e.HasIndex(c => c.Company);
             e.HasIndex(c => c.UserId);
+            e.Property(c => c.Name).HasConversion(strConv);
+            e.Property(c => c.Phone).HasConversion(strConv);
+            e.Property(c => c.Gstin).HasConversion(strConv);
+            e.Property(c => c.JobTitle).HasConversion(strConv);
         });
 
         // ─── Contact Columns ───────────────────────────────
@@ -200,6 +214,8 @@ public class AppDbContext : DbContext
             e.Property(p => p.History).HasColumnType("jsonb");
             e.Property(p => p.Stages).HasColumnType("jsonb");
             e.HasIndex(p => p.UserId);
+            e.Property(p => p.ClientName).HasConversion(strConv);
+            e.Property(p => p.Phone).HasConversion(strConv);
         });
 
         // ─── Tasks ─────────────────────────────────────────
@@ -229,6 +245,10 @@ public class AppDbContext : DbContext
                 .HasForeignKey(s => s.ProjectFinanceId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(pf => pf.Charges).WithOne(c => c.ProjectFinance)
                 .HasForeignKey(c => c.ProjectFinanceId).OnDelete(DeleteBehavior.Cascade);
+            e.Property(pf => pf.ClientName).HasConversion(strConv);
+            e.Property(pf => pf.ClientGstin).HasConversion(strConv);
+            e.Property(pf => pf.Currency).HasConversion(strConv);
+            e.Property(pf => pf.DealValue).HasConversion(decNullConv);
         });
 
         modelBuilder.Entity<Milestone>(e =>
@@ -252,6 +272,7 @@ public class AppDbContext : DbContext
             e.ToTable("expenses");
             e.Property(ex => ex.Details).HasColumnType("jsonb");
             e.HasIndex(ex => ex.UserId);
+            e.Property(ex => ex.Amount).HasConversion(decConv);
         });
 
         // ─── Incomes ───────────────────────────────────────
@@ -259,6 +280,7 @@ public class AppDbContext : DbContext
         {
             e.ToTable("incomes");
             e.HasIndex(i => i.UserId);
+            e.Property(i => i.Amount).HasConversion(decConv);
         });
 
         // ─── Timesheet Entries ─────────────────────────────
@@ -354,6 +376,7 @@ public class AppDbContext : DbContext
             e.ToTable("documents");
             e.HasIndex(d => d.UserId);
             e.HasIndex(d => new { d.EntityType, d.EntityId });
+            e.Property(d => d.FileUrl).HasConversion(strConv);
         });
 
         // ─── Companies ───────────────────────────────────
@@ -362,6 +385,8 @@ public class AppDbContext : DbContext
             e.ToTable("companies");
             e.HasIndex(c => c.UserId);
             e.HasIndex(c => c.Name);
+            e.Property(c => c.Name).HasConversion(strConv);
+            e.Property(c => c.Gstin).HasConversion(strConv);
         });
 
         // ─── Leads ───────────────────────────────────────
@@ -370,6 +395,7 @@ public class AppDbContext : DbContext
             e.ToTable("leads");
             e.HasIndex(l => l.UserId);
             e.HasIndex(l => l.Stage);
+            e.Property(l => l.ContactName).HasConversion(strConv);
         });
 
         // ─── Audit Logs ──────────────────────────────────
@@ -422,9 +448,12 @@ public class AppDbContext : DbContext
                 .HasForeignKey(i => i.ProjectFinanceId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(i => i.Milestone).WithMany()
                 .HasForeignKey(i => i.MilestoneId).OnDelete(DeleteBehavior.Restrict);
-            e.Property(i => i.SubTotal).HasColumnType("decimal(18,2)");
-            e.Property(i => i.TaxAmount).HasColumnType("decimal(18,2)");
-            e.Property(i => i.TotalAmount).HasColumnType("decimal(18,2)");
+            e.Property(i => i.ClientName).HasConversion(strConv);
+            e.Property(i => i.ClientGstin).HasConversion(strConv);
+            e.Property(i => i.Currency).HasConversion(strConv);
+            e.Property(i => i.SubTotal).HasConversion(decConv);
+            e.Property(i => i.TaxAmount).HasConversion(decConv);
+            e.Property(i => i.TotalAmount).HasConversion(decConv);
         });
 
         // ─── Snake case column naming convention ───────────
@@ -558,21 +587,11 @@ public class AppDbContext : DbContext
         {
             foreach (var property in entry.Properties)
             {
-                var propertyType = property.Metadata.ClrType;
-
-                if (propertyType == typeof(DateTime))
+                // Check the actual boxed value — handles both DateTime and DateTime?
+                // (a non-null DateTime? boxes to DateTime, so this covers both cases)
+                if (property.CurrentValue is DateTime dt && dt.Kind != DateTimeKind.Utc)
                 {
-                    if (property.CurrentValue is DateTime dt)
-                    {
-                        property.CurrentValue = NormalizeDateTime(dt);
-                    }
-                }
-                else if (propertyType == typeof(DateTime?))
-                {
-                    if (property.CurrentValue is DateTime dtNullable)
-                    {
-                        property.CurrentValue = (DateTime?)NormalizeDateTime(dtNullable);
-                    }
+                    property.CurrentValue = NormalizeDateTime(dt);
                 }
             }
         }

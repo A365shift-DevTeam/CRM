@@ -11,6 +11,10 @@ public class ProjectDto
     public string? Type { get; set; }
     public object? History { get; set; }
     public object? Stages { get; set; }
+    public string? Phone { get; set; }
+    public string? BrandingName { get; set; }
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
 }
 
 public class CreateProjectRequest
@@ -23,6 +27,10 @@ public class CreateProjectRequest
     public string? Type { get; set; }
     public object? History { get; set; }
     public object? Stages { get; set; }
+    public string? Phone { get; set; }
+    public string? BrandingName { get; set; }
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
 }
 
 public class UpdateProjectRequest : CreateProjectRequest

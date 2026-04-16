@@ -1,17 +1,17 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5231/api';
 
-function getToken() {
-    return localStorage.getItem('auth_token');
-}
+// ── Auth token is stored in an httpOnly cookie set by the backend.
+// ── These helpers only manage the non-sensitive user profile in localStorage.
 
-export function setToken(token) {
-    localStorage.setItem('auth_token', token);
+/** @deprecated Token lives in httpOnly cookie — no longer stored in JS. No-op kept for call-site compatibility. */
+export function setToken(_token) {
+    // intentional no-op: token is written by the server as an httpOnly cookie
 }
 
 export function clearToken() {
-    localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_user');
     localStorage.removeItem('auth_login_timestamp');
+    // The actual cookie is cleared by calling POST /auth/logout (server deletes it)
 }
 
 export function getStoredUser() {
@@ -24,19 +24,18 @@ export function setStoredUser(user) {
 }
 
 async function request(endpoint, options = {}) {
-    const token = getToken();
     const headers = {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options.headers,
     };
 
     const res = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
         headers,
+        credentials: 'include', // send the httpOnly auth_token cookie automatically
     });
 
-    // Handle 401 - token expired
+    // Handle 401 — cookie expired or missing
     if (res.status === 401) {
         clearToken();
         window.location.href = '/login';
@@ -68,8 +67,8 @@ async function request(endpoint, options = {}) {
 }
 
 export const apiClient = {
-    get: (endpoint) => request(endpoint, { method: 'GET' }),
-    post: (endpoint, body) => request(endpoint, { method: 'POST', body: JSON.stringify(body) }),
-    put: (endpoint, body) => request(endpoint, { method: 'PUT', body: JSON.stringify(body) }),
-    delete: (endpoint) => request(endpoint, { method: 'DELETE' }),
+    get:    (endpoint)        => request(endpoint, { method: 'GET' }),
+    post:   (endpoint, body)  => request(endpoint, { method: 'POST',   body: JSON.stringify(body) }),
+    put:    (endpoint, body)  => request(endpoint, { method: 'PUT',    body: JSON.stringify(body) }),
+    delete: (endpoint)        => request(endpoint, { method: 'DELETE' }),
 };

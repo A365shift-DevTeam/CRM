@@ -33,8 +33,10 @@ export default function Login() {
       className="min-h-screen relative overflow-hidden bg-cover bg-center flex items-center justify-center"
       style={{ backgroundImage: `url(${loginBg})` }}
     >
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-[#07090F]/65" />
+      {/* Subtle vignette — keeps text legible without darkening the whole image */}
+      <div className="absolute inset-0 pointer-events-none" style={{
+        background: 'radial-gradient(ellipse at center, transparent 30%, rgba(7,9,15,0.30) 100%)'
+      }} />
 
       {/* Subtle top accent glow */}
       <div

@@ -27,6 +27,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
         };
+
+        // Read JWT from httpOnly cookie — token never exposed to frontend JS
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                // Cookie takes priority; Authorization header still works for Swagger / API tools
+                var cookieToken = context.Request.Cookies["auth_token"];
+                if (!string.IsNullOrEmpty(cookieToken))
+                    context.Token = cookieToken;
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services.AddAuthorization(options =>

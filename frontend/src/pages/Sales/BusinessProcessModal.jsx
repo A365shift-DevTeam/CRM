@@ -58,10 +58,18 @@ const BusinessProcessModal = ({
     useEffect(() => {
         if (show) {
             setViewedStage(targetStage !== undefined ? targetStage : activeStage)
-            setFormData(prev => ({
-                ...prev,
-                startDate: new Date().toISOString().split('T')[0]
-            }))
+            // Fix #10: Full reset on every open so stale data from a previous session is cleared
+            setFormData({
+                targetDate: '',
+                amount: '',
+                currency: 'INR',
+                inrRate: '',
+                description: '',
+                attachment: '',
+                attachmentName: '',
+                startDate: new Date().toISOString().split('T')[0],
+                endDate: ''
+            })
         }
     }, [show, targetStage, activeStage])
 
@@ -93,7 +101,19 @@ const BusinessProcessModal = ({
         }
     }
 
+    const [amountError, setAmountError] = useState('')
+
     const handleSubmit = () => {
+        // Fix #4: Validate amount before submitting
+        if (formData.amount !== '' && formData.amount !== null) {
+            const parsed = parseFloat(formData.amount)
+            if (!isFinite(parsed) || parsed < 0) {
+                setAmountError('Enter a valid positive amount')
+                return
+            }
+        }
+        setAmountError('')
+
         /* If the user is viewing the CURRENT active stage, auto-advance to next.
            If they clicked a specific future/past stage, save to that stage as-is. */
         let targetIndex = viewedStage
@@ -123,6 +143,7 @@ const BusinessProcessModal = ({
             startDate: new Date().toISOString().split('T')[0],
             endDate: ''
         })
+        setAmountError('')
     }
 
     if (!show) return null
@@ -303,10 +324,12 @@ const BusinessProcessModal = ({
                                 type="number"
                                 className="form-control"
                                 placeholder="0.00"
+                                min="0"
                                 value={formData.amount}
-                                onChange={e => handleFormChange('amount', e.target.value)}
+                                onChange={e => { setAmountError(''); handleFormChange('amount', e.target.value) }}
                             />
                         </div>
+                        {amountError && <div style={{ color: '#ef4444', fontSize: 12, marginTop: 4 }}>{amountError}</div>}
 
                         {/* ── INR Conversion (only for non-INR currencies) ── */}
                         {formData.currency !== 'INR' && (
