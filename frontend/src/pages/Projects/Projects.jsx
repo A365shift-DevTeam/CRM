@@ -393,7 +393,13 @@ export default function Projects() {
     title: '', clientName: '', type: 'Standard', startDate: '', endDate: ''
   });
 
-  useEffect(() => { loadProjects(); }, []);
+  useEffect(() => {
+    loadProjects();
+    // Re-fetch when Sales page (or any other page) updates a project
+    const handler = () => loadProjects();
+    window.addEventListener('crm:projects-updated', handler);
+    return () => window.removeEventListener('crm:projects-updated', handler);
+  }, []);
 
   const loadProjects = async () => {
     try {

@@ -57,8 +57,14 @@ const BusinessProcessModal = ({
 
     useEffect(() => {
         if (show) {
-            setViewedStage(targetStage !== undefined ? targetStage : activeStage)
-            // Fix #10: Full reset on every open so stale data from a previous session is cleared
+            const idx = targetStage !== undefined ? targetStage : activeStage
+            setViewedStage(idx)
+            // Pre-populate start/end dates from the stage if they already exist
+            const existingStage = stages[idx] || {}
+            const toInputDate = d => {
+                if (!d) return ''
+                return typeof d === 'string' ? d.split('T')[0] : new Date(d).toISOString().split('T')[0]
+            }
             setFormData({
                 targetDate: '',
                 amount: '',
@@ -67,11 +73,11 @@ const BusinessProcessModal = ({
                 description: '',
                 attachment: '',
                 attachmentName: '',
-                startDate: new Date().toISOString().split('T')[0],
-                endDate: ''
+                startDate: toInputDate(existingStage.startDate) || new Date().toISOString().split('T')[0],
+                endDate: toInputDate(existingStage.endDate) || ''
             })
         }
-    }, [show, targetStage, activeStage])
+    }, [show, targetStage, activeStage, stages])
 
     /* ── Currency change → auto-populate INR rate ── */
     useEffect(() => {

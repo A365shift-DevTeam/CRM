@@ -450,7 +450,9 @@ function Sales() {
             delay: p.delay || 0,
             type: p.type || 'Product',
             history: updatedHistory,
-            stages: currentStages
+            stages: currentStages,
+            startDate: p.startDate || null,
+            endDate: p.endDate || null,
         };
 
         // Optimistic UI update
@@ -461,6 +463,8 @@ function Sales() {
         try {
             // Call API
             await projectService.update(projectId, apiUpdates);
+            // Notify Projects page to re-fetch if it's mounted
+            window.dispatchEvent(new CustomEvent('crm:projects-updated'));
             toast.success(`Stage updated: ${transitionStr}`);
             // Prompt to create invoice when deal is Won
             if (newStageLabel === 'Won') {
@@ -771,6 +775,7 @@ function Sales() {
         setShowEditModal(false)
         try {
             await projectService.update(editingProject.id, apiUpdates)
+            window.dispatchEvent(new CustomEvent('crm:projects-updated'));
             toast.success('Project updated successfully');
         } catch (error) {
             console.error('Failed to update project:', error)
