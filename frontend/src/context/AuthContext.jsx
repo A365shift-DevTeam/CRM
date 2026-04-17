@@ -39,6 +39,12 @@ export function AuthProvider({ children }) {
 
     async function login(email, password) {
         const data = await apiClient.post('/auth/login', { email, password });
+
+        // 2FA required — return the challenge info, don't set user yet
+        if (data.requires2FA) {
+            return { requires2FA: true, method: data.twoFactorMethod, partialToken: data.partialToken };
+        }
+
         // Token is set as httpOnly cookie by the server — not stored in JS
         const user = {
             id: data.id,
@@ -49,7 +55,19 @@ export function AuthProvider({ children }) {
         };
         setStoredUser(user);
         setCurrentUser(user);
-        return user;
+        return { requires2FA: false, user };
+    }
+
+    async function completeLogin(loginResponse) {
+        const user = {
+            id: loginResponse.id,
+            email: loginResponse.email,
+            displayName: loginResponse.displayName,
+            role: loginResponse.role,
+            permissions: loginResponse.permissions || []
+        };
+        setStoredUser(user);
+        setCurrentUser(user);
     }
 
     async function logout() {
@@ -91,6 +109,7 @@ export function AuthProvider({ children }) {
         currentUser,
         signup,
         login,
+        completeLogin,
         logout,
         hasPermission,
         hasAnyPermission,
