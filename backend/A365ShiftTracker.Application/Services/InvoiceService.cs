@@ -17,13 +17,21 @@ public class InvoiceService : IInvoiceService
 
     public async Task<PagedResult<InvoiceDto>> GetAllAsync(int userId, int page, int pageSize)
     {
-        var paged = await _uow.Invoices.GetPagedAsync(
-            i => i.UserId == userId, page, pageSize,
-            q => q.OrderByDescending(i => i.CreatedAt));
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        page = Math.Max(1, page);
+        var query = _uow.Invoices.Query()
+            .AsNoTracking()
+            .Include(i => i.Milestone)
+            .Where(i => i.UserId == userId)
+            .OrderByDescending(i => i.CreatedAt);
+        var total = await query.CountAsync();
+        var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
         return new PagedResult<InvoiceDto>
         {
-            Items = paged.Items.Select(MapToDto),
-            TotalCount = paged.TotalCount, Page = paged.Page, PageSize = paged.PageSize
+            Items = items.Select(MapToDto),
+            TotalCount = total,
+            Page = page,
+            PageSize = pageSize
         };
     }
 
