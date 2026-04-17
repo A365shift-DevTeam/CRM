@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './components/Toast/ToastContext';
@@ -7,29 +7,29 @@ import MainLayout from './layouts/MainLayout';
 import Login from './pages/Auth/Login';
 import ForgotPassword from './pages/Auth/ForgotPassword';
 import ResetPassword from './pages/Auth/ResetPassword';
-
-import Dashboard from './pages/Dashboard/Dashboard';
-import Sales from './pages/Sales/Sales';
-import Contact from './pages/Contact/Contacts/Contacts';
-import Timesheet from './pages/Timesheet/Timesheet';
-import Finance from './pages/Finance/Finance';
-import TodoList from './pages/TodoList/TodoList';
-import Invoice from './pages/Invoice/Invoice';
-import AIFollowup from './pages/AIFollowup/AIFollowup';
-import Vendor from './pages/Vendor/Vendor';
-import AIAgentsLayout from './pages/AIAgents/AIAgentsLayout';
-import Admin from './pages/Admin/Admin';
-import Settings from './pages/Settings/Settings';
-import Projects from './pages/Projects/Projects';
-import Documents from './pages/Documents/Documents';
-import Company from './pages/Company/Company';
-import Leads from './pages/Leads/Leads';
-import Calendar from './pages/Calendar/Calendar';
-import Reports from './pages/Reports/Reports';
-import Legal from './pages/Legal/Legal';
-import Tickets from './pages/Tickets/Tickets';
 import { ThemeProvider } from './context/ThemeContext';
 import './index.css';
+
+const Dashboard      = lazy(() => import('./pages/Dashboard/Dashboard'));
+const Sales          = lazy(() => import('./pages/Sales/Sales'));
+const Contact        = lazy(() => import('./pages/Contact/Contacts/Contacts'));
+const Timesheet      = lazy(() => import('./pages/Timesheet/Timesheet'));
+const Finance        = lazy(() => import('./pages/Finance/Finance'));
+const TodoList       = lazy(() => import('./pages/TodoList/TodoList'));
+const Invoice        = lazy(() => import('./pages/Invoice/Invoice'));
+const AIFollowup     = lazy(() => import('./pages/AIFollowup/AIFollowup'));
+const Vendor         = lazy(() => import('./pages/Vendor/Vendor'));
+const AIAgentsLayout = lazy(() => import('./pages/AIAgents/AIAgentsLayout'));
+const Admin          = lazy(() => import('./pages/Admin/Admin'));
+const Settings       = lazy(() => import('./pages/Settings/Settings'));
+const Projects       = lazy(() => import('./pages/Projects/Projects'));
+const Documents      = lazy(() => import('./pages/Documents/Documents'));
+const Company        = lazy(() => import('./pages/Company/Company'));
+const Leads          = lazy(() => import('./pages/Leads/Leads'));
+const Calendar       = lazy(() => import('./pages/Calendar/Calendar'));
+const Reports        = lazy(() => import('./pages/Reports/Reports'));
+const Legal          = lazy(() => import('./pages/Legal/Legal'));
+const Tickets        = lazy(() => import('./pages/Tickets/Tickets'));
 
 function PlaceholderPage({ title }) {
   return (
@@ -46,6 +46,11 @@ function App() {
       <AuthProvider>
         <ThemeProvider>
         <ToastProvider>
+        <Suspense fallback={
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#4361EE', fontSize: 14 }}>
+            Loading…
+          </div>
+        }>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -65,7 +70,7 @@ function App() {
             <Route path="invoice" element={<PrivateRoute permission="invoice.view"><Invoice /></PrivateRoute>} />
             <Route path="admin" element={<PrivateRoute permission="admin.view"><Admin /></PrivateRoute>} />
             <Route path="settings" element={<PrivateRoute permission="dashboard.view"><Settings /></PrivateRoute>} />
-            
+
             {/* CRM modules */}
             <Route path="company" element={<PrivateRoute permission="contacts.view"><Company /></PrivateRoute>} />
             <Route path="leads" element={<PrivateRoute permission="sales.view"><Leads /></PrivateRoute>} />
@@ -84,6 +89,7 @@ function App() {
             </Route>
           </Route>
         </Routes>
+        </Suspense>
         </ToastProvider>
         </ThemeProvider>
       </AuthProvider>
