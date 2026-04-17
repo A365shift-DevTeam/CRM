@@ -9,6 +9,18 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ─── Response Compression ─────────────────────────────────
+builder.Services.AddResponseCompression(opts =>
+{
+    opts.EnableForHttps = true;
+    opts.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
+    opts.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+});
+builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProviderOptions>(opts =>
+    opts.Level = System.IO.Compression.CompressionLevel.Fastest);
+builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProviderOptions>(opts =>
+    opts.Level = System.IO.Compression.CompressionLevel.Fastest);
+
 // ─── Infrastructure (EF Core, Repositories, Services) ──────
 builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -124,6 +136,7 @@ builder.Services.AddSwaggerGen(options =>
 var app = builder.Build();
 
 // ─── Middleware Pipeline ───────────────────────────────────
+app.UseResponseCompression(); // must be first
 app.UseMiddleware<ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())

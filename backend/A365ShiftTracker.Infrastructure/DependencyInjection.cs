@@ -21,6 +21,7 @@ public static class DependencyInjection
 
         // Current user service
         services.AddHttpContextAccessor();
+        services.AddMemoryCache();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
 
         // Repositories
