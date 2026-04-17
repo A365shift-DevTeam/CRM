@@ -4,6 +4,7 @@ using A365ShiftTracker.Application.Services;
 using A365ShiftTracker.Infrastructure.Data;
 using A365ShiftTracker.Infrastructure.Helpers;
 using A365ShiftTracker.Infrastructure.Repositories;
+using A365ShiftTracker.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -52,6 +53,7 @@ public static class DependencyInjection
         services.AddScoped<ILegalAgreementService, LegalAgreementService>();
         services.AddScoped<IInvoiceService, InvoiceService>();
         services.AddScoped<ITicketService, TicketService>();
+        services.AddScoped<IEmailService, SmtpEmailService>();
         services.AddHttpClient("Claude");
         services.AddScoped<TicketAiService>();
 
