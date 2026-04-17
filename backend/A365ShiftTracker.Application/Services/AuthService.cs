@@ -113,7 +113,7 @@ public class AuthService : IAuthService
         var user = await _uow.Users.GetByIdAsync(userId)
             ?? throw new UnauthorizedAccessException("User not found.");
 
-        var code = new Random().Next(100000, 999999).ToString();
+        var code = System.Security.Cryptography.RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
         user.OtpCode = BCrypt.Net.BCrypt.HashPassword(code);
         user.OtpExpiry = DateTime.UtcNow.AddMinutes(5);
         await _uow.Users.UpdateAsync(user);
@@ -135,7 +135,10 @@ public class AuthService : IAuthService
             throw new UnauthorizedAccessException("OTP expired. Request a new code.");
 
         if (!BCrypt.Net.BCrypt.Verify(request.Code, user.OtpCode))
+        {
+            IncrementAttempts(request.PartialToken);
             throw new UnauthorizedAccessException("Invalid code.");
+        }
 
         // Clear OTP
         user.OtpCode = null;
@@ -169,7 +172,10 @@ public class AuthService : IAuthService
         var secretBytes = Base32Encoding.ToBytes(user.TotpSecret);
         var totp = new Totp(secretBytes);
         if (!totp.VerifyTotp(request.Code, out _, VerificationWindow.RfcSpecifiedNetworkDelay))
+        {
+            IncrementAttempts(request.PartialToken);
             throw new UnauthorizedAccessException("Invalid authenticator code.");
+        }
 
         var (roleName, permissions) = await GetUserRoleAndPermissionsAsync(user.Id);
         return new LoginResponse
@@ -290,13 +296,14 @@ public class AuthService : IAuthService
     private string GeneratePartialToken(int userId, string email, string method)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+        var jti = Guid.NewGuid().ToString();
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, userId.ToString()),
             new(JwtRegisteredClaimNames.Email, email),
+            new(JwtRegisteredClaimNames.Jti, jti),
             new("2fa_pending", "true"),
-            new("2fa_method", method),
-            new("2fa_attempts", "0")
+            new("2fa_method", method)
         };
         var token = new JwtSecurityToken(
             issuer: _config["Jwt:Issuer"],
@@ -330,13 +337,28 @@ public class AuthService : IAuthService
                 throw new UnauthorizedAccessException("Invalid partial token.");
 
             var userId = int.Parse(principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ?? "0");
-            var attempts = int.Parse(principal.FindFirst("2fa_attempts")?.Value ?? "0");
+            var jti = principal.FindFirst(JwtRegisteredClaimNames.Jti)?.Value ?? string.Empty;
+            var attempts = _cache.TryGetValue($"2fa_attempts:{jti}", out int stored) ? stored : 0;
             return (userId, attempts);
         }
         catch (SecurityTokenException)
         {
             throw new UnauthorizedAccessException("Partial token expired or invalid. Please log in again.");
         }
+    }
+
+    private void IncrementAttempts(string partialToken)
+    {
+        try
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var jwt = handler.ReadJwtToken(partialToken);
+            var jti = jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Jti)?.Value;
+            if (jti is null) return;
+            var current = _cache.TryGetValue($"2fa_attempts:{jti}", out int stored) ? stored : 0;
+            _cache.Set($"2fa_attempts:{jti}", current + 1, TimeSpan.FromMinutes(6));
+        }
+        catch { /* ignore parse errors */ }
     }
 
     // ── Permission Caching ───────────────────────────────────
