@@ -24,7 +24,7 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         => await _dbSet.AsNoTracking().ToListAsync();
 
     public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
-        => await _dbSet.AsNoTracking().Where(predicate).ToListAsync();
+        => await _dbSet.Where(predicate).ToListAsync();
 
     public async Task<PagedResult<T>> GetPagedAsync(
         Expression<Func<T, bool>> predicate,
