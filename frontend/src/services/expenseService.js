@@ -1,12 +1,12 @@
 import { apiClient } from './apiClient';
 
 export const expenseService = {
-    getExpenses: async () => {
+    getExpenses: async (page = 1, pageSize = 25) => {
         try {
-            return await apiClient.get('/expenses');
+            return await apiClient.get(`/expenses?page=${page}&pageSize=${pageSize}`);
         } catch (error) {
             console.error('Error fetching expenses:', error);
-            return [];
+            return { items: [], totalPages: 1 };
         }
     },
 

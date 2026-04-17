@@ -6,8 +6,8 @@ export const auditLogService = {
 };
 
 export const projectService = {
-    getAll: async () => {
-        return await apiClient.get('/projects');
+    getAll: async (page = 1, pageSize = 25) => {
+        return await apiClient.get(`/projects?page=${page}&pageSize=${pageSize}`);
     },
 
     create: async (projectData) => {

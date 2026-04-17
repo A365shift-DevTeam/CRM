@@ -1,8 +1,8 @@
 import { apiClient } from './apiClient';
 
 export const contactService = {
-    getContacts: async () => {
-        return await apiClient.get('/contacts');
+    getContacts: async (page = 1, pageSize = 25) => {
+        return await apiClient.get(`/contacts?page=${page}&pageSize=${pageSize}`);
     },
 
     createContact: async (contactData) => {

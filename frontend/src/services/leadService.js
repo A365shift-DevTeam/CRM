@@ -1,8 +1,8 @@
 import { apiClient } from './apiClient';
 
 export const leadService = {
-    getLeads: async () => {
-        return await apiClient.get('/leads');
+    getLeads: async (page = 1, pageSize = 25) => {
+        return await apiClient.get(`/leads?page=${page}&pageSize=${pageSize}`);
     },
     createLead: async (data) => {
         return await apiClient.post('/leads', data);

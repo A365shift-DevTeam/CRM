@@ -1,12 +1,12 @@
 import { apiClient } from './apiClient';
 
 export const incomeService = {
-    getIncomes: async () => {
+    getIncomes: async (page = 1, pageSize = 25) => {
         try {
-            return await apiClient.get('/incomes');
+            return await apiClient.get(`/incomes?page=${page}&pageSize=${pageSize}`);
         } catch (error) {
             console.error('Error fetching incomes:', error);
-            return [];
+            return { items: [], totalPages: 1 };
         }
     },
 

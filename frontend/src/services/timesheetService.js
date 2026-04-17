@@ -3,8 +3,8 @@ import { apiClient } from './apiClient';
 export const timesheetService = {
     // ─── Entries ───────────────────────────────────────────────
 
-    getEntries: async () => {
-        return await apiClient.get('/timesheet/entries');
+    getEntries: async (page = 1, pageSize = 25) => {
+        return await apiClient.get(`/timesheet/entries?page=${page}&pageSize=${pageSize}`);
     },
 
     createEntry: async (entryData) => {
