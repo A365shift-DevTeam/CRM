@@ -3,9 +3,11 @@ using A365ShiftTracker.API.Middleware;
 using A365ShiftTracker.Infrastructure;
 using A365ShiftTracker.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.IO.Compression;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,13 +15,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddResponseCompression(opts =>
 {
     opts.EnableForHttps = true;
-    opts.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
-    opts.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+    opts.Providers.Add<BrotliCompressionProvider>();
+    opts.Providers.Add<GzipCompressionProvider>();
 });
-builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProviderOptions>(opts =>
-    opts.Level = System.IO.Compression.CompressionLevel.Fastest);
-builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProviderOptions>(opts =>
-    opts.Level = System.IO.Compression.CompressionLevel.Fastest);
+builder.Services.Configure<BrotliCompressionProviderOptions>(opts =>
+    opts.Level = CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(opts =>
+    opts.Level = CompressionLevel.Fastest);
 
 // ─── Infrastructure (EF Core, Repositories, Services) ──────
 builder.Services.AddInfrastructure(builder.Configuration);
