@@ -1,6 +1,7 @@
 using System.Text.Json;
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
+using A365ShiftTracker.Domain.Common;
 using A365ShiftTracker.Domain.Entities;
 
 namespace A365ShiftTracker.Application.Services;
@@ -11,10 +12,20 @@ public class ProjectService : IProjectService
 
     public ProjectService(IUnitOfWork uow) => _uow = uow;
 
-    public async Task<IEnumerable<ProjectDto>> GetAllAsync(int userId)
+    public async Task<PagedResult<ProjectDto>> GetAllAsync(int userId, int page, int pageSize)
     {
-        var projects = await _uow.Projects.FindAsync(p => p.UserId == userId);
-        return projects.Select(MapToDto);
+        var paged = await _uow.Projects.GetPagedAsync(
+            p => p.UserId == userId,
+            page,
+            pageSize,
+            q => q.OrderByDescending(p => p.Id));
+        return new PagedResult<ProjectDto>
+        {
+            Items = paged.Items.Select(MapToDto),
+            TotalCount = paged.TotalCount,
+            Page = paged.Page,
+            PageSize = paged.PageSize
+        };
     }
 
     public async Task<ProjectDto?> GetByIdAsync(int id, int userId)

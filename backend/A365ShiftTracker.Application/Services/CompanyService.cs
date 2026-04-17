@@ -1,5 +1,6 @@
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
+using A365ShiftTracker.Domain.Common;
 using A365ShiftTracker.Domain.Entities;
 
 namespace A365ShiftTracker.Application.Services;
@@ -10,10 +11,20 @@ public class CompanyService : ICompanyService
 
     public CompanyService(IUnitOfWork uow) => _uow = uow;
 
-    public async Task<IEnumerable<CompanyDto>> GetAllAsync(int userId)
+    public async Task<PagedResult<CompanyDto>> GetAllAsync(int userId, int page, int pageSize)
     {
-        var companies = await _uow.Companies.FindAsync(c => c.UserId == userId);
-        return companies.OrderBy(c => c.Name).Select(MapToDto);
+        var paged = await _uow.Companies.GetPagedAsync(
+            c => c.UserId == userId,
+            page,
+            pageSize,
+            q => q.OrderBy(c => c.Name));
+        return new PagedResult<CompanyDto>
+        {
+            Items = paged.Items.Select(MapToDto),
+            TotalCount = paged.TotalCount,
+            Page = paged.Page,
+            PageSize = paged.PageSize
+        };
     }
 
     public async Task<CompanyDto> CreateAsync(CreateCompanyRequest request, int userId)

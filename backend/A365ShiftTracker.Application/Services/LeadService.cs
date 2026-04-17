@@ -1,5 +1,6 @@
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
+using A365ShiftTracker.Domain.Common;
 using A365ShiftTracker.Domain.Entities;
 
 namespace A365ShiftTracker.Application.Services;
@@ -10,10 +11,20 @@ public class LeadService : ILeadService
 
     public LeadService(IUnitOfWork uow) => _uow = uow;
 
-    public async Task<IEnumerable<LeadDto>> GetAllAsync(int userId)
+    public async Task<PagedResult<LeadDto>> GetAllAsync(int userId, int page, int pageSize)
     {
-        var leads = await _uow.Leads.FindAsync(l => l.UserId == userId);
-        return leads.OrderByDescending(l => l.CreatedAt).Select(MapToDto);
+        var paged = await _uow.Leads.GetPagedAsync(
+            l => l.UserId == userId,
+            page,
+            pageSize,
+            q => q.OrderByDescending(l => l.CreatedAt));
+        return new PagedResult<LeadDto>
+        {
+            Items = paged.Items.Select(MapToDto),
+            TotalCount = paged.TotalCount,
+            Page = paged.Page,
+            PageSize = paged.PageSize
+        };
     }
 
     public async Task<LeadDto> CreateAsync(CreateLeadRequest request, int userId)
