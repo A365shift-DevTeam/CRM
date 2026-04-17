@@ -8,7 +8,7 @@ import {
   FileText, AlertCircle, CheckCircle2, Layers,
   Search, X, LayoutGrid, GanttChart as GanttIcon, CalendarDays,
   Plus, Minus, Settings2,
-  Tag, User, Briefcase, History
+  Tag, User, Briefcase, History, Filter, ZoomIn, ZoomOut, Calendar
 } from 'lucide-react';
 import { Modal } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
@@ -113,12 +113,23 @@ function GanttView({ projects, themeColor, onEdit, onProjectUpdate }) {
   const [expandedIds, setExpandedIds] = React.useState(new Set());
   const [editingStage, setEditingStage] = React.useState(null); // { projectId, stageIndex }
   const [stageForm, setStageForm] = React.useState({ label: '', color: '#4361EE', startDate: '', endDate: '' });
+  const [quarterFilter, setQuarterFilter] = React.useState('All');
+  const [timeScale, setTimeScale] = React.useState('month');
 
   const expandAll   = () => setExpandedIds(new Set(projects.map(p => p.id)));
   const collapseAll = () => setExpandedIds(new Set());
   const toggleExpand = id => setExpandedIds(prev => {
     const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n;
   });
+
+  // ── Quarter ranges (current year) ─────────────
+  const currentYear = today.getFullYear();
+  const QUARTERS = {
+    Q1: { start: new Date(currentYear, 0, 1),  end: new Date(currentYear, 2, 31) },
+    Q2: { start: new Date(currentYear, 3, 1),  end: new Date(currentYear, 5, 30) },
+    Q3: { start: new Date(currentYear, 6, 1),  end: new Date(currentYear, 8, 30) },
+    Q4: { start: new Date(currentYear, 9, 1),  end: new Date(currentYear, 11, 31) },
+  };
 
   // ── Timeline bounds ──────────────────────────
   const collectDates = () => {
@@ -135,10 +146,26 @@ function GanttView({ projects, themeColor, onEdit, onProjectUpdate }) {
   };
   const allDates = collectDates();
   const hasAnyDate = allDates.length > 0;
-  const minRaw  = hasAnyDate ? new Date(Math.min(...allDates.map(d => d.getTime()))) : new Date(today.getFullYear(), today.getMonth() - 1, 1);
-  const maxRaw  = hasAnyDate ? new Date(Math.max(...allDates.map(d => d.getTime()), today.getTime())) : new Date(today.getFullYear(), today.getMonth() + 5, 0);
-  const minDate = new Date(minRaw); minDate.setDate(1); minDate.setDate(minDate.getDate() - 3);
-  const maxDate = new Date(maxRaw); maxDate.setDate(maxDate.getDate() + 15);
+
+  let minDate, maxDate;
+  if (quarterFilter !== 'All' && QUARTERS[quarterFilter]) {
+    const q = QUARTERS[quarterFilter];
+    minDate = new Date(q.start); minDate.setDate(minDate.getDate() - 3);
+    maxDate = new Date(q.end);   maxDate.setDate(maxDate.getDate() + 5);
+  } else if (timeScale === 'day') {
+    // Day view — show ~30 days centered on today
+    minDate = new Date(today); minDate.setDate(minDate.getDate() - 3);
+    maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + 27);
+  } else if (timeScale === 'year') {
+    // Year view — full calendar year
+    minDate = new Date(currentYear, 0, 1);  minDate.setDate(minDate.getDate() - 3);
+    maxDate = new Date(currentYear, 11, 31); maxDate.setDate(maxDate.getDate() + 5);
+  } else {
+    const minRaw = hasAnyDate ? new Date(Math.min(...allDates.map(d => d.getTime()))) : new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const maxRaw = hasAnyDate ? new Date(Math.max(...allDates.map(d => d.getTime()), today.getTime())) : new Date(today.getFullYear(), today.getMonth() + 5, 0);
+    minDate = new Date(minRaw); minDate.setDate(1); minDate.setDate(minDate.getDate() - 3);
+    maxDate = new Date(maxRaw); maxDate.setDate(maxDate.getDate() + 15);
+  }
   const span = maxDate - minDate;
 
   const pct = d => Math.max(0, Math.min(100, ((new Date(d) - minDate) / span) * 100));
@@ -148,12 +175,36 @@ function GanttView({ projects, themeColor, onEdit, onProjectUpdate }) {
   };
   const todayPct = pct(today);
 
-  // Month column headers
-  const months = [];
-  const mc = new Date(minDate); mc.setDate(1);
-  while (mc <= maxDate) {
-    months.push({ label: mc.toLocaleString('default', { month: 'short' }), year: mc.getFullYear(), pos: pct(mc) });
-    mc.setMonth(mc.getMonth() + 1);
+  // ── Column headers based on time scale ─────────
+  const timeColumns = [];
+  if (timeScale === 'day') {
+    // Generate individual day columns
+    const dc = new Date(minDate);
+    while (dc <= maxDate) {
+      const isToday = dc.toDateString() === today.toDateString();
+      const isWeekend = dc.getDay() === 0 || dc.getDay() === 6;
+      timeColumns.push({
+        label: dc.getDate().toString(),
+        sublabel: dc.getDate() === 1 || dc.toDateString() === new Date(minDate).toDateString()
+          ? dc.toLocaleString('default', { month: 'short' }) : '',
+        pos: pct(dc),
+        isToday, isWeekend,
+      });
+      dc.setDate(dc.getDate() + 1);
+    }
+  } else {
+    // Month / Year — generate month columns
+    const mc = new Date(minDate); mc.setDate(1);
+    while (mc <= maxDate) {
+      timeColumns.push({
+        label: mc.toLocaleString('default', { month: 'short' }),
+        sublabel: timeScale === 'year' ? '' : '',
+        year: mc.getFullYear(),
+        pos: pct(mc),
+        isToday: false, isWeekend: false,
+      });
+      mc.setMonth(mc.getMonth() + 1);
+    }
   }
 
   // ── Stage editor helpers ──────────────────────
@@ -203,6 +254,29 @@ function GanttView({ projects, themeColor, onEdit, onProjectUpdate }) {
           <span className="gl-item"><span className="gl-dot" style={{ background: '#8B5CF6' }} />Stage</span>
           <span className="gl-item"><span className="gl-dot" style={{ background: '#06B6D4', opacity: 0.6 }} />Sub-stage</span>
         </div>
+        <div className="gantt-qfilter-row">
+          <Filter size={12} className="gantt-qfilter-icon" />
+          {['All', 'Q1', 'Q2', 'Q3', 'Q4'].map(q => (
+            <button
+              key={q}
+              className={`gantt-qfilter-btn${quarterFilter === q ? ' active' : ''}`}
+              style={quarterFilter === q ? { color: themeColor, borderColor: themeColor, background: `${themeColor}12` } : {}}
+              onClick={() => setQuarterFilter(q)}
+              title={q === 'All' ? 'Show full timeline' : `${q} ${currentYear} (${QUARTERS[q].start.toLocaleString('default', { month:'short' })}–${QUARTERS[q].end.toLocaleString('default', { month:'short' })})`}
+            >{q}</button>
+          ))}
+        </div>
+        <div className="gantt-scale-row">
+          <Calendar size={12} className="gantt-scale-icon" />
+          {[{ key: 'day', label: 'Days' }, { key: 'month', label: 'Month' }, { key: 'year', label: 'Yearly' }].map(s => (
+            <button
+              key={s.key}
+              className={`gantt-scale-btn${timeScale === s.key ? ' active' : ''}`}
+              style={timeScale === s.key ? { color: themeColor, borderColor: themeColor, background: `${themeColor}12` } : {}}
+              onClick={() => setTimeScale(s.key)}
+            >{s.label}</button>
+          ))}
+        </div>
         <div className="gantt-ctrl-row">
           <button className="gantt-ctrl-btn" onClick={expandAll}>Expand All</button>
           <button className="gantt-ctrl-btn" onClick={collapseAll}>Collapse All</button>
@@ -210,13 +284,17 @@ function GanttView({ projects, themeColor, onEdit, onProjectUpdate }) {
       </div>
 
       {/* ── Header row ── */}
-      <div className="gantt-header">
+      <div className={`gantt-header${timeScale === 'day' ? ' gantt-header-day' : ''}`}>
         <div className="gantt-label-col gantt-header-label">Project / Stage</div>
         <div className="gantt-track-col gantt-month-header">
-          {months.map((m, i) => (
-            <div key={i} className="gantt-month-cell" style={{ left: `${m.pos}%` }}>
+          {timeColumns.map((col, i) => (
+            <div key={i}
+              className={`gantt-month-cell${col.isToday ? ' is-today-col' : ''}${col.isWeekend ? ' is-weekend-col' : ''}`}
+              style={{ left: `${col.pos}%` }}
+            >
               <div className="gantt-month-rule" />
-              <span className="gantt-month-name">{m.label}</span>
+              {col.sublabel && <span className="gantt-col-sublabel">{col.sublabel}</span>}
+              <span className={`gantt-month-name${timeScale === 'day' ? ' day-num' : ''}`}>{col.label}</span>
             </div>
           ))}
           {todayPct >= 0 && todayPct <= 100 && (
@@ -261,7 +339,7 @@ function GanttView({ projects, themeColor, onEdit, onProjectUpdate }) {
                 </div>
 
                 <div className="gantt-track-col gantt-track">
-                  {months.map((m, i) => <div key={i} className="gantt-grid-col" style={{ left: `${m.pos}%` }} />)}
+                  {timeColumns.map((col, i) => <div key={i} className={`gantt-grid-col${col.isWeekend ? ' weekend-col' : ''}`} style={{ left: `${col.pos}%` }} />)}
                   {todayPct >= 0 && todayPct <= 100 && <div className="gantt-row-today" style={{ left: `${todayPct}%` }} />}
                   {hasDate && (() => {
                     const l = pct(project.startDate);
@@ -308,7 +386,7 @@ function GanttView({ projects, themeColor, onEdit, onProjectUpdate }) {
                       </div>
 
                       <div className="gantt-track-col gantt-track">
-                        {months.map((m, i) => <div key={i} className="gantt-grid-col" style={{ left: `${m.pos}%` }} />)}
+                        {timeColumns.map((col, i) => <div key={i} className={`gantt-grid-col${col.isWeekend ? ' weekend-col' : ''}`} style={{ left: `${col.pos}%` }} />)}
                         {todayPct >= 0 && todayPct <= 100 && <div className="gantt-row-today" style={{ left: `${todayPct}%`, opacity: 0.35 }} />}
                         {hasStageDates && (() => {
                           const l = pct(stage.startDate);
@@ -388,7 +466,7 @@ export default function Projects() {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch]     = useState('');
   const [filterType, setFilterType] = useState('All');
-  const [viewMode, setViewMode] = useState('cards');
+  const [viewMode, setViewMode] = useState('gantt');
 
   const [showModal, setShowModal]           = useState(false);
   const [editingProject, setEditingProject] = useState(null);
@@ -760,15 +838,35 @@ export default function Projects() {
         .gantt-ctrl-btn { padding: 5px 12px; border-radius: 7px; border: 1px solid #E1E8F4; background: #fff; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer; transition: all .15s; font-family: inherit; }
         .gantt-ctrl-btn:hover { background: #F4F7FD; border-color: #C7D2E8; color: #0F172A; }
 
+        /* Quarter filter */
+        .gantt-qfilter-row { display: flex; align-items: center; gap: 4px; background: #F1F5F9; border-radius: 10px; padding: 3px 4px; }
+        .gantt-qfilter-icon { color: #94A3B8; margin: 0 4px 0 6px; flex-shrink: 0; }
+        .gantt-qfilter-btn { padding: 5px 12px; border-radius: 7px; border: 1.5px solid transparent; background: transparent; font-size: 12px; font-weight: 600; color: #64748B; cursor: pointer; transition: all .16s; font-family: inherit; white-space: nowrap; }
+        .gantt-qfilter-btn:hover:not(.active) { background: rgba(0,0,0,.04); color: #334155; }
+        .gantt-qfilter-btn.active { background: #fff; font-weight: 700; box-shadow: 0 1px 4px rgba(15,23,42,.08); border-radius: 7px; }
+
+        /* Time scale toggle */
+        .gantt-scale-row { display: flex; align-items: center; gap: 4px; background: #F1F5F9; border-radius: 10px; padding: 3px 4px; }
+        .gantt-scale-icon { color: #94A3B8; margin: 0 4px 0 6px; flex-shrink: 0; }
+        .gantt-scale-btn { padding: 5px 12px; border-radius: 7px; border: 1.5px solid transparent; background: transparent; font-size: 12px; font-weight: 600; color: #64748B; cursor: pointer; transition: all .16s; font-family: inherit; white-space: nowrap; }
+        .gantt-scale-btn:hover:not(.active) { background: rgba(0,0,0,.04); color: #334155; }
+        .gantt-scale-btn.active { background: #fff; font-weight: 700; box-shadow: 0 1px 4px rgba(15,23,42,.08); border-radius: 7px; }
+
         /* Header row */
         .gantt-header { display: grid; grid-template-columns: 280px 1fr; background: #F8FAFC; border-bottom: 1px solid #E8EEF8; height: 38px; }
+        .gantt-header.gantt-header-day { height: 44px; }
         .gantt-header-label { display: flex; align-items: center; padding: 0 16px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #94A3B8; border-right: 1px solid #E8EEF8; }
         .gantt-month-header { position: relative; overflow: hidden; }
         .gantt-month-cell { position: absolute; top: 0; height: 100%; display: flex; flex-direction: column; align-items: flex-start; transform: translateX(-1px); pointer-events: none; }
+        .gantt-month-cell.is-today-col .gantt-month-name.day-num { color: #F43F5E; font-weight: 800; }
+        .gantt-month-cell.is-weekend-col .gantt-month-name.day-num { color: #CBD5E1; }
         .gantt-month-rule { width: 1px; height: 10px; background: #CBD5E1; }
         .gantt-month-name { font-size: 10px; font-weight: 700; color: #94A3B8; letter-spacing: .04em; text-transform: uppercase; padding: 1px 4px; white-space: nowrap; }
+        .gantt-month-name.day-num { font-size: 9.5px; letter-spacing: 0; font-weight: 600; }
+        .gantt-col-sublabel { font-size: 8.5px; font-weight: 700; color: #4361EE; padding: 0 4px; letter-spacing: .04em; text-transform: uppercase; line-height: 1; }
         .gantt-today-line { position: absolute; top: 0; bottom: 0; width: 2px; background: #F43F5E; z-index: 10; transform: translateX(-1px); }
         .gantt-today-tag { position: absolute; top: 4px; left: 5px; font-size: 9px; font-weight: 800; color: #F43F5E; background: rgba(254,242,242,.95); padding: 1px 5px; border-radius: 3px; white-space: nowrap; }
+        .gantt-grid-col.weekend-col { background: rgba(203,213,225,0.08); width: 2px; }
 
         /* Body */
         .gantt-body { display: flex; flex-direction: column; }
