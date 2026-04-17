@@ -379,7 +379,7 @@ function Sales() {
         try {
             setLoading(true);
             const data = await projectService.getAll();
-            setProjects(data);
+            setProjects(Array.isArray(data) ? data : (data?.items ?? []));
         } catch (error) {
             console.error("Failed to load projects", error);
         } finally {

@@ -809,7 +809,7 @@ export default function Dashboard() {
     if (!currentUser) return;
 
     const fetchProjects = async () => {
-      try { setLoadingProjects(true); const d = await projectService.getAll(1, 100); setProjects((d?.items ?? d) || []); }
+      try { setLoadingProjects(true); const d = await projectService.getAll(1, 100); setProjects(Array.isArray(d) ? d : (d?.items ?? [])); }
       catch (e) { console.error('Dashboard projects:', e); } finally { setLoadingProjects(false); }
     };
     const fetchContacts = async () => {
@@ -828,7 +828,7 @@ export default function Dashboard() {
       } catch (e) { console.error('Dashboard finance:', e); } finally { setLoadingFinance(false); }
     };
     const fetchTasks = async () => {
-      try { setLoadingTasks(true); setTasks((await taskService.getAll()) || []); }
+      try { setLoadingTasks(true); const d = await taskService.getAll(); setTasks(Array.isArray(d) ? d : (d?.items ?? d?.tasks ?? [])); }
       catch (e) { console.error('Dashboard tasks:', e); } finally { setLoadingTasks(false); }
     };
     const fetchAlerts = async () => {
