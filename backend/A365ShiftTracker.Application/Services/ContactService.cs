@@ -1,6 +1,7 @@
 using System.Text.Json;
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
+using A365ShiftTracker.Domain.Common;
 using A365ShiftTracker.Domain.Entities;
 
 namespace A365ShiftTracker.Application.Services;
@@ -11,10 +12,20 @@ public class ContactService : IContactService
 
     public ContactService(IUnitOfWork uow) => _uow = uow;
 
-    public async Task<IEnumerable<ContactDto>> GetAllAsync(int userId)
+    public async Task<PagedResult<ContactDto>> GetAllAsync(int userId, int page, int pageSize)
     {
-        var contacts = await _uow.Contacts.FindAsync(c => c.UserId == userId);
-        return contacts.Select(MapToDto);
+        var paged = await _uow.Contacts.GetPagedAsync(
+            c => c.UserId == userId,
+            page,
+            pageSize,
+            q => q.OrderByDescending(c => c.Id));
+        return new PagedResult<ContactDto>
+        {
+            Items = paged.Items.Select(MapToDto),
+            TotalCount = paged.TotalCount,
+            Page = paged.Page,
+            PageSize = paged.PageSize
+        };
     }
 
     public async Task<ContactDto> CreateAsync(CreateContactRequest req, int userId)
