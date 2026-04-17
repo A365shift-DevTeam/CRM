@@ -1,6 +1,7 @@
 using System.Text.Json;
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
+using A365ShiftTracker.Domain.Common;
 using A365ShiftTracker.Domain.Entities;
 
 namespace A365ShiftTracker.Application.Services;
@@ -22,10 +23,16 @@ public class NotificationService : INotificationService
 
     public NotificationService(IUnitOfWork uow) => _uow = uow;
 
-    public async Task<IEnumerable<NotificationDto>> GetAllAsync(int userId)
+    public async Task<PagedResult<NotificationDto>> GetAllAsync(int userId, int page, int pageSize)
     {
-        var notifications = await _uow.Notifications.FindAsync(n => n.UserId == userId);
-        return notifications.OrderByDescending(n => n.CreatedAt).Select(MapToDto);
+        var paged = await _uow.Notifications.GetPagedAsync(
+            n => n.UserId == userId, page, pageSize,
+            q => q.OrderByDescending(n => n.CreatedAt));
+        return new PagedResult<NotificationDto>
+        {
+            Items = paged.Items.Select(MapToDto),
+            TotalCount = paged.TotalCount, Page = paged.Page, PageSize = paged.PageSize
+        };
     }
 
     public async Task<int> GetUnreadCountAsync(int userId)

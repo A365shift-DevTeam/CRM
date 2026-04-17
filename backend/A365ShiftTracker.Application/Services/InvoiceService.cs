@@ -1,5 +1,6 @@
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
+using A365ShiftTracker.Domain.Common;
 using A365ShiftTracker.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,14 +15,16 @@ public class InvoiceService : IInvoiceService
         _uow = uow;
     }
 
-    public async Task<List<InvoiceDto>> GetAllAsync(int userId)
+    public async Task<PagedResult<InvoiceDto>> GetAllAsync(int userId, int page, int pageSize)
     {
-        var items = await _uow.Invoices.Query()
-            .Where(i => i.UserId == userId)
-            .Include(i => i.Milestone)
-            .OrderByDescending(i => i.InvoiceDate)
-            .ToListAsync();
-        return items.Select(MapToDto).ToList();
+        var paged = await _uow.Invoices.GetPagedAsync(
+            i => i.UserId == userId, page, pageSize,
+            q => q.OrderByDescending(i => i.CreatedAt));
+        return new PagedResult<InvoiceDto>
+        {
+            Items = paged.Items.Select(MapToDto),
+            TotalCount = paged.TotalCount, Page = paged.Page, PageSize = paged.PageSize
+        };
     }
 
     public async Task<InvoiceDto?> GetByIdAsync(int id, int userId)

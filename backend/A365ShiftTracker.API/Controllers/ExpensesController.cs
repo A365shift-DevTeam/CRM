@@ -1,6 +1,7 @@
 using A365ShiftTracker.Application.Common;
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
+using A365ShiftTracker.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,11 +17,12 @@ public class ExpensesController : BaseApiController
     public ExpensesController(IExpenseService service) => _service = service;
 
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<IEnumerable<ExpenseDto>>>> GetAll()
+    public async Task<ActionResult<ApiResponse<PagedResult<ExpenseDto>>>> GetAll(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 25)
     {
         var userId = GetCurrentUserId();
-        var result = await _service.GetAllAsync(userId);
-        return Ok(ApiResponse<IEnumerable<ExpenseDto>>.Ok(result));
+        var result = await _service.GetAllAsync(userId, page, pageSize);
+        return Ok(ApiResponse<PagedResult<ExpenseDto>>.Ok(result));
     }
 
     [HttpPost]

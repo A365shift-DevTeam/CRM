@@ -1,11 +1,12 @@
 using A365ShiftTracker.Application.DTOs;
+using A365ShiftTracker.Domain.Common;
 
 namespace A365ShiftTracker.Application.Interfaces;
 
 public interface ITimesheetService
 {
     // Entries
-    Task<IEnumerable<TimesheetEntryDto>> GetEntriesAsync(int userId);
+    Task<PagedResult<TimesheetEntryDto>> GetEntriesAsync(int userId, int page, int pageSize);
     Task<TimesheetEntryDto> CreateEntryAsync(CreateTimesheetEntryRequest request, int userId);
     Task<TimesheetEntryDto> UpdateEntryAsync(int id, UpdateTimesheetEntryRequest request, int userId);
     Task DeleteEntryAsync(int id, int userId);

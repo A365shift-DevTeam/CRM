@@ -1,10 +1,11 @@
 using A365ShiftTracker.Application.DTOs;
+using A365ShiftTracker.Domain.Common;
 
 namespace A365ShiftTracker.Application.Interfaces;
 
 public interface INotificationService
 {
-    Task<IEnumerable<NotificationDto>> GetAllAsync(int userId);
+    Task<PagedResult<NotificationDto>> GetAllAsync(int userId, int page, int pageSize);
     Task<int> GetUnreadCountAsync(int userId);
     Task MarkAsReadAsync(int id, int userId);
     Task MarkAllAsReadAsync(int userId);

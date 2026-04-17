@@ -2,6 +2,7 @@ using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
 using A365ShiftTracker.Application.Services;
 using A365ShiftTracker.Application.Common;
+using A365ShiftTracker.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,11 +23,12 @@ public class TicketsController : BaseApiController
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 25)
     {
         var userId = GetCurrentUserId();
-        var result = await _service.GetAllAsync(userId);
-        return Ok(ApiResponse<List<TicketDto>>.Ok(result, "Tickets retrieved"));
+        var result = await _service.GetAllAsync(userId, page, pageSize);
+        return Ok(ApiResponse<PagedResult<TicketDto>>.Ok(result, "Tickets retrieved"));
     }
 
     [HttpGet("{id}")]

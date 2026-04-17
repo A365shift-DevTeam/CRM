@@ -1,6 +1,7 @@
 using System.Text.Json;
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
+using A365ShiftTracker.Domain.Common;
 using A365ShiftTracker.Domain.Entities;
 
 namespace A365ShiftTracker.Application.Services;
@@ -13,10 +14,16 @@ public class TimesheetService : ITimesheetService
 
     // ─── Entries ───────────────────────────────────────────
 
-    public async Task<IEnumerable<TimesheetEntryDto>> GetEntriesAsync(int userId)
+    public async Task<PagedResult<TimesheetEntryDto>> GetEntriesAsync(int userId, int page, int pageSize)
     {
-        var entries = await _uow.TimesheetEntries.FindAsync(e => e.UserId == userId);
-        return entries.Select(MapEntryToDto);
+        var paged = await _uow.TimesheetEntries.GetPagedAsync(
+            t => t.UserId == userId, page, pageSize,
+            q => q.OrderByDescending(t => t.StartDatetime));
+        return new PagedResult<TimesheetEntryDto>
+        {
+            Items = paged.Items.Select(MapEntryToDto),
+            TotalCount = paged.TotalCount, Page = paged.Page, PageSize = paged.PageSize
+        };
     }
 
     public async Task<TimesheetEntryDto> CreateEntryAsync(CreateTimesheetEntryRequest request, int userId)

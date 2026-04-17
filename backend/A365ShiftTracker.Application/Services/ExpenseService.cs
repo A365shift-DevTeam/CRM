@@ -1,6 +1,7 @@
 using System.Text.Json;
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
+using A365ShiftTracker.Domain.Common;
 using A365ShiftTracker.Domain.Entities;
 
 namespace A365ShiftTracker.Application.Services;
@@ -11,10 +12,16 @@ public class ExpenseService : IExpenseService
 
     public ExpenseService(IUnitOfWork uow) => _uow = uow;
 
-    public async Task<IEnumerable<ExpenseDto>> GetAllAsync(int userId)
+    public async Task<PagedResult<ExpenseDto>> GetAllAsync(int userId, int page, int pageSize)
     {
-        var expenses = await _uow.Expenses.FindAsync(e => e.UserId == userId);
-        return expenses.OrderByDescending(e => e.Date).Select(MapToDto);
+        var paged = await _uow.Expenses.GetPagedAsync(
+            e => e.UserId == userId, page, pageSize,
+            q => q.OrderByDescending(e => e.Date));
+        return new PagedResult<ExpenseDto>
+        {
+            Items = paged.Items.Select(MapToDto),
+            TotalCount = paged.TotalCount, Page = paged.Page, PageSize = paged.PageSize
+        };
     }
 
     public async Task<ExpenseDto> CreateAsync(CreateExpenseRequest request, int userId)

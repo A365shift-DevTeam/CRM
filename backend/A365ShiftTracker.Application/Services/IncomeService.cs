@@ -1,5 +1,6 @@
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
+using A365ShiftTracker.Domain.Common;
 using A365ShiftTracker.Domain.Entities;
 
 namespace A365ShiftTracker.Application.Services;
@@ -10,10 +11,16 @@ public class IncomeService : IIncomeService
 
     public IncomeService(IUnitOfWork uow) => _uow = uow;
 
-    public async Task<IEnumerable<IncomeDto>> GetAllAsync(int userId)
+    public async Task<PagedResult<IncomeDto>> GetAllAsync(int userId, int page, int pageSize)
     {
-        var incomes = await _uow.Incomes.FindAsync(i => i.UserId == userId);
-        return incomes.OrderByDescending(i => i.Date).Select(MapToDto);
+        var paged = await _uow.Incomes.GetPagedAsync(
+            i => i.UserId == userId, page, pageSize,
+            q => q.OrderByDescending(i => i.Date));
+        return new PagedResult<IncomeDto>
+        {
+            Items = paged.Items.Select(MapToDto),
+            TotalCount = paged.TotalCount, Page = paged.Page, PageSize = paged.PageSize
+        };
     }
 
     public async Task<IncomeDto> CreateAsync(CreateIncomeRequest request, int userId)

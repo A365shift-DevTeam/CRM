@@ -1,5 +1,6 @@
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
+using A365ShiftTracker.Domain.Common;
 using A365ShiftTracker.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,10 +15,16 @@ public class TicketService : ITicketService
         _uow = uow;
     }
 
-    public async Task<List<TicketDto>> GetAllAsync(int userId)
+    public async Task<PagedResult<TicketDto>> GetAllAsync(int userId, int page, int pageSize)
     {
-        var items = await _uow.Tickets.FindAsync(t => t.UserId == userId);
-        return items.OrderByDescending(t => t.CreatedAt).Select(MapToDto).ToList();
+        var paged = await _uow.Tickets.GetPagedAsync(
+            t => t.UserId == userId, page, pageSize,
+            q => q.OrderByDescending(t => t.CreatedAt));
+        return new PagedResult<TicketDto>
+        {
+            Items = paged.Items.Select(MapToDto),
+            TotalCount = paged.TotalCount, Page = paged.Page, PageSize = paged.PageSize
+        };
     }
 
     public async Task<TicketDto?> GetByIdAsync(int id, int userId)

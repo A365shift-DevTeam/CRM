@@ -1,6 +1,7 @@
 using A365ShiftTracker.Application.Common;
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
+using A365ShiftTracker.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,11 +18,12 @@ public class TimesheetController : BaseApiController
 
     // ─── Entries ───────────────────────────────────────
     [HttpGet("entries")]
-    public async Task<ActionResult<ApiResponse<IEnumerable<TimesheetEntryDto>>>> GetEntries()
+    public async Task<ActionResult<ApiResponse<PagedResult<TimesheetEntryDto>>>> GetEntries(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 25)
     {
         var userId = GetCurrentUserId();
-        var result = await _service.GetEntriesAsync(userId);
-        return Ok(ApiResponse<IEnumerable<TimesheetEntryDto>>.Ok(result));
+        var result = await _service.GetEntriesAsync(userId, page, pageSize);
+        return Ok(ApiResponse<PagedResult<TimesheetEntryDto>>.Ok(result));
     }
 
     [HttpPost("entries")]
