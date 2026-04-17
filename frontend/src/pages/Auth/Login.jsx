@@ -28,6 +28,8 @@ export default function Login() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const cooldownRef = useRef(null);
 
+  useEffect(() => () => clearInterval(cooldownRef.current), []);
+
   const { login, completeLogin } = useAuth();
   const navigate = useNavigate();
 

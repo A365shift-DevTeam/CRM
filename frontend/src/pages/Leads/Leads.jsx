@@ -202,7 +202,7 @@ export default function Leads() {
         title="Leads"
         itemCount={filtered.length}
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={(q) => { setSearchQuery(q); setPage(1); }}
         viewModes={[
           { id: 'list', icon: <List size={15} />, label: 'List' },
           { id: 'kanban', icon: <Columns size={15} />, label: 'Kanban' },

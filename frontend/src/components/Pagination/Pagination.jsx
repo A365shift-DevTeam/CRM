@@ -30,6 +30,7 @@ export default function Pagination({ page, totalPages, pageSize, onPageChange, o
         </span>
 
         <button
+          aria-label="Previous page"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
           className="p-1.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
@@ -44,6 +45,7 @@ export default function Pagination({ page, totalPages, pageSize, onPageChange, o
         </button>
 
         <button
+          aria-label="Next page"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
           className="p-1.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"

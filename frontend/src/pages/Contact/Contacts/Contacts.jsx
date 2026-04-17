@@ -411,12 +411,12 @@ const Contacts = () => {
         title="Contacts"
         itemCount={contacts.length}
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={(q) => { setSearchQuery(q); setPage(1); }}
         searchPlaceholder="Search contacts..."
         filters={filterableColumns}
         filterBy={filterBy}
         filterValue={filterValue}
-        onFilterChange={(fb, fv) => { setFilterBy(fb); setFilterValue(fv); }}
+        onFilterChange={(fb, fv) => { setFilterBy(fb); setFilterValue(fv); setPage(1); }}
         getFilterOptions={getFilterOptions}
         sortOptions={[
           { id: 'name', name: 'Name' },
