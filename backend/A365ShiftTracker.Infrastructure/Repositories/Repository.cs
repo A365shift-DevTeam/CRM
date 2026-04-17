@@ -24,7 +24,34 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         => await _dbSet.AsNoTracking().ToListAsync();
 
     public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
-        => await _dbSet.Where(predicate).ToListAsync();
+        => await _dbSet.AsNoTracking().Where(predicate).ToListAsync();
+
+    public async Task<PagedResult<T>> GetPagedAsync(
+        Expression<Func<T, bool>> predicate,
+        int page,
+        int pageSize,
+        Func<IQueryable<T>, IQueryable<T>>? orderBy = null)
+    {
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        page = Math.Max(1, page);
+
+        var query = _dbSet.AsNoTracking().Where(predicate);
+        if (orderBy != null) query = orderBy(query);
+
+        var total = await query.CountAsync();
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResult<T>
+        {
+            Items = items,
+            TotalCount = total,
+            Page = page,
+            PageSize = pageSize
+        };
+    }
 
     public async Task<T> AddAsync(T entity)
     {
