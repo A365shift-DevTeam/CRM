@@ -82,12 +82,12 @@ const Finance = () => {
     try {
       setIsLoading(true)
       const [expensesData, incomesData, financesData] = await Promise.all([
-        expenseService.getExpenses(),
-        incomeService.getIncomes(),
+        expenseService.getExpenses(1, 1000),
+        incomeService.getIncomes(1, 1000),
         projectFinanceService.getAll()
       ])
-      setExpenses(expensesData || [])
-      setIncomes(incomesData || [])
+      setExpenses((expensesData?.items ?? expensesData) || [])
+      setIncomes((incomesData?.items ?? incomesData) || [])
       setProjectFinances(financesData || [])
     } catch (error) {
       console.error('Error loading data:', error)
@@ -99,8 +99,8 @@ const Finance = () => {
   const loadExpenses = async () => {
 
     try {
-      const data = await expenseService.getExpenses()
-      setExpenses(data || [])
+      const data = await expenseService.getExpenses(1, 1000)
+      setExpenses((data?.items ?? data) || [])
     } catch (error) {
       console.error('Error loading expenses:', error)
     }
@@ -108,8 +108,8 @@ const Finance = () => {
 
   const loadIncomes = async () => {
     try {
-      const data = await incomeService.getIncomes()
-      setIncomes(data || [])
+      const data = await incomeService.getIncomes(1, 1000)
+      setIncomes((data?.items ?? data) || [])
     } catch (error) {
       console.error('Error loading incomes:', error)
     }

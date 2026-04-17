@@ -474,8 +474,8 @@ const BusinessDetails = ({ details, updateDetails, charges, addCharge, removeCha
     const dropRef = useRef(null);
 
     useEffect(() => {
-        contactService.getContacts()
-            .then(data => setContacts(Array.isArray(data) ? data : []))
+        contactService.getContacts(1, 1000)
+            .then(data => { const arr = data?.items ?? data; setContacts(Array.isArray(arr) ? arr : []); })
             .catch(() => setContacts([]));
     }, []);
 
@@ -1413,7 +1413,8 @@ const ProjectTrackerComplete = () => {
             let retrievedAddress = '';
             let retrievedCountry = 'India';
             try {
-                const contacts = await contactService.getContacts();
+                const contactData = await contactService.getContacts(1, 1000);
+                const contacts = contactData?.items ?? contactData ?? [];
                 const searchName = (receivedProject.clientName || '').toLowerCase().trim();
                 const matchedContact = contacts.find(c => {
                     const cName    = (c.name    || '').toLowerCase().trim();

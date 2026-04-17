@@ -6,6 +6,7 @@ import { leadService } from '../../services/leadService';
 import { projectService } from '../../services/api';
 import { useToast } from '../../components/Toast/ToastContext';
 import PageToolbar from '../../components/PageToolbar/PageToolbar';
+import Pagination from '../../components/Pagination/Pagination';
 import StatsGrid from '../../components/StatsGrid/StatsGrid';
 import AuditPanel from '../../components/AuditPanel/AuditPanel';
 import './Leads.css';
@@ -36,6 +37,9 @@ export default function Leads() {
   const toast = useToast();
   const [leads, setLeads] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalPages, setTotalPages] = useState(1);
   const [viewMode, setViewMode] = useState('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -45,13 +49,14 @@ export default function Leads() {
   const [qualifyingLead, setQualifyingLead] = useState(null);
   const [qualifyForm, setQualifyForm] = useState({});
 
-  useEffect(() => { loadLeads(); }, []);
+  useEffect(() => { loadLeads(); }, [page, pageSize]);
 
   const loadLeads = async () => {
     try {
       setIsLoading(true);
-      const data = await leadService.getLeads();
-      setLeads(data || []);
+      const data = await leadService.getLeads(page, pageSize);
+      setLeads(data?.items || []);
+      setTotalPages(data?.totalPages || 1);
     } catch (e) {
       console.error('Error loading leads:', e);
     } finally {
@@ -279,6 +284,14 @@ export default function Leads() {
           ))}
         </div>
       )}
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+      />
 
       <Modal show={showModal} onHide={() => setShowModal(false)} centered size="lg">
         <Modal.Header closeButton className="border-0 pb-0">

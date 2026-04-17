@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { projectService } from '../../services/api';
+import Pagination from '../../components/Pagination/Pagination';
 import { useToast } from '../../components/Toast/ToastContext';
 import { useTheme } from '../../context/ThemeContext';
 import { FaPlus, FaTrash, FaPenToSquare } from 'react-icons/fa6';
@@ -382,6 +383,9 @@ export default function Projects() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading]   = useState(true);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch]     = useState('');
   const [filterType, setFilterType] = useState('All');
   const [viewMode, setViewMode] = useState('cards');
@@ -399,12 +403,14 @@ export default function Projects() {
     const handler = () => loadProjects();
     window.addEventListener('crm:projects-updated', handler);
     return () => window.removeEventListener('crm:projects-updated', handler);
-  }, []);
+  }, [page, pageSize]);
 
   const loadProjects = async () => {
     try {
       setLoading(true);
-      setProjects((await projectService.getAll()) || []);
+      const data = await projectService.getAll(page, pageSize);
+      setProjects((data?.items ?? data) || []);
+      setTotalPages(data?.totalPages || 1);
     } catch { toast.error('Failed to load projects'); }
     finally  { setLoading(false); }
   };
@@ -563,6 +569,14 @@ export default function Projects() {
           ))}
         </div>
       )}
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+      />
 
       {/* ── Project Modal ── */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered dialogClassName="proj-modal-dialog">

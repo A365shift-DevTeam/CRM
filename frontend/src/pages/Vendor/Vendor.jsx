@@ -131,7 +131,8 @@ export default function Vendor() {
 
         const fetchContacts = async () => {
             try {
-                const allContacts = await contactService.getContacts();
+                const contactData = await contactService.getContacts(1, 1000);
+                const allContacts = contactData?.items ?? contactData ?? [];
 
                 // 1. Filter vendors
                 const vendorContacts = allContacts.filter(contact =>

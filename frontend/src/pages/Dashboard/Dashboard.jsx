@@ -809,22 +809,22 @@ export default function Dashboard() {
     if (!currentUser) return;
 
     const fetchProjects = async () => {
-      try { setLoadingProjects(true); setProjects((await projectService.getAll()) || []); }
+      try { setLoadingProjects(true); const d = await projectService.getAll(1, 100); setProjects((d?.items ?? d) || []); }
       catch (e) { console.error('Dashboard projects:', e); } finally { setLoadingProjects(false); }
     };
     const fetchContacts = async () => {
-      try { setLoadingContacts(true); setContacts((await contactService.getContacts()) || []); }
+      try { setLoadingContacts(true); const d = await contactService.getContacts(1, 100); setContacts((d?.items ?? d) || []); }
       catch (e) { console.error('Dashboard contacts:', e); } finally { setLoadingContacts(false); }
     };
     const fetchTimesheet = async () => {
-      try { setLoadingTimesheet(true); setTimesheetEntries((await timesheetService.getEntries()) || []); }
+      try { setLoadingTimesheet(true); const d = await timesheetService.getEntries(1, 100); setTimesheetEntries((d?.items ?? d) || []); }
       catch (e) { console.error('Dashboard timesheet:', e); } finally { setLoadingTimesheet(false); }
     };
     const fetchFinance = async () => {
       try {
         setLoadingFinance(true);
-        const [exp, inc] = await Promise.all([expenseService.getExpenses(), incomeService.getIncomes()]);
-        setExpenses(exp || []); setIncomes(inc || []);
+        const [exp, inc] = await Promise.all([expenseService.getExpenses(1, 1000), incomeService.getIncomes(1, 1000)]);
+        setExpenses((exp?.items ?? exp) || []); setIncomes((inc?.items ?? inc) || []);
       } catch (e) { console.error('Dashboard finance:', e); } finally { setLoadingFinance(false); }
     };
     const fetchTasks = async () => {

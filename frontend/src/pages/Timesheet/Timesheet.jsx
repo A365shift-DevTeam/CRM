@@ -66,10 +66,10 @@ const Timesheet = () => {
     try {
       setIsLoading(true)
       const [entriesData, columnsData] = await Promise.all([
-        timesheetService.getEntries(),
+        timesheetService.getEntries(1, 1000),
         timesheetService.getColumns()
       ])
-      setEntries(entriesData || [])
+      setEntries((entriesData?.items ?? entriesData) || [])
       // Deduplicate columns by id — prevents doubled fields even if Firestore has duplicates
       const seen = new Set()
       const uniqueColumns = (columnsData || []).filter(col => {

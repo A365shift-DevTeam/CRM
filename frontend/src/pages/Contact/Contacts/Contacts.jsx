@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Button, Dropdown, Form, Badge, Modal, Card, Row, Col } from 'react-bootstrap'
 import {
   Plus, Filter, MoreVertical,
@@ -18,6 +18,7 @@ import { useToast } from '../../../components/Toast/ToastContext'
 import { ContactColumnManager } from './ContactColumnManager'
 import PageToolbar from '../../../components/PageToolbar/PageToolbar'
 import StatsGrid from '../../../components/StatsGrid/StatsGrid'
+import Pagination from '../../../components/Pagination/Pagination'
 import './Contacts.css'
 
 const DEFAULT_STATUS_COLUMNS = ['Active', 'Inactive', 'Lead', 'Prospect', 'Customer']
@@ -26,6 +27,9 @@ const Contacts = () => {
   const toast = useToast()
   const [contacts, setContacts] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
+  const [totalPages, setTotalPages] = useState(1)
 
   // View State
   const [viewMode, setViewMode] = useState('list') // 'list', 'kanban', 'chart'
@@ -73,9 +77,12 @@ const Contacts = () => {
   const [convertLeadForm, setConvertLeadForm] = useState({})
 
   useEffect(() => {
-    loadContacts()
     loadColumns()
   }, [])
+
+  useEffect(() => {
+    loadContacts()
+  }, [page, pageSize])
 
   const loadColumns = async () => {
     try {
@@ -114,8 +121,9 @@ const Contacts = () => {
   const loadContacts = async () => {
     try {
       setIsLoading(true)
-      const data = await contactService.getContacts()
-      setContacts(data || [])
+      const data = await contactService.getContacts(page, pageSize)
+      setContacts(data?.items || [])
+      setTotalPages(data?.totalPages || 1)
     } catch (error) {
       console.error('Error loading contacts:', error)
     } finally {
@@ -481,6 +489,14 @@ const Contacts = () => {
           <ChartView contacts={processedContacts} />
         )}
       </div>
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+      />
 
       {/* Modals */}
       <ContactModal

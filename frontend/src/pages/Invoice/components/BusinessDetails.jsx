@@ -28,8 +28,8 @@ export default function BusinessDetails({ details, updateDetails, charges, addCh
     const dropRef = useRef(null);
 
     useEffect(() => {
-        contactService.getContacts()
-            .then(data => setContacts(Array.isArray(data) ? data : []))
+        contactService.getContacts(1, 1000)
+            .then(data => { const arr = data?.items ?? data; setContacts(Array.isArray(arr) ? arr : []); })
             .catch(() => setContacts([]));
     }, []);
 

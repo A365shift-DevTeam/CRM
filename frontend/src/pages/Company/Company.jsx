@@ -64,7 +64,7 @@ export default function Company() {
     try {
       setIsLoading(true);
       const data = await companyService.getCompanies();
-      setCompanies(data || []);
+      setCompanies((data?.items ?? data) || []);
     } catch (e) {
       console.error('Error loading companies:', e);
     } finally {

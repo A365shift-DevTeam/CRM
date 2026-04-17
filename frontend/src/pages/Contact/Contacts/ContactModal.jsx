@@ -158,8 +158,8 @@ export const ContactModal = ({ show, onHide, contact, columns = [], onSave, onDe
 
   useEffect(() => {
     if (show) {
-      companyService.getCompanies()
-        .then(data => setCompanies(data || []))
+      companyService.getCompanies(1, 1000)
+        .then(data => setCompanies((data?.items ?? data) || []))
         .catch(err => console.error('Error loading companies:', err))
     }
   }, [show])
