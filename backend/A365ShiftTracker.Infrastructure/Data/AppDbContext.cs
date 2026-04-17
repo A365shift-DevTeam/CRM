@@ -72,6 +72,7 @@ public class AppDbContext : DbContext
             e.HasIndex(u => u.Email).IsUnique();
             e.HasMany(u => u.UserRoles).WithOne(ur => ur.User)
                 .HasForeignKey(ur => ur.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.Property(u => u.TotpSecret).HasConversion(strConv); // encrypt TOTP secret at rest
         });
 
         // ─── Roles ─────────────────────────────────────────

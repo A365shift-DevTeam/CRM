@@ -13,6 +13,18 @@ public class User : BaseEntity
     public string? ResetToken { get; set; }
     public DateTime? ResetTokenExpiry { get; set; }
 
+    // Email OTP 2FA
+    public string? OtpCode { get; set; }          // BCrypt-hashed 6-digit code
+    public DateTime? OtpExpiry { get; set; }
+
+    // TOTP Authenticator App
+    public string? TotpSecret { get; set; }        // Base32 secret (stored encrypted via EF converter)
+    public bool IsTotpEnabled { get; set; } = false;
+
+    // Admin 2FA control
+    public bool TwoFactorRequired { get; set; } = false;
+    public string TwoFactorMethod { get; set; } = "email"; // "email" | "totp"
+
     // Navigation
     public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 }
