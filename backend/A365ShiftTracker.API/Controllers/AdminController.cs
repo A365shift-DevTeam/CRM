@@ -3,6 +3,7 @@ using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace A365ShiftTracker.API.Controllers;
 
@@ -12,8 +13,15 @@ namespace A365ShiftTracker.API.Controllers;
 public class AdminController : ControllerBase
 {
     private readonly IAdminService _adminService;
+    private readonly IUnitOfWork _uow;
+    private readonly IMemoryCache _cache;
 
-    public AdminController(IAdminService adminService) => _adminService = adminService;
+    public AdminController(IAdminService adminService, IUnitOfWork uow, IMemoryCache cache)
+    {
+        _adminService = adminService;
+        _uow = uow;
+        _cache = cache;
+    }
 
     // ─── Users ─────────────────────────────────────────────────
 
@@ -103,5 +111,41 @@ public class AdminController : ControllerBase
     {
         var permissions = await _adminService.GetAllPermissionsAsync();
         return Ok(ApiResponse<IEnumerable<PermissionDto>>.Ok(permissions));
+    }
+
+    // ─── 2FA Management ────────────────────────────────────────
+
+    [HttpPost("users/{id}/2fa")]
+    public async Task<ActionResult<ApiResponse<bool>>> SetUserTwoFactor(int id, Require2FARequest request)
+    {
+        var users = await _uow.Users.FindAsync(u => u.Id == id);
+        var user = users.FirstOrDefault()
+            ?? throw new KeyNotFoundException($"User {id} not found.");
+
+        user.TwoFactorRequired = request.Required;
+        user.TwoFactorMethod = request.Method;
+        await _uow.Users.UpdateAsync(user);
+        await _uow.SaveChangesAsync();
+
+        // Invalidate permission cache for this user
+        _cache.Remove($"permissions:{id}");
+
+        return Ok(ApiResponse<bool>.Ok(true,
+            request.Required ? $"2FA ({request.Method}) required for user {id}." : $"2FA disabled for user {id}."));
+    }
+
+    [HttpDelete("users/{id}/2fa")]
+    public async Task<ActionResult<ApiResponse<bool>>> RemoveUserTwoFactor(int id)
+    {
+        var users = await _uow.Users.FindAsync(u => u.Id == id);
+        var user = users.FirstOrDefault()
+            ?? throw new KeyNotFoundException($"User {id} not found.");
+
+        user.TwoFactorRequired = false;
+        await _uow.Users.UpdateAsync(user);
+        await _uow.SaveChangesAsync();
+        _cache.Remove($"permissions:{id}");
+
+        return Ok(ApiResponse<bool>.Ok(true, $"2FA disabled for user {id}."));
     }
 }
