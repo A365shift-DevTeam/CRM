@@ -136,7 +136,7 @@ public class AuthService : IAuthService
 
         if (!BCrypt.Net.BCrypt.Verify(request.Code, user.OtpCode))
         {
-            IncrementAttempts(request.PartialToken);
+            IncrementAttempts(request.PartialToken, user.Id);
             throw new UnauthorizedAccessException("Invalid code.");
         }
 
@@ -173,7 +173,7 @@ public class AuthService : IAuthService
         var totp = new Totp(secretBytes);
         if (!totp.VerifyTotp(request.Code, out _, VerificationWindow.RfcSpecifiedNetworkDelay))
         {
-            IncrementAttempts(request.PartialToken);
+            IncrementAttempts(request.PartialToken, user.Id);
             throw new UnauthorizedAccessException("Invalid authenticator code.");
         }
 
@@ -190,6 +190,9 @@ public class AuthService : IAuthService
     {
         var user = await _uow.Users.GetByIdAsync(userId)
             ?? throw new KeyNotFoundException("User not found.");
+
+        if (user.IsTotpEnabled)
+            throw new InvalidOperationException("TOTP is already active. Disable it before reconfiguring.");
 
         var secretBytes = KeyGeneration.GenerateRandomKey(20);
         var secret = Base32Encoding.ToString(secretBytes);
@@ -338,8 +341,9 @@ public class AuthService : IAuthService
 
             var userId = int.Parse(principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ?? "0");
             var jti = principal.FindFirst(JwtRegisteredClaimNames.Jti)?.Value ?? string.Empty;
-            var attempts = _cache.TryGetValue($"2fa_attempts:{jti}", out int stored) ? stored : 0;
-            return (userId, attempts);
+            var jtiAttempts = _cache.TryGetValue($"2fa_attempts:{jti}", out int jtiStored) ? jtiStored : 0;
+            var userAttempts = _cache.TryGetValue($"2fa_attempts:user:{userId}", out int userStored) ? userStored : 0;
+            return (userId, Math.Max(jtiAttempts, userAttempts));
         }
         catch (SecurityTokenException)
         {
@@ -347,18 +351,25 @@ public class AuthService : IAuthService
         }
     }
 
-    private void IncrementAttempts(string partialToken)
+    private void IncrementAttempts(string partialToken, int userId)
     {
+        // Track per JTI (covers current partial token) and per user (covers re-login with fresh JTI).
         try
         {
             var handler = new JwtSecurityTokenHandler();
             var jwt = handler.ReadJwtToken(partialToken);
             var jti = jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Jti)?.Value;
-            if (jti is null) return;
-            var current = _cache.TryGetValue($"2fa_attempts:{jti}", out int stored) ? stored : 0;
-            _cache.Set($"2fa_attempts:{jti}", current + 1, TimeSpan.FromMinutes(6));
+            if (jti is not null)
+            {
+                var jtiCount = _cache.TryGetValue($"2fa_attempts:{jti}", out int jtiStored) ? jtiStored : 0;
+                _cache.Set($"2fa_attempts:{jti}", jtiCount + 1, TimeSpan.FromMinutes(6));
+            }
         }
         catch { /* ignore parse errors */ }
+
+        var userKey = $"2fa_attempts:user:{userId}";
+        var userCount = _cache.TryGetValue(userKey, out int userStored) ? userStored : 0;
+        _cache.Set(userKey, userCount + 1, TimeSpan.FromMinutes(5));
     }
 
     // ── Permission Caching ───────────────────────────────────
