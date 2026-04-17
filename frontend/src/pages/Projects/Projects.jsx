@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { projectService } from '../../services/api';
+import { projectService } from '../../services/projectService';
 import Pagination from '../../components/Pagination/Pagination';
 import { useToast } from '../../components/Toast/ToastContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -408,7 +408,7 @@ export default function Projects() {
   const loadProjects = async () => {
     try {
       setLoading(true);
-      const data = await projectService.getAll(page, pageSize);
+      const data = await projectService.getProjects(page, pageSize);
       setProjects((data?.items ?? data) || []);
       setTotalPages(data?.totalPages || 1);
     } catch { toast.error('Failed to load projects'); }
@@ -418,7 +418,7 @@ export default function Projects() {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this project?')) return;
     try {
-      await projectService.delete(id);
+      await projectService.deleteProject(id);
       setProjects(prev => prev.filter(p => p.id !== id));
       toast.success('Project deleted');
     } catch { toast.error('Failed to delete project'); }
@@ -451,11 +451,11 @@ export default function Projects() {
           startDate,
           endDate,
         };
-        const updated = await projectService.update(editingProject.id, payload);
+        const updated = await projectService.updateProject(editingProject.id, payload);
         setProjects(prev => prev.map(p => p.id === editingProject.id ? { ...p, ...updated } : p));
         toast.success('Project updated');
       } else {
-        const created = await projectService.create({
+        const created = await projectService.createProject({
           title:       formData.title,
           clientName:  formData.clientName,
           type:        formData.type,
@@ -475,7 +475,7 @@ export default function Projects() {
   const handleProjectUpdate = async (project, updates) => {
     try {
       const payload = { ...project, ...updates };
-      await projectService.update(project.id, payload);
+      await projectService.updateProject(project.id, payload);
       setProjects(prev => prev.map(p => p.id === project.id ? { ...p, ...updates } : p));
       toast.success('Stage updated');
     } catch { toast.error('Failed to update stage'); }
