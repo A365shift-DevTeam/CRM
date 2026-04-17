@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { apiClient } from '../../services/apiClient';
+import { useAuth } from '../../context/AuthContext';
 import { FaPalette, FaCheck } from 'react-icons/fa6';
 
 const TABS = [
@@ -13,12 +14,14 @@ export default function Settings() {
     const [inputColor, setInputColor] = useState(themeColor);
     const [activeTab, setActiveTab] = useState('appearance');
 
+    const { currentUser } = useAuth();
+
     // TOTP state
     const [totpSetup, setTotpSetup]     = useState(null);
     const [qrDataUrl, setQrDataUrl]     = useState('');
     const [totpCode, setTotpCode]       = useState('');
     const [totpStatus, setTotpStatus]   = useState('');
-    const [totpEnabled, setTotpEnabled] = useState(false);
+    const [totpEnabled, setTotpEnabled] = useState(currentUser?.isTotpEnabled || false);
 
     const handleSave = () => {
         if (/^#[0-9A-F]{6}$/i.test(inputColor) || /^#[0-9A-F]{3}$/i.test(inputColor)) {

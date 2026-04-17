@@ -21,6 +21,7 @@ public class AuthResponse
     public string Token { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
     public List<string> Permissions { get; set; } = new();
+    public bool IsTotpEnabled { get; set; } = false;
 }
 
 public class LoginResponse
@@ -32,6 +33,7 @@ public class LoginResponse
     public string Token { get; set; } = string.Empty;
     public string? Role { get; set; }
     public List<string> Permissions { get; set; } = new();
+    public bool IsTotpEnabled { get; set; } = false;
 
     // Returned when 2FA IS required — partial auth
     public bool Requires2FA { get; set; } = false;

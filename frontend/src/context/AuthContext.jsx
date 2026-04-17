@@ -30,7 +30,8 @@ export function AuthProvider({ children }) {
             email: data.email,
             displayName: data.displayName,
             role: data.role,
-            permissions: data.permissions || []
+            permissions: data.permissions || [],
+            isTotpEnabled: data.isTotpEnabled || false
         };
         setStoredUser(user);
         setCurrentUser(user);
@@ -51,7 +52,8 @@ export function AuthProvider({ children }) {
             email: data.email,
             displayName: data.displayName,
             role: data.role,
-            permissions: data.permissions || []
+            permissions: data.permissions || [],
+            isTotpEnabled: data.isTotpEnabled || false
         };
         setStoredUser(user);
         setCurrentUser(user);
@@ -64,7 +66,8 @@ export function AuthProvider({ children }) {
             email: loginResponse.email,
             displayName: loginResponse.displayName,
             role: loginResponse.role,
-            permissions: loginResponse.permissions || []
+            permissions: loginResponse.permissions || [],
+            isTotpEnabled: loginResponse.isTotpEnabled || false
         };
         setStoredUser(user);
         setCurrentUser(user);

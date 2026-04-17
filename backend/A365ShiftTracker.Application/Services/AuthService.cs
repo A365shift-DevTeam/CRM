@@ -60,7 +60,8 @@ public class AuthService : IAuthService
         {
             Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
             Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions),
-            Role = roleName, Permissions = permissions
+            Role = roleName, Permissions = permissions,
+            IsTotpEnabled = user.IsTotpEnabled
         };
     }
 
@@ -83,13 +84,15 @@ public class AuthService : IAuthService
         await _uow.SaveChangesAsync();
 
         // 2FA required — issue partial token
-        if (user.TwoFactorRequired)
+        // Check both the admin-controlled flag and user-enabled TOTP
+        if (user.TwoFactorRequired || user.IsTotpEnabled)
         {
-            var partialToken = GeneratePartialToken(user.Id, user.Email, user.TwoFactorMethod);
+            var method = user.IsTotpEnabled ? "totp" : user.TwoFactorMethod;
+            var partialToken = GeneratePartialToken(user.Id, user.Email, method);
             return new LoginResponse
             {
                 Requires2FA = true,
-                TwoFactorMethod = user.TwoFactorMethod,
+                TwoFactorMethod = method,
                 PartialToken = partialToken
             };
         }
@@ -101,7 +104,8 @@ public class AuthService : IAuthService
             Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
             Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions),
             Role = roleName, Permissions = permissions,
-            Requires2FA = false
+            Requires2FA = false,
+            IsTotpEnabled = user.IsTotpEnabled
         };
     }
 
@@ -126,18 +130,18 @@ public class AuthService : IAuthService
     {
         var (userId, attempts) = ValidatePartialToken(request.PartialToken);
         if (attempts >= 5)
-            throw new UnauthorizedAccessException("Too many attempts. Please log in again.");
+            throw new InvalidOperationException("Too many attempts. Please log in again.");
 
         var user = await _uow.Users.GetByIdAsync(userId)
             ?? throw new UnauthorizedAccessException("User not found.");
 
         if (user.OtpCode is null || user.OtpExpiry is null || user.OtpExpiry < DateTime.UtcNow)
-            throw new UnauthorizedAccessException("OTP expired. Request a new code.");
+            throw new InvalidOperationException("OTP expired. Request a new code.");
 
         if (!BCrypt.Net.BCrypt.Verify(request.Code, user.OtpCode))
         {
             IncrementAttempts(request.PartialToken, user.Id);
-            throw new UnauthorizedAccessException("Invalid code.");
+            throw new InvalidOperationException("Invalid code. Please try again.");
         }
 
         // Clear OTP
@@ -151,7 +155,8 @@ public class AuthService : IAuthService
         {
             Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
             Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions),
-            Role = roleName, Permissions = permissions
+            Role = roleName, Permissions = permissions,
+            IsTotpEnabled = user.IsTotpEnabled
         };
     }
 
@@ -161,7 +166,7 @@ public class AuthService : IAuthService
     {
         var (userId, attempts) = ValidatePartialToken(request.PartialToken);
         if (attempts >= 5)
-            throw new UnauthorizedAccessException("Too many attempts. Please log in again.");
+            throw new InvalidOperationException("Too many attempts. Please log in again.");
 
         var user = await _uow.Users.GetByIdAsync(userId)
             ?? throw new UnauthorizedAccessException("User not found.");
@@ -171,10 +176,11 @@ public class AuthService : IAuthService
 
         var secretBytes = Base32Encoding.ToBytes(user.TotpSecret);
         var totp = new Totp(secretBytes);
-        if (!totp.VerifyTotp(request.Code, out _, VerificationWindow.RfcSpecifiedNetworkDelay))
+        // Allow ±1 time step (±30 seconds) to handle minor clock drift
+        if (!totp.VerifyTotp(request.Code, out _, new VerificationWindow(previous: 1, future: 1)))
         {
             IncrementAttempts(request.PartialToken, user.Id);
-            throw new UnauthorizedAccessException("Invalid authenticator code.");
+            throw new InvalidOperationException("Invalid authenticator code. Please try again.");
         }
 
         var (roleName, permissions) = await GetUserRoleAndPermissionsAsync(user.Id);
@@ -182,7 +188,8 @@ public class AuthService : IAuthService
         {
             Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
             Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions),
-            Role = roleName, Permissions = permissions
+            Role = roleName, Permissions = permissions,
+            IsTotpEnabled = user.IsTotpEnabled
         };
     }
 
@@ -223,6 +230,8 @@ public class AuthService : IAuthService
             throw new UnauthorizedAccessException("Invalid code. TOTP not enabled.");
 
         user.IsTotpEnabled = true;
+        user.TwoFactorRequired = true;
+        user.TwoFactorMethod = "totp";
         await _uow.Users.UpdateAsync(user);
         await _uow.SaveChangesAsync();
     }
@@ -234,6 +243,8 @@ public class AuthService : IAuthService
 
         user.IsTotpEnabled = false;
         user.TotpSecret = null;
+        user.TwoFactorRequired = false;
+        user.TwoFactorMethod = "email";
         await _uow.Users.UpdateAsync(user);
         await _uow.SaveChangesAsync();
     }
@@ -339,7 +350,10 @@ public class AuthService : IAuthService
             if (pending != "true")
                 throw new UnauthorizedAccessException("Invalid partial token.");
 
-            var userId = int.Parse(principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ?? "0");
+            var subValue = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
+                ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+                ?? "0";
+            var userId = int.Parse(subValue);
             var jti = principal.FindFirst(JwtRegisteredClaimNames.Jti)?.Value ?? string.Empty;
             var jtiAttempts = _cache.TryGetValue($"2fa_attempts:{jti}", out int jtiStored) ? jtiStored : 0;
             var userAttempts = _cache.TryGetValue($"2fa_attempts:user:{userId}", out int userStored) ? userStored : 0;

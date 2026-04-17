@@ -36,7 +36,8 @@ async function request(endpoint, options = {}) {
     });
 
     // Handle 401 — cookie expired or missing
-    if (res.status === 401) {
+    // Skip this global redirect for /auth routes so the login form can show the error instead of reloading.
+    if (res.status === 401 && !endpoint.startsWith('/auth')) {
         clearToken();
         window.location.href = '/login';
         throw new Error('Session expired. Please log in again.');
