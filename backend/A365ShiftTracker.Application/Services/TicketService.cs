@@ -180,7 +180,7 @@ public class TicketService : ITicketService
         CreatedAt = t.CreatedAt,
         UpdatedAt = t.UpdatedAt,
         CreatedByName = t.CreatedByName,
-        Comments = t.Comments.Select(MapCommentToDto).ToList()
+        Comments = t.Comments?.Select(MapCommentToDto).ToList() ?? []
     };
 
     private static TicketCommentDto MapCommentToDto(TicketComment c) => new()
