@@ -22,6 +22,8 @@ public class AuthResponse
     public string Role { get; set; } = string.Empty;
     public List<string> Permissions { get; set; } = new();
     public bool IsTotpEnabled { get; set; } = false;
+    public bool TwoFactorRequired { get; set; } = false;
+    public string TwoFactorMethod { get; set; } = "email";
 }
 
 public class LoginResponse
@@ -34,11 +36,15 @@ public class LoginResponse
     public string? Role { get; set; }
     public List<string> Permissions { get; set; } = new();
     public bool IsTotpEnabled { get; set; } = false;
+    public bool TwoFactorRequired { get; set; } = false;
+    public string TwoFactorMethod { get; set; } = "email"; // "email" | "totp"
 
     // Returned when 2FA IS required — partial auth
     public bool Requires2FA { get; set; } = false;
-    public string TwoFactorMethod { get; set; } = "email"; // "email" | "totp"
     public string PartialToken { get; set; } = string.Empty;
+
+    // TOTP required by admin but user hasn't set it up yet — full login granted, prompt setup
+    public bool TotpSetupRequired { get; set; } = false;
 }
 
 public class VerifyOtpRequest
@@ -73,4 +79,9 @@ public class Require2FARequest
 public class SendOtpRequest
 {
     public string PartialToken { get; set; } = string.Empty;
+}
+
+public class VerifyEmailOtpEnableRequest
+{
+    public string Code { get; set; } = string.Empty;
 }

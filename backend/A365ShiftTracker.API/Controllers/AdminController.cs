@@ -13,11 +13,13 @@ namespace A365ShiftTracker.API.Controllers;
 public class AdminController : ControllerBase
 {
     private readonly IAdminService _adminService;
+    private readonly IAuthService _authService;
     private readonly IUnitOfWork _uow;
     private readonly IMemoryCache _cache;
 
-    public AdminController(IAdminService adminService, IUnitOfWork uow, IMemoryCache cache)
+    public AdminController(IAdminService adminService, IAuthService authService, IUnitOfWork uow, IMemoryCache cache)
     {
+        _authService = authService;
         _adminService = adminService;
         _uow = uow;
         _cache = cache;
@@ -147,5 +149,32 @@ public class AdminController : ControllerBase
         _cache.Remove($"permissions:{id}");
 
         return Ok(ApiResponse<bool>.Ok(true, $"2FA disabled for user {id}."));
+    }
+
+    [HttpDelete("users/{id}/totp")]
+    public async Task<ActionResult<ApiResponse<bool>>> ResetUserTotp(int id)
+    {
+        await _authService.AdminResetUserTotpAsync(id);
+        _cache.Remove($"permissions:{id}");
+        return Ok(ApiResponse<bool>.Ok(true, $"TOTP reset for user {id}."));
+    }
+
+    [HttpPost("users/{id}/require-totp")]
+    public async Task<ActionResult<ApiResponse<bool>>> RequireUserTotp(int id)
+    {
+        var users = await _uow.Users.FindAsync(u => u.Id == id);
+        var user = users.FirstOrDefault()
+            ?? throw new KeyNotFoundException($"User {id} not found.");
+
+        if (user.IsTotpEnabled)
+            return BadRequest(ApiResponse<bool>.Fail("User already has TOTP enabled."));
+
+        user.TwoFactorRequired = true;
+        user.TwoFactorMethod = "totp";
+        await _uow.Users.UpdateAsync(user);
+        await _uow.SaveChangesAsync();
+        _cache.Remove($"permissions:{id}");
+
+        return Ok(ApiResponse<bool>.Ok(true, $"TOTP required for user {id}. User must set it up via Settings."));
     }
 }

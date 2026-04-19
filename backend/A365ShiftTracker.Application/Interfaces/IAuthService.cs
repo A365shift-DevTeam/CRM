@@ -19,4 +19,12 @@ public interface IAuthService
     Task<TotpSetupResponse> GetTotpSetupAsync(int userId);
     Task VerifyAndEnableTotpAsync(int userId, VerifyTotpSetupRequest request);
     Task DisableTotpAsync(int userId);
+
+    // Email OTP self-enrollment
+    Task SendEmailOtpEnableAsync(int userId);
+    Task VerifyAndEnableEmailOtpAsync(int userId, string code);
+    Task DisableEmailOtpAsync(int userId);
+
+    // Admin TOTP management
+    Task AdminResetUserTotpAsync(int userId);
 }

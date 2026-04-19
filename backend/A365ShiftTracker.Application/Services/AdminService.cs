@@ -329,6 +329,9 @@ public class AdminService : IAdminService
             .SelectMany(ur => ur.Role.RolePermissions)
             .Select(rp => rp.Permission.Code)
             .Distinct()
-            .ToList()
+            .ToList(),
+        TwoFactorRequired = user.TwoFactorRequired,
+        TwoFactorMethod = user.TwoFactorMethod,
+        IsTotpEnabled = user.IsTotpEnabled
     };
 }

@@ -48,6 +48,8 @@ export default function Login() {
         } else {
           setStep('totp');
         }
+      } else if (result.user?.totpSetupRequired) {
+        navigate('/settings', { state: { totpSetupRequired: true } });
       } else {
         navigate('/');
       }

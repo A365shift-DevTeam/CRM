@@ -22,17 +22,23 @@ export function AuthProvider({ children }) {
         setLoading(false);
     }, []);
 
-    async function signup(email, password, displayName) {
-        const data = await apiClient.post('/auth/register', { email, password, displayName });
-        // Token is set as httpOnly cookie by the server — not stored in JS
-        const user = {
+    function buildUserProfile(data) {
+        return {
             id: data.id,
             email: data.email,
             displayName: data.displayName,
             role: data.role,
             permissions: data.permissions || [],
-            isTotpEnabled: data.isTotpEnabled || false
+            isTotpEnabled: data.isTotpEnabled || false,
+            twoFactorRequired: data.twoFactorRequired || false,
+            twoFactorMethod: data.twoFactorMethod || 'email',
+            totpSetupRequired: data.totpSetupRequired || false,
         };
+    }
+
+    async function signup(email, password, displayName) {
+        const data = await apiClient.post('/auth/register', { email, password, displayName });
+        const user = buildUserProfile(data);
         setStoredUser(user);
         setCurrentUser(user);
         return user;
@@ -46,31 +52,24 @@ export function AuthProvider({ children }) {
             return { requires2FA: true, method: data.twoFactorMethod, partialToken: data.partialToken };
         }
 
-        // Token is set as httpOnly cookie by the server — not stored in JS
-        const user = {
-            id: data.id,
-            email: data.email,
-            displayName: data.displayName,
-            role: data.role,
-            permissions: data.permissions || [],
-            isTotpEnabled: data.isTotpEnabled || false
-        };
+        const user = buildUserProfile(data);
         setStoredUser(user);
         setCurrentUser(user);
         return { requires2FA: false, user };
     }
 
     async function completeLogin(loginResponse) {
-        const user = {
-            id: loginResponse.id,
-            email: loginResponse.email,
-            displayName: loginResponse.displayName,
-            role: loginResponse.role,
-            permissions: loginResponse.permissions || [],
-            isTotpEnabled: loginResponse.isTotpEnabled || false
-        };
+        const user = buildUserProfile(loginResponse);
         setStoredUser(user);
         setCurrentUser(user);
+    }
+
+    function updateCurrentUser(patch) {
+        setCurrentUser(prev => {
+            const updated = { ...prev, ...patch };
+            setStoredUser(updated);
+            return updated;
+        });
     }
 
     async function logout() {
@@ -113,6 +112,7 @@ export function AuthProvider({ children }) {
         signup,
         login,
         completeLogin,
+        updateCurrentUser,
         logout,
         hasPermission,
         hasAnyPermission,

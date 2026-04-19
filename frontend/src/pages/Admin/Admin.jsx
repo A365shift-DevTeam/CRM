@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaShieldHalved, FaUsers, FaUserGear, FaKey, FaToggleOn, FaToggleOff, FaPen, FaPlus, FaTrash, FaLock, FaUserPlus } from 'react-icons/fa6';
+import { FaShieldHalved, FaShield, FaUsers, FaUserGear, FaKey, FaToggleOn, FaToggleOff, FaPen, FaPlus, FaTrash, FaLock, FaUserPlus, FaMobileScreen } from 'react-icons/fa6';
 import { adminService } from '../../services/adminService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast/ToastContext';
@@ -105,6 +105,45 @@ export default function Admin() {
             toast.success('Password has been reset successfully');
         } catch (err) {
             toast.error(err.message || 'Failed to reset password');
+        }
+    };
+
+    const handleSave2FA = async (userId, enabled, method) => {
+        try {
+            if (enabled) {
+                await adminService.setUserTwoFactor(userId, true, method);
+                setUsers(prev => prev.map(u => u.id === userId ? { ...u, twoFactorRequired: true, twoFactorMethod: method } : u));
+                toast.success('Email OTP enabled for user');
+            } else {
+                await adminService.removeUserTwoFactor(userId);
+                setUsers(prev => prev.map(u => u.id === userId ? { ...u, twoFactorRequired: false } : u));
+                toast.success('2FA requirement removed for user');
+            }
+            setModalType(null);
+        } catch (err) {
+            toast.error(err.message || 'Failed to update 2FA setting');
+        }
+    };
+
+    const handleResetTotp = async (userId) => {
+        try {
+            await adminService.resetUserTotp(userId);
+            setUsers(prev => prev.map(u => u.id === userId ? { ...u, isTotpEnabled: false, twoFactorRequired: false, twoFactorMethod: 'email' } : u));
+            toast.success('TOTP has been reset for this user');
+            setModalType(null);
+        } catch (err) {
+            toast.error(err.message || 'Failed to reset TOTP');
+        }
+    };
+
+    const handleRequireTotp = async (userId) => {
+        try {
+            await adminService.requireUserTotp(userId);
+            setUsers(prev => prev.map(u => u.id === userId ? { ...u, twoFactorRequired: true, twoFactorMethod: 'totp' } : u));
+            toast.success('TOTP required — user must set it up via Settings');
+            setModalType(null);
+        } catch (err) {
+            toast.error(err.message || 'Failed to require TOTP');
         }
     };
 
@@ -218,12 +257,24 @@ export default function Admin() {
                                 <th>Email</th>
                                 <th>Roles</th>
                                 <th>Status</th>
+                                <th>2FA</th>
                                 <th>Last Login</th>
                                 <th style={{ textAlign: 'center' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {users.map(user => (
+                            {users.map(user => {
+                                const twoFALabel = user.isTotpEnabled
+                                    ? 'TOTP'
+                                    : user.twoFactorRequired
+                                        ? 'Email OTP'
+                                        : 'Off';
+                                const twoFAColor = user.isTotpEnabled
+                                    ? { background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }
+                                    : user.twoFactorRequired
+                                        ? { background: 'rgba(67,97,238,0.12)', color: '#4361EE', border: '1px solid rgba(67,97,238,0.3)' }
+                                        : { background: 'rgba(148,163,184,0.1)', color: '#94a3b8', border: '1px solid rgba(148,163,184,0.2)' };
+                                return (
                                 <tr key={user.id}>
                                     <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{user.displayName || '—'}</td>
                                     <td>{user.email}</td>
@@ -239,6 +290,12 @@ export default function Admin() {
                                         <span className={`status-badge ${user.isActive ? 'active' : 'inactive'}`}>
                                             <span className={`status-dot ${user.isActive ? 'active' : 'inactive'}`} />
                                             {user.isActive ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '2px 8px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600, ...twoFAColor }}>
+                                            {user.isTotpEnabled ? <FaMobileScreen size={10} /> : <FaShield size={10} />}
+                                            {twoFALabel}
                                         </span>
                                     </td>
                                     <td style={{ color: '#94a3b8', fontSize: '0.8rem' }}>
@@ -262,6 +319,14 @@ export default function Admin() {
                                             </div>
                                             <div
                                                 className="admin-action-icon password"
+                                                title="Manage 2FA"
+                                                onClick={() => { setModalType('manage2FA'); setModalData(user); }}
+                                                style={{ color: (user.twoFactorRequired || user.isTotpEnabled) ? '#4361EE' : undefined }}
+                                            >
+                                                <FaShield size={14} />
+                                            </div>
+                                            <div
+                                                className="admin-action-icon password"
                                                 title="Change Password"
                                                 onClick={() => { setModalType('resetPassword'); setModalData(user); }}
                                             >
@@ -277,7 +342,8 @@ export default function Admin() {
                                         </div>
                                     </td>
                                 </tr>
-                            ))}
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
@@ -394,6 +460,16 @@ export default function Admin() {
                 <ResetPasswordModal
                     user={modalData}
                     onSave={handleResetPassword}
+                    onClose={() => setModalType(null)}
+                />
+            )}
+
+            {modalType === 'manage2FA' && modalData && (
+                <Manage2FAModal
+                    user={modalData}
+                    onSaveEmailOtp={handleSave2FA}
+                    onResetTotp={handleResetTotp}
+                    onRequireTotp={handleRequireTotp}
                     onClose={() => setModalType(null)}
                 />
             )}
@@ -698,6 +774,176 @@ function EditRoleModal({ role, permissions, onSave, onClose }) {
                     <button className="modal-btn primary" onClick={handleSubmit}>
                         {role ? 'Update Role' : 'Create Role'}
                     </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── Manage 2FA Modal ─────────────────────────────────────────
+
+function Manage2FAModal({ user, onSaveEmailOtp, onResetTotp, onRequireTotp, onClose }) {
+    const emailOtpOn = user.twoFactorRequired && user.twoFactorMethod === 'email' && !user.isTotpEnabled;
+    const totpRequiredNotSetup = user.twoFactorRequired && user.twoFactorMethod === 'totp' && !user.isTotpEnabled;
+    const [emailEnabled, setEmailEnabled] = useState(emailOtpOn);
+    const [confirm, setConfirm] = useState(null); // 'reset-totp' | 'require-totp'
+
+    const statusLabel = user.isTotpEnabled
+        ? 'TOTP (authenticator app)'
+        : totpRequiredNotSetup
+            ? 'TOTP required — setup pending'
+            : user.twoFactorRequired
+                ? 'Email OTP'
+                : 'None';
+    const statusColor = user.isTotpEnabled
+        ? '#10b981'
+        : totpRequiredNotSetup
+            ? '#f59e0b'
+            : user.twoFactorRequired
+                ? '#4361EE'
+                : '#94a3b8';
+
+    const sectionStyle = { padding: '14px 16px', borderRadius: 10, marginBottom: 12, border: '1px solid rgba(148,163,184,0.15)', background: 'rgba(248,250,252,0.6)' };
+
+    if (confirm === 'reset-totp') {
+        return (
+            <div className="modal-overlay" onClick={onClose}>
+                <div className="modal-box" onClick={e => e.stopPropagation()}>
+                    <div className="modal-box-header">
+                        <h3>Reset TOTP — {user.displayName || user.email}</h3>
+                    </div>
+                    <div className="modal-box-body">
+                        <div className="p-3 rounded mb-3" style={{ background: 'rgba(244,63,94,0.07)', border: '1px solid rgba(244,63,94,0.2)', fontSize: '0.85rem', color: '#f43f5e' }}>
+                            This will <strong>permanently remove</strong> the user's authenticator app setup. They will need to re-enroll via Settings &gt; Security.
+                        </div>
+                    </div>
+                    <div className="modal-box-footer">
+                        <button className="modal-btn cancel" onClick={() => setConfirm(null)}>Cancel</button>
+                        <button className="modal-btn warning" onClick={() => onResetTotp(user.id)}>Reset TOTP</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (confirm === 'require-totp') {
+        return (
+            <div className="modal-overlay" onClick={onClose}>
+                <div className="modal-box" onClick={e => e.stopPropagation()}>
+                    <div className="modal-box-header">
+                        <h3>Require TOTP — {user.displayName || user.email}</h3>
+                    </div>
+                    <div className="modal-box-body">
+                        <div className="p-3 rounded mb-3" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', fontSize: '0.85rem', color: '#d97706' }}>
+                            The user will be allowed to log in but will see a prompt to set up their authenticator app via <strong>Settings &gt; Security</strong> before full access is enforced.
+                        </div>
+                    </div>
+                    <div className="modal-box-footer">
+                        <button className="modal-btn cancel" onClick={() => setConfirm(null)}>Cancel</button>
+                        <button className="modal-btn primary" onClick={() => onRequireTotp(user.id)}>Require TOTP</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-box" onClick={e => e.stopPropagation()}>
+                <div className="modal-box-header">
+                    <h3>Manage 2FA — {user.displayName || user.email}</h3>
+                </div>
+                <div className="modal-box-body">
+
+                    {/* Status row */}
+                    <div className="mb-3 p-3 rounded d-flex align-items-center gap-2" style={{ background: 'rgba(67,97,238,0.05)', border: '1px solid rgba(67,97,238,0.12)' }}>
+                        <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Current 2FA:</span>
+                        <span style={{ fontWeight: 700, fontSize: '0.85rem', color: statusColor }}>{statusLabel}</span>
+                    </div>
+
+                    {/* ── Email OTP section ── */}
+                    <div style={sectionStyle}>
+                        <div className="d-flex align-items-center justify-content-between mb-1">
+                            <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                Email OTP
+                            </div>
+                            {!user.isTotpEnabled && !totpRequiredNotSetup && (
+                                <div
+                                    style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                                    onClick={() => setEmailEnabled(prev => !prev)}
+                                >
+                                    {emailEnabled ? <FaToggleOn size={20} color="#4361EE" /> : <FaToggleOff size={20} color="#94a3b8" />}
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: emailEnabled ? '#4361EE' : '#94a3b8' }}>
+                                        {emailEnabled ? 'On' : 'Off'}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                        <p style={{ fontSize: '0.77rem', color: '#94a3b8', margin: 0 }}>
+                            User receives a 6-digit code by email on each login.
+                        </p>
+                        {(user.isTotpEnabled || totpRequiredNotSetup) && (
+                            <p style={{ fontSize: '0.77rem', color: '#f59e0b', marginTop: 4 }}>
+                                TOTP is {user.isTotpEnabled ? 'active' : 'required'}. Disable it first to switch to Email OTP.
+                            </p>
+                        )}
+                    </div>
+
+                    {/* ── TOTP section ── */}
+                    <div style={sectionStyle}>
+                        <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)', marginBottom: 4 }}>
+                            Authenticator App (TOTP)
+                        </div>
+                        {user.isTotpEnabled ? (
+                            <div>
+                                <p style={{ fontSize: '0.77rem', color: '#10b981', marginBottom: 8 }}>
+                                    Active — user has configured their authenticator app.
+                                </p>
+                                <button
+                                    onClick={() => setConfirm('reset-totp')}
+                                    className="px-3 py-1 rounded-lg text-xs font-medium"
+                                    style={{ background: 'rgba(244,63,94,0.1)', color: '#f43f5e', border: '1px solid rgba(244,63,94,0.3)', cursor: 'pointer' }}
+                                >
+                                    Reset TOTP
+                                </button>
+                            </div>
+                        ) : totpRequiredNotSetup ? (
+                            <div>
+                                <p style={{ fontSize: '0.77rem', color: '#d97706', marginBottom: 8 }}>
+                                    Required by admin — user has not yet set it up.
+                                </p>
+                                <button
+                                    onClick={() => onResetTotp(user.id)}
+                                    className="px-3 py-1 rounded-lg text-xs font-medium"
+                                    style={{ background: 'rgba(244,63,94,0.1)', color: '#f43f5e', border: '1px solid rgba(244,63,94,0.3)', cursor: 'pointer' }}
+                                >
+                                    Cancel Requirement
+                                </button>
+                            </div>
+                        ) : (
+                            <div>
+                                <p style={{ fontSize: '0.77rem', color: '#94a3b8', marginBottom: 8 }}>
+                                    Not enabled. Admin can require the user to set it up.
+                                </p>
+                                <button
+                                    onClick={() => setConfirm('require-totp')}
+                                    className="px-3 py-1 rounded-lg text-xs font-medium text-white"
+                                    style={{ background: '#10b981', border: 'none', cursor: 'pointer' }}
+                                >
+                                    Require TOTP
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                </div>
+                <div className="modal-box-footer">
+                    <button className="modal-btn cancel" onClick={onClose}>Cancel</button>
+                    {!user.isTotpEnabled && !totpRequiredNotSetup && (
+                        <button className="modal-btn primary" onClick={() => onSaveEmailOtp(user.id, emailEnabled, 'email')}>
+                            Save
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

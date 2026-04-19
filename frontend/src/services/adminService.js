@@ -9,6 +9,10 @@ export const adminService = {
     updateUserStatus: (userId, isActive) => apiClient.put(`/admin/users/${userId}/status`, { isActive }),
     deleteUser: (userId) => apiClient.delete(`/admin/users/${userId}`),
     resetUserPassword: (userId, newPassword) => apiClient.put(`/admin/users/${userId}/reset-password`, { newPassword }),
+    setUserTwoFactor: (userId, required, method) => apiClient.post(`/admin/users/${userId}/2fa`, { required, method }),
+    removeUserTwoFactor: (userId) => apiClient.delete(`/admin/users/${userId}/2fa`),
+    resetUserTotp: (userId) => apiClient.delete(`/admin/users/${userId}/totp`),
+    requireUserTotp: (userId) => apiClient.post(`/admin/users/${userId}/require-totp`, {}),
 
     // Roles
     getRoles: () => apiClient.get('/admin/roles'),
