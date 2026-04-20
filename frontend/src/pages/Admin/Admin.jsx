@@ -1,9 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { FaShieldHalved, FaShield, FaUsers, FaUserGear, FaKey, FaToggleOn, FaToggleOff, FaPen, FaPlus, FaTrash, FaLock, FaUserPlus, FaMobileScreen } from 'react-icons/fa6';
+import React, { useState, useEffect, useCallback } from 'react';
+import { FaShieldHalved, FaShield, FaUsers, FaUserGear, FaKey, FaToggleOn, FaToggleOff, FaPen, FaPlus, FaTrash, FaLock, FaUserPlus, FaMobileScreen, FaTicket, FaReply } from 'react-icons/fa6';
+import { Send, Lock } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast/ToastContext';
 import './Admin.css';
+
+const PRIORITY_BADGE_COLOR = { Critical: '#F43F5E', High: '#F59E0B', Medium: '#4361EE', Low: '#94A3B8' };
+const STATUS_BADGE = { 'Open': '#3b82f6', 'In Progress': '#8b5cf6', 'Pending': '#f59e0b', 'Resolved': '#10b981', 'Closed': '#64748b' };
+const TICKET_STATUSES = ['Open', 'In Progress', 'Pending', 'Resolved', 'Closed'];
 
 export default function Admin() {
     const { currentUser } = useAuth();
@@ -14,13 +19,38 @@ export default function Admin() {
     const [permissions, setPermissions] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    // Tickets state
+    const [tickets, setTickets] = useState([]);
+    const [ticketsLoading, setTicketsLoading] = useState(false);
+    const [ticketPage, setTicketPage] = useState(1);
+    const [ticketTotal, setTicketTotal] = useState(0);
+    const [replyTicket, setReplyTicket] = useState(null);
+
     // Modal state
     const [modalType, setModalType] = useState(null);
     const [modalData, setModalData] = useState(null);
 
+    const loadTickets = useCallback(async (page = 1) => {
+        setTicketsLoading(true);
+        try {
+            const result = await adminService.getTickets(page, 20);
+            setTickets(result?.items ?? []);
+            setTicketTotal(result?.totalCount ?? 0);
+            setTicketPage(page);
+        } catch (err) {
+            toast.error('Failed to load tickets');
+        } finally {
+            setTicketsLoading(false);
+        }
+    }, [toast]);
+
     useEffect(() => {
         loadData();
     }, []);
+
+    useEffect(() => {
+        if (activeTab === 'tickets') loadTickets(1);
+    }, [activeTab, loadTickets]);
 
     const loadData = async () => {
         setLoading(true);
@@ -232,6 +262,9 @@ export default function Admin() {
                     <button className={`admin-tab ${activeTab === 'permissions' ? 'active' : ''}`} onClick={() => setActiveTab('permissions')}>
                         <FaKey size={14} /> Permissions <span className="tab-count">{permissions.length}</span>
                     </button>
+                    <button className={`admin-tab ${activeTab === 'tickets' ? 'active' : ''}`} onClick={() => setActiveTab('tickets')}>
+                        <FaTicket size={14} /> Support Tickets {ticketTotal > 0 && <span className="tab-count">{ticketTotal}</span>}
+                    </button>
                 </div>
 
                 {activeTab === 'users' && (
@@ -435,6 +468,76 @@ export default function Admin() {
                 </div>
             )}
 
+            {/* Tickets Tab */}
+            {activeTab === 'tickets' && (
+                <div className="admin-card">
+                    {ticketsLoading ? (
+                        <div className="text-center p-4"><div className="spinner-border text-primary spinner-border-sm" /></div>
+                    ) : (
+                        <>
+                        <table className="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Ticket #</th>
+                                    <th>Title</th>
+                                    <th>Raised By</th>
+                                    <th>Priority</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th style={{ textAlign: 'center' }}>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {tickets.length === 0 ? (
+                                    <tr><td colSpan={7} className="text-center py-4 text-muted">No tickets found.</td></tr>
+                                ) : tickets.map(t => (
+                                    <tr key={t.id}>
+                                        <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#4361EE', fontSize: 12 }}>{t.ticketNumber}</td>
+                                        <td style={{ fontWeight: 600, color: 'var(--text-primary)', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</td>
+                                        <td style={{ fontSize: 12, color: '#64748b' }}>
+                                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 12 }}>{t.createdByName || '—'}</div>
+                                            <div style={{ color: '#94a3b8', fontSize: 11 }}>{t.raisedByEmail || ''}</div>
+                                        </td>
+                                        <td>
+                                            <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: `${PRIORITY_BADGE_COLOR[t.priority]}18`, color: PRIORITY_BADGE_COLOR[t.priority] }}>
+                                                {t.priority}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: `${STATUS_BADGE[t.status]}18`, color: STATUS_BADGE[t.status] }}>
+                                                {t.status}
+                                            </span>
+                                        </td>
+                                        <td style={{ fontSize: 12, color: '#94a3b8' }}>{new Date(t.createdAt).toLocaleDateString()}</td>
+                                        <td style={{ textAlign: 'center' }}>
+                                            <button
+                                                className="admin-action-icon edit"
+                                                title="Reply"
+                                                onClick={async () => {
+                                                    const full = await adminService.getTicket(t.id);
+                                                    setReplyTicket(full);
+                                                }}
+                                                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', fontSize: 12 }}
+                                            >
+                                                <FaReply size={11} /> Reply
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        {ticketTotal > 20 && (
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: '12px 0' }}>
+                                <button className="modal-btn cancel" disabled={ticketPage === 1} onClick={() => loadTickets(ticketPage - 1)} style={{ padding: '4px 12px', fontSize: 12 }}>Prev</button>
+                                <span style={{ fontSize: 12, color: '#64748b', alignSelf: 'center' }}>Page {ticketPage}</span>
+                                <button className="modal-btn cancel" disabled={ticketPage * 20 >= ticketTotal} onClick={() => loadTickets(ticketPage + 1)} style={{ padding: '4px 12px', fontSize: 12 }}>Next</button>
+                            </div>
+                        )}
+                        </>
+                    )}
+                </div>
+            )}
+
             {/* ─── Modals ──────────────────────────────────────────── */}
 
             {(modalType === 'createUser' || modalType === 'editUser') && (
@@ -480,6 +583,22 @@ export default function Admin() {
                     permissions={permissions}
                     onSave={handleSaveRole}
                     onClose={() => setModalType(null)}
+                />
+            )}
+
+            {replyTicket && (
+                <TicketReplyModal
+                    ticket={replyTicket}
+                    adminName={currentUser?.displayName || 'Admin'}
+                    onClose={() => setReplyTicket(null)}
+                    onReplySent={(comment) => {
+                        setReplyTicket(prev => ({ ...prev, comments: [...(prev.comments ?? []), comment], status: prev.status === 'Open' ? 'In Progress' : prev.status }));
+                        setTickets(prev => prev.map(t => t.id === replyTicket.id ? { ...t, status: t.status === 'Open' ? 'In Progress' : t.status } : t));
+                    }}
+                    onStatusChanged={(updated) => {
+                        setReplyTicket(prev => ({ ...prev, status: updated.status }));
+                        setTickets(prev => prev.map(t => t.id === updated.id ? { ...t, status: updated.status } : t));
+                    }}
                 />
             )}
         </div>
@@ -944,6 +1063,147 @@ function Manage2FAModal({ user, onSaveEmailOtp, onResetTotp, onRequireTotp, onCl
                             Save
                         </button>
                     )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── Ticket Reply Modal ───────────────────────────────────────
+
+function TicketReplyModal({ ticket, adminName, onClose, onReplySent, onStatusChanged }) {
+    const [commentText, setCommentText] = useState('');
+    const [isInternal, setIsInternal] = useState(false);
+    const [sending, setSending] = useState(false);
+    const [status, setStatus] = useState(ticket.status);
+    const [savingStatus, setSavingStatus] = useState(false);
+    const toast = useToast();
+
+    const handleReply = async () => {
+        if (!commentText.trim()) return;
+        setSending(true);
+        try {
+            const comment = await adminService.replyToTicket(ticket.id, commentText, isInternal, adminName);
+            onReplySent(comment);
+            setCommentText('');
+            toast.success('Reply sent');
+        } catch (e) {
+            toast.error(e.message || 'Failed to send reply');
+        } finally {
+            setSending(false);
+        }
+    };
+
+    const handleStatusSave = async () => {
+        if (status === ticket.status) return;
+        setSavingStatus(true);
+        try {
+            const updated = await adminService.setTicketStatus(ticket.id, status);
+            onStatusChanged(updated);
+            toast.success(`Status set to ${status}`);
+        } catch (e) {
+            toast.error(e.message || 'Failed to update status');
+        } finally {
+            setSavingStatus(false);
+        }
+    };
+
+    const comments = ticket.comments ?? [];
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-box" style={{ maxWidth: 640, width: '95vw' }} onClick={e => e.stopPropagation()}>
+                <div className="modal-box-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                        <h3 style={{ marginBottom: 4 }}>{ticket.ticketNumber} — {ticket.title}</h3>
+                        <div style={{ fontSize: 12, color: '#94a3b8' }}>
+                            Raised by <strong style={{ color: '#64748b' }}>{ticket.createdByName || 'User'}</strong>
+                            {ticket.raisedByEmail && <span> · {ticket.raisedByEmail}</span>}
+                            <span> · {new Date(ticket.createdAt).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                        <select
+                            value={status}
+                            onChange={e => setStatus(e.target.value)}
+                            style={{ fontSize: 12, padding: '4px 8px', borderRadius: 6, border: `1.5px solid ${STATUS_BADGE[status] || '#e2e8f0'}`, color: STATUS_BADGE[status], fontWeight: 600, background: `${STATUS_BADGE[status]}14`, cursor: 'pointer' }}
+                        >
+                            {TICKET_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                        {status !== ticket.status && (
+                            <button className="modal-btn primary" style={{ padding: '4px 10px', fontSize: 11 }} onClick={handleStatusSave} disabled={savingStatus}>
+                                {savingStatus ? '…' : 'Save'}
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                <div className="modal-box-body" style={{ maxHeight: '55vh', overflowY: 'auto' }}>
+                    {/* Original description */}
+                    {ticket.description && (
+                        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 14px', marginBottom: 12, fontSize: 13, color: '#334155', whiteSpace: 'pre-wrap' }}>
+                            {ticket.description}
+                        </div>
+                    )}
+
+                    {/* Comment thread */}
+                    {comments.length === 0 ? (
+                        <div style={{ textAlign: 'center', color: '#94a3b8', padding: '16px 0', fontSize: 13 }}>No replies yet. Be the first to respond.</div>
+                    ) : (
+                        comments.map(c => {
+                            const isAdmin = c.authorName === adminName;
+                            return (
+                                <div key={c.id} style={{ display: 'flex', flexDirection: isAdmin ? 'row-reverse' : 'row', gap: 8, marginBottom: 10 }}>
+                                    <div style={{
+                                        maxWidth: '80%',
+                                        padding: '8px 12px',
+                                        borderRadius: 10,
+                                        fontSize: 13,
+                                        background: isAdmin ? 'rgba(67,97,238,0.1)' : '#f1f5f9',
+                                        border: isAdmin ? '1px solid rgba(67,97,238,0.2)' : '1px solid #e2e8f0',
+                                        color: '#0f172a',
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexDirection: isAdmin ? 'row-reverse' : 'row' }}>
+                                            <span style={{ fontWeight: 700, fontSize: 12, color: isAdmin ? '#4361EE' : '#64748b' }}>{c.authorName}</span>
+                                            {c.isInternal && <span style={{ fontSize: 10, background: '#fef3c7', color: '#d97706', border: '1px solid #fcd34d', borderRadius: 4, padding: '0 4px', display: 'flex', alignItems: 'center', gap: 2 }}><Lock size={8} />Internal</span>}
+                                            <span style={{ fontSize: 10, color: '#94a3b8' }}>{new Date(c.createdAt).toLocaleString()}</span>
+                                        </div>
+                                        <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{c.comment}</div>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+
+                {/* Reply input */}
+                <div style={{ padding: '12px 20px', borderTop: '1px solid #e2e8f0' }}>
+                    <textarea
+                        rows={3}
+                        style={{ width: '100%', borderRadius: 8, border: '1px solid #e2e8f0', padding: '8px 12px', fontSize: 13, resize: 'vertical', outline: 'none', fontFamily: 'inherit' }}
+                        placeholder="Write your reply…"
+                        value={commentText}
+                        onChange={e => setCommentText(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleReply(); }}
+                    />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#64748b', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={isInternal} onChange={e => setIsInternal(e.target.checked)} />
+                            Internal note (not visible to user)
+                        </label>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <button className="modal-btn cancel" onClick={onClose}>Close</button>
+                            <button
+                                className="modal-btn primary"
+                                onClick={handleReply}
+                                disabled={sending || !commentText.trim()}
+                                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                            >
+                                <Send size={13} />
+                                {sending ? 'Sending…' : 'Send Reply'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -1,6 +1,7 @@
 using A365ShiftTracker.Application.Common;
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
+using A365ShiftTracker.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
@@ -14,13 +15,15 @@ public class AdminController : ControllerBase
 {
     private readonly IAdminService _adminService;
     private readonly IAuthService _authService;
+    private readonly ITicketService _ticketService;
     private readonly IUnitOfWork _uow;
     private readonly IMemoryCache _cache;
 
-    public AdminController(IAdminService adminService, IAuthService authService, IUnitOfWork uow, IMemoryCache cache)
+    public AdminController(IAdminService adminService, IAuthService authService, ITicketService ticketService, IUnitOfWork uow, IMemoryCache cache)
     {
         _authService = authService;
         _adminService = adminService;
+        _ticketService = ticketService;
         _uow = uow;
         _cache = cache;
     }
@@ -157,6 +160,41 @@ public class AdminController : ControllerBase
         await _authService.AdminResetUserTotpAsync(id);
         _cache.Remove($"permissions:{id}");
         return Ok(ApiResponse<bool>.Ok(true, $"TOTP reset for user {id}."));
+    }
+
+    // ─── Support Tickets ───────────────────────────────────────
+
+    [HttpGet("tickets")]
+    public async Task<ActionResult<ApiResponse<PagedResult<TicketDto>>>> GetAllTickets(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 25)
+    {
+        var result = await _ticketService.GetAllForAdminAsync(page, pageSize);
+        return Ok(ApiResponse<PagedResult<TicketDto>>.Ok(result));
+    }
+
+    [HttpGet("tickets/{id}")]
+    public async Task<ActionResult<ApiResponse<TicketDto>>> GetTicket(int id)
+    {
+        var result = await _ticketService.GetByIdForAdminAsync(id);
+        if (result == null) return NotFound(ApiResponse<object>.Fail("Not found"));
+        return Ok(ApiResponse<TicketDto>.Ok(result));
+    }
+
+    [HttpPost("tickets/{id}/reply")]
+    public async Task<ActionResult<ApiResponse<TicketCommentDto>>> ReplyToTicket(int id, [FromBody] CreateTicketCommentRequest req)
+    {
+        var adminUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst("sub")?.Value ?? "0");
+        var result = await _ticketService.AdminReplyAsync(id, req, adminUserId);
+        return Ok(ApiResponse<TicketCommentDto>.Ok(result, "Reply sent."));
+    }
+
+    [HttpPatch("tickets/{id}/status")]
+    public async Task<ActionResult<ApiResponse<TicketDto>>> SetTicketStatus(int id, [FromBody] AdminSetStatusRequest req)
+    {
+        var result = await _ticketService.AdminSetStatusAsync(id, req.Status);
+        if (result == null) return NotFound(ApiResponse<object>.Fail("Not found"));
+        return Ok(ApiResponse<TicketDto>.Ok(result, "Status updated."));
     }
 
     [HttpPost("users/{id}/require-totp")]

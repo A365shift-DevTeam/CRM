@@ -13,4 +13,10 @@ public interface ITicketService
     Task<TicketStatsDto> GetStatsAsync(int userId);
     Task<TicketCommentDto> AddCommentAsync(int ticketId, CreateTicketCommentRequest req, int userId);
     Task<List<TicketCommentDto>> GetCommentsAsync(int ticketId, int userId);
+
+    // Admin-only
+    Task<PagedResult<TicketDto>> GetAllForAdminAsync(int page, int pageSize);
+    Task<TicketDto?> GetByIdForAdminAsync(int ticketId);
+    Task<TicketCommentDto> AdminReplyAsync(int ticketId, CreateTicketCommentRequest req, int adminUserId);
+    Task<TicketDto?> AdminSetStatusAsync(int ticketId, string status);
 }
