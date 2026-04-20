@@ -1,9 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { FaShieldHalved, FaUsers, FaUserGear, FaKey, FaToggleOn, FaToggleOff, FaPen, FaPlus, FaTrash, FaLock, FaUserPlus } from 'react-icons/fa6';
+import React, { useState, useEffect, useCallback } from 'react';
+import { FaShieldHalved, FaShield, FaUsers, FaUserGear, FaKey, FaToggleOn, FaToggleOff, FaPen, FaPlus, FaTrash, FaLock, FaUserPlus, FaMobileScreen, FaTicket, FaReply } from 'react-icons/fa6';
+import { Send, Lock } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast/ToastContext';
 import './Admin.css';
+
+const PRIORITY_BADGE_COLOR = { Critical: '#F43F5E', High: '#F59E0B', Medium: '#4361EE', Low: '#94A3B8' };
+const STATUS_BADGE = { 'Open': '#3b82f6', 'In Progress': '#8b5cf6', 'Pending': '#f59e0b', 'Resolved': '#10b981', 'Closed': '#64748b' };
+const TICKET_STATUSES = ['Open', 'In Progress', 'Pending', 'Resolved', 'Closed'];
 
 export default function Admin() {
     const { currentUser } = useAuth();
@@ -14,13 +19,38 @@ export default function Admin() {
     const [permissions, setPermissions] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    // Tickets state
+    const [tickets, setTickets] = useState([]);
+    const [ticketsLoading, setTicketsLoading] = useState(false);
+    const [ticketPage, setTicketPage] = useState(1);
+    const [ticketTotal, setTicketTotal] = useState(0);
+    const [replyTicket, setReplyTicket] = useState(null);
+
     // Modal state
     const [modalType, setModalType] = useState(null);
     const [modalData, setModalData] = useState(null);
 
+    const loadTickets = useCallback(async (page = 1) => {
+        setTicketsLoading(true);
+        try {
+            const result = await adminService.getTickets(page, 20);
+            setTickets(result?.items ?? []);
+            setTicketTotal(result?.totalCount ?? 0);
+            setTicketPage(page);
+        } catch (err) {
+            toast.error('Failed to load tickets');
+        } finally {
+            setTicketsLoading(false);
+        }
+    }, [toast]);
+
     useEffect(() => {
         loadData();
     }, []);
+
+    useEffect(() => {
+        if (activeTab === 'tickets') loadTickets(1);
+    }, [activeTab, loadTickets]);
 
     const loadData = async () => {
         setLoading(true);
@@ -105,6 +135,45 @@ export default function Admin() {
             toast.success('Password has been reset successfully');
         } catch (err) {
             toast.error(err.message || 'Failed to reset password');
+        }
+    };
+
+    const handleSave2FA = async (userId, enabled, method) => {
+        try {
+            if (enabled) {
+                await adminService.setUserTwoFactor(userId, true, method);
+                setUsers(prev => prev.map(u => u.id === userId ? { ...u, twoFactorRequired: true, twoFactorMethod: method } : u));
+                toast.success('Email OTP enabled for user');
+            } else {
+                await adminService.removeUserTwoFactor(userId);
+                setUsers(prev => prev.map(u => u.id === userId ? { ...u, twoFactorRequired: false } : u));
+                toast.success('2FA requirement removed for user');
+            }
+            setModalType(null);
+        } catch (err) {
+            toast.error(err.message || 'Failed to update 2FA setting');
+        }
+    };
+
+    const handleResetTotp = async (userId) => {
+        try {
+            await adminService.resetUserTotp(userId);
+            setUsers(prev => prev.map(u => u.id === userId ? { ...u, isTotpEnabled: false, twoFactorRequired: false, twoFactorMethod: 'email' } : u));
+            toast.success('TOTP has been reset for this user');
+            setModalType(null);
+        } catch (err) {
+            toast.error(err.message || 'Failed to reset TOTP');
+        }
+    };
+
+    const handleRequireTotp = async (userId) => {
+        try {
+            await adminService.requireUserTotp(userId);
+            setUsers(prev => prev.map(u => u.id === userId ? { ...u, twoFactorRequired: true, twoFactorMethod: 'totp' } : u));
+            toast.success('TOTP required — user must set it up via Settings');
+            setModalType(null);
+        } catch (err) {
+            toast.error(err.message || 'Failed to require TOTP');
         }
     };
 
@@ -193,6 +262,9 @@ export default function Admin() {
                     <button className={`admin-tab ${activeTab === 'permissions' ? 'active' : ''}`} onClick={() => setActiveTab('permissions')}>
                         <FaKey size={14} /> Permissions <span className="tab-count">{permissions.length}</span>
                     </button>
+                    <button className={`admin-tab ${activeTab === 'tickets' ? 'active' : ''}`} onClick={() => setActiveTab('tickets')}>
+                        <FaTicket size={14} /> Support Tickets {ticketTotal > 0 && <span className="tab-count">{ticketTotal}</span>}
+                    </button>
                 </div>
 
                 {activeTab === 'users' && (
@@ -218,12 +290,24 @@ export default function Admin() {
                                 <th>Email</th>
                                 <th>Roles</th>
                                 <th>Status</th>
+                                <th>2FA</th>
                                 <th>Last Login</th>
                                 <th style={{ textAlign: 'center' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {users.map(user => (
+                            {users.map(user => {
+                                const twoFALabel = user.isTotpEnabled
+                                    ? 'TOTP'
+                                    : user.twoFactorRequired
+                                        ? 'Email OTP'
+                                        : 'Off';
+                                const twoFAColor = user.isTotpEnabled
+                                    ? { background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }
+                                    : user.twoFactorRequired
+                                        ? { background: 'rgba(67,97,238,0.12)', color: '#4361EE', border: '1px solid rgba(67,97,238,0.3)' }
+                                        : { background: 'rgba(148,163,184,0.1)', color: '#94a3b8', border: '1px solid rgba(148,163,184,0.2)' };
+                                return (
                                 <tr key={user.id}>
                                     <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{user.displayName || '—'}</td>
                                     <td>{user.email}</td>
@@ -239,6 +323,12 @@ export default function Admin() {
                                         <span className={`status-badge ${user.isActive ? 'active' : 'inactive'}`}>
                                             <span className={`status-dot ${user.isActive ? 'active' : 'inactive'}`} />
                                             {user.isActive ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '2px 8px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600, ...twoFAColor }}>
+                                            {user.isTotpEnabled ? <FaMobileScreen size={10} /> : <FaShield size={10} />}
+                                            {twoFALabel}
                                         </span>
                                     </td>
                                     <td style={{ color: '#94a3b8', fontSize: '0.8rem' }}>
@@ -262,6 +352,14 @@ export default function Admin() {
                                             </div>
                                             <div
                                                 className="admin-action-icon password"
+                                                title="Manage 2FA"
+                                                onClick={() => { setModalType('manage2FA'); setModalData(user); }}
+                                                style={{ color: (user.twoFactorRequired || user.isTotpEnabled) ? '#4361EE' : undefined }}
+                                            >
+                                                <FaShield size={14} />
+                                            </div>
+                                            <div
+                                                className="admin-action-icon password"
                                                 title="Change Password"
                                                 onClick={() => { setModalType('resetPassword'); setModalData(user); }}
                                             >
@@ -277,7 +375,8 @@ export default function Admin() {
                                         </div>
                                     </td>
                                 </tr>
-                            ))}
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
@@ -369,6 +468,76 @@ export default function Admin() {
                 </div>
             )}
 
+            {/* Tickets Tab */}
+            {activeTab === 'tickets' && (
+                <div className="admin-card">
+                    {ticketsLoading ? (
+                        <div className="text-center p-4"><div className="spinner-border text-primary spinner-border-sm" /></div>
+                    ) : (
+                        <>
+                        <table className="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Ticket #</th>
+                                    <th>Title</th>
+                                    <th>Raised By</th>
+                                    <th>Priority</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th style={{ textAlign: 'center' }}>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {tickets.length === 0 ? (
+                                    <tr><td colSpan={7} className="text-center py-4 text-muted">No tickets found.</td></tr>
+                                ) : tickets.map(t => (
+                                    <tr key={t.id}>
+                                        <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#4361EE', fontSize: 12 }}>{t.ticketNumber}</td>
+                                        <td style={{ fontWeight: 600, color: 'var(--text-primary)', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</td>
+                                        <td style={{ fontSize: 12, color: '#64748b' }}>
+                                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 12 }}>{t.createdByName || '—'}</div>
+                                            <div style={{ color: '#94a3b8', fontSize: 11 }}>{t.raisedByEmail || ''}</div>
+                                        </td>
+                                        <td>
+                                            <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: `${PRIORITY_BADGE_COLOR[t.priority]}18`, color: PRIORITY_BADGE_COLOR[t.priority] }}>
+                                                {t.priority}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: `${STATUS_BADGE[t.status]}18`, color: STATUS_BADGE[t.status] }}>
+                                                {t.status}
+                                            </span>
+                                        </td>
+                                        <td style={{ fontSize: 12, color: '#94a3b8' }}>{new Date(t.createdAt).toLocaleDateString()}</td>
+                                        <td style={{ textAlign: 'center' }}>
+                                            <button
+                                                className="admin-action-icon edit"
+                                                title="Reply"
+                                                onClick={async () => {
+                                                    const full = await adminService.getTicket(t.id);
+                                                    setReplyTicket(full);
+                                                }}
+                                                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', fontSize: 12 }}
+                                            >
+                                                <FaReply size={11} /> Reply
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        {ticketTotal > 20 && (
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: '12px 0' }}>
+                                <button className="modal-btn cancel" disabled={ticketPage === 1} onClick={() => loadTickets(ticketPage - 1)} style={{ padding: '4px 12px', fontSize: 12 }}>Prev</button>
+                                <span style={{ fontSize: 12, color: '#64748b', alignSelf: 'center' }}>Page {ticketPage}</span>
+                                <button className="modal-btn cancel" disabled={ticketPage * 20 >= ticketTotal} onClick={() => loadTickets(ticketPage + 1)} style={{ padding: '4px 12px', fontSize: 12 }}>Next</button>
+                            </div>
+                        )}
+                        </>
+                    )}
+                </div>
+            )}
+
             {/* ─── Modals ──────────────────────────────────────────── */}
 
             {(modalType === 'createUser' || modalType === 'editUser') && (
@@ -398,12 +567,38 @@ export default function Admin() {
                 />
             )}
 
+            {modalType === 'manage2FA' && modalData && (
+                <Manage2FAModal
+                    user={modalData}
+                    onSaveEmailOtp={handleSave2FA}
+                    onResetTotp={handleResetTotp}
+                    onRequireTotp={handleRequireTotp}
+                    onClose={() => setModalType(null)}
+                />
+            )}
+
             {(modalType === 'editRole' || modalType === 'createRole') && (
                 <EditRoleModal
                     role={modalType === 'editRole' ? modalData : null}
                     permissions={permissions}
                     onSave={handleSaveRole}
                     onClose={() => setModalType(null)}
+                />
+            )}
+
+            {replyTicket && (
+                <TicketReplyModal
+                    ticket={replyTicket}
+                    adminName={currentUser?.displayName || 'Admin'}
+                    onClose={() => setReplyTicket(null)}
+                    onReplySent={(comment) => {
+                        setReplyTicket(prev => ({ ...prev, comments: [...(prev.comments ?? []), comment], status: prev.status === 'Open' ? 'In Progress' : prev.status }));
+                        setTickets(prev => prev.map(t => t.id === replyTicket.id ? { ...t, status: t.status === 'Open' ? 'In Progress' : t.status } : t));
+                    }}
+                    onStatusChanged={(updated) => {
+                        setReplyTicket(prev => ({ ...prev, status: updated.status }));
+                        setTickets(prev => prev.map(t => t.id === updated.id ? { ...t, status: updated.status } : t));
+                    }}
                 />
             )}
         </div>
@@ -698,6 +893,317 @@ function EditRoleModal({ role, permissions, onSave, onClose }) {
                     <button className="modal-btn primary" onClick={handleSubmit}>
                         {role ? 'Update Role' : 'Create Role'}
                     </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── Manage 2FA Modal ─────────────────────────────────────────
+
+function Manage2FAModal({ user, onSaveEmailOtp, onResetTotp, onRequireTotp, onClose }) {
+    const emailOtpOn = user.twoFactorRequired && user.twoFactorMethod === 'email' && !user.isTotpEnabled;
+    const totpRequiredNotSetup = user.twoFactorRequired && user.twoFactorMethod === 'totp' && !user.isTotpEnabled;
+    const [emailEnabled, setEmailEnabled] = useState(emailOtpOn);
+    const [confirm, setConfirm] = useState(null); // 'reset-totp' | 'require-totp'
+
+    const statusLabel = user.isTotpEnabled
+        ? 'TOTP (authenticator app)'
+        : totpRequiredNotSetup
+            ? 'TOTP required — setup pending'
+            : user.twoFactorRequired
+                ? 'Email OTP'
+                : 'None';
+    const statusColor = user.isTotpEnabled
+        ? '#10b981'
+        : totpRequiredNotSetup
+            ? '#f59e0b'
+            : user.twoFactorRequired
+                ? '#4361EE'
+                : '#94a3b8';
+
+    const sectionStyle = { padding: '14px 16px', borderRadius: 10, marginBottom: 12, border: '1px solid rgba(148,163,184,0.15)', background: 'rgba(248,250,252,0.6)' };
+
+    if (confirm === 'reset-totp') {
+        return (
+            <div className="modal-overlay" onClick={onClose}>
+                <div className="modal-box" onClick={e => e.stopPropagation()}>
+                    <div className="modal-box-header">
+                        <h3>Reset TOTP — {user.displayName || user.email}</h3>
+                    </div>
+                    <div className="modal-box-body">
+                        <div className="p-3 rounded mb-3" style={{ background: 'rgba(244,63,94,0.07)', border: '1px solid rgba(244,63,94,0.2)', fontSize: '0.85rem', color: '#f43f5e' }}>
+                            This will <strong>permanently remove</strong> the user's authenticator app setup. They will need to re-enroll via Settings &gt; Security.
+                        </div>
+                    </div>
+                    <div className="modal-box-footer">
+                        <button className="modal-btn cancel" onClick={() => setConfirm(null)}>Cancel</button>
+                        <button className="modal-btn warning" onClick={() => onResetTotp(user.id)}>Reset TOTP</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (confirm === 'require-totp') {
+        return (
+            <div className="modal-overlay" onClick={onClose}>
+                <div className="modal-box" onClick={e => e.stopPropagation()}>
+                    <div className="modal-box-header">
+                        <h3>Require TOTP — {user.displayName || user.email}</h3>
+                    </div>
+                    <div className="modal-box-body">
+                        <div className="p-3 rounded mb-3" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', fontSize: '0.85rem', color: '#d97706' }}>
+                            The user will be allowed to log in but will see a prompt to set up their authenticator app via <strong>Settings &gt; Security</strong> before full access is enforced.
+                        </div>
+                    </div>
+                    <div className="modal-box-footer">
+                        <button className="modal-btn cancel" onClick={() => setConfirm(null)}>Cancel</button>
+                        <button className="modal-btn primary" onClick={() => onRequireTotp(user.id)}>Require TOTP</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-box" onClick={e => e.stopPropagation()}>
+                <div className="modal-box-header">
+                    <h3>Manage 2FA — {user.displayName || user.email}</h3>
+                </div>
+                <div className="modal-box-body">
+
+                    {/* Status row */}
+                    <div className="mb-3 p-3 rounded d-flex align-items-center gap-2" style={{ background: 'rgba(67,97,238,0.05)', border: '1px solid rgba(67,97,238,0.12)' }}>
+                        <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Current 2FA:</span>
+                        <span style={{ fontWeight: 700, fontSize: '0.85rem', color: statusColor }}>{statusLabel}</span>
+                    </div>
+
+                    {/* ── Email OTP section ── */}
+                    <div style={sectionStyle}>
+                        <div className="d-flex align-items-center justify-content-between mb-1">
+                            <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                Email OTP
+                            </div>
+                            {!user.isTotpEnabled && !totpRequiredNotSetup && (
+                                <div
+                                    style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                                    onClick={() => setEmailEnabled(prev => !prev)}
+                                >
+                                    {emailEnabled ? <FaToggleOn size={20} color="#4361EE" /> : <FaToggleOff size={20} color="#94a3b8" />}
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: emailEnabled ? '#4361EE' : '#94a3b8' }}>
+                                        {emailEnabled ? 'On' : 'Off'}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                        <p style={{ fontSize: '0.77rem', color: '#94a3b8', margin: 0 }}>
+                            User receives a 6-digit code by email on each login.
+                        </p>
+                        {(user.isTotpEnabled || totpRequiredNotSetup) && (
+                            <p style={{ fontSize: '0.77rem', color: '#f59e0b', marginTop: 4 }}>
+                                TOTP is {user.isTotpEnabled ? 'active' : 'required'}. Disable it first to switch to Email OTP.
+                            </p>
+                        )}
+                    </div>
+
+                    {/* ── TOTP section ── */}
+                    <div style={sectionStyle}>
+                        <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)', marginBottom: 4 }}>
+                            Authenticator App (TOTP)
+                        </div>
+                        {user.isTotpEnabled ? (
+                            <div>
+                                <p style={{ fontSize: '0.77rem', color: '#10b981', marginBottom: 8 }}>
+                                    Active — user has configured their authenticator app.
+                                </p>
+                                <button
+                                    onClick={() => setConfirm('reset-totp')}
+                                    className="px-3 py-1 rounded-lg text-xs font-medium"
+                                    style={{ background: 'rgba(244,63,94,0.1)', color: '#f43f5e', border: '1px solid rgba(244,63,94,0.3)', cursor: 'pointer' }}
+                                >
+                                    Reset TOTP
+                                </button>
+                            </div>
+                        ) : totpRequiredNotSetup ? (
+                            <div>
+                                <p style={{ fontSize: '0.77rem', color: '#d97706', marginBottom: 8 }}>
+                                    Required by admin — user has not yet set it up.
+                                </p>
+                                <button
+                                    onClick={() => onResetTotp(user.id)}
+                                    className="px-3 py-1 rounded-lg text-xs font-medium"
+                                    style={{ background: 'rgba(244,63,94,0.1)', color: '#f43f5e', border: '1px solid rgba(244,63,94,0.3)', cursor: 'pointer' }}
+                                >
+                                    Cancel Requirement
+                                </button>
+                            </div>
+                        ) : (
+                            <div>
+                                <p style={{ fontSize: '0.77rem', color: '#94a3b8', marginBottom: 8 }}>
+                                    Not enabled. Admin can require the user to set it up.
+                                </p>
+                                <button
+                                    onClick={() => setConfirm('require-totp')}
+                                    className="px-3 py-1 rounded-lg text-xs font-medium text-white"
+                                    style={{ background: '#10b981', border: 'none', cursor: 'pointer' }}
+                                >
+                                    Require TOTP
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                </div>
+                <div className="modal-box-footer">
+                    <button className="modal-btn cancel" onClick={onClose}>Cancel</button>
+                    {!user.isTotpEnabled && !totpRequiredNotSetup && (
+                        <button className="modal-btn primary" onClick={() => onSaveEmailOtp(user.id, emailEnabled, 'email')}>
+                            Save
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── Ticket Reply Modal ───────────────────────────────────────
+
+function TicketReplyModal({ ticket, adminName, onClose, onReplySent, onStatusChanged }) {
+    const [commentText, setCommentText] = useState('');
+    const [isInternal, setIsInternal] = useState(false);
+    const [sending, setSending] = useState(false);
+    const [status, setStatus] = useState(ticket.status);
+    const [savingStatus, setSavingStatus] = useState(false);
+    const toast = useToast();
+
+    const handleReply = async () => {
+        if (!commentText.trim()) return;
+        setSending(true);
+        try {
+            const comment = await adminService.replyToTicket(ticket.id, commentText, isInternal, adminName);
+            onReplySent(comment);
+            setCommentText('');
+            toast.success('Reply sent');
+        } catch (e) {
+            toast.error(e.message || 'Failed to send reply');
+        } finally {
+            setSending(false);
+        }
+    };
+
+    const handleStatusSave = async () => {
+        if (status === ticket.status) return;
+        setSavingStatus(true);
+        try {
+            const updated = await adminService.setTicketStatus(ticket.id, status);
+            onStatusChanged(updated);
+            toast.success(`Status set to ${status}`);
+        } catch (e) {
+            toast.error(e.message || 'Failed to update status');
+        } finally {
+            setSavingStatus(false);
+        }
+    };
+
+    const comments = ticket.comments ?? [];
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-box" style={{ maxWidth: 640, width: '95vw' }} onClick={e => e.stopPropagation()}>
+                <div className="modal-box-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                        <h3 style={{ marginBottom: 4 }}>{ticket.ticketNumber} — {ticket.title}</h3>
+                        <div style={{ fontSize: 12, color: '#94a3b8' }}>
+                            Raised by <strong style={{ color: '#64748b' }}>{ticket.createdByName || 'User'}</strong>
+                            {ticket.raisedByEmail && <span> · {ticket.raisedByEmail}</span>}
+                            <span> · {new Date(ticket.createdAt).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                        <select
+                            value={status}
+                            onChange={e => setStatus(e.target.value)}
+                            style={{ fontSize: 12, padding: '4px 8px', borderRadius: 6, border: `1.5px solid ${STATUS_BADGE[status] || '#e2e8f0'}`, color: STATUS_BADGE[status], fontWeight: 600, background: `${STATUS_BADGE[status]}14`, cursor: 'pointer' }}
+                        >
+                            {TICKET_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                        {status !== ticket.status && (
+                            <button className="modal-btn primary" style={{ padding: '4px 10px', fontSize: 11 }} onClick={handleStatusSave} disabled={savingStatus}>
+                                {savingStatus ? '…' : 'Save'}
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                <div className="modal-box-body" style={{ maxHeight: '55vh', overflowY: 'auto' }}>
+                    {/* Original description */}
+                    {ticket.description && (
+                        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 14px', marginBottom: 12, fontSize: 13, color: '#334155', whiteSpace: 'pre-wrap' }}>
+                            {ticket.description}
+                        </div>
+                    )}
+
+                    {/* Comment thread */}
+                    {comments.length === 0 ? (
+                        <div style={{ textAlign: 'center', color: '#94a3b8', padding: '16px 0', fontSize: 13 }}>No replies yet. Be the first to respond.</div>
+                    ) : (
+                        comments.map(c => {
+                            const isAdmin = c.authorName === adminName;
+                            return (
+                                <div key={c.id} style={{ display: 'flex', flexDirection: isAdmin ? 'row-reverse' : 'row', gap: 8, marginBottom: 10 }}>
+                                    <div style={{
+                                        maxWidth: '80%',
+                                        padding: '8px 12px',
+                                        borderRadius: 10,
+                                        fontSize: 13,
+                                        background: isAdmin ? 'rgba(67,97,238,0.1)' : '#f1f5f9',
+                                        border: isAdmin ? '1px solid rgba(67,97,238,0.2)' : '1px solid #e2e8f0',
+                                        color: '#0f172a',
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexDirection: isAdmin ? 'row-reverse' : 'row' }}>
+                                            <span style={{ fontWeight: 700, fontSize: 12, color: isAdmin ? '#4361EE' : '#64748b' }}>{c.authorName}</span>
+                                            {c.isInternal && <span style={{ fontSize: 10, background: '#fef3c7', color: '#d97706', border: '1px solid #fcd34d', borderRadius: 4, padding: '0 4px', display: 'flex', alignItems: 'center', gap: 2 }}><Lock size={8} />Internal</span>}
+                                            <span style={{ fontSize: 10, color: '#94a3b8' }}>{new Date(c.createdAt).toLocaleString()}</span>
+                                        </div>
+                                        <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{c.comment}</div>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+
+                {/* Reply input */}
+                <div style={{ padding: '12px 20px', borderTop: '1px solid #e2e8f0' }}>
+                    <textarea
+                        rows={3}
+                        style={{ width: '100%', borderRadius: 8, border: '1px solid #e2e8f0', padding: '8px 12px', fontSize: 13, resize: 'vertical', outline: 'none', fontFamily: 'inherit' }}
+                        placeholder="Write your reply…"
+                        value={commentText}
+                        onChange={e => setCommentText(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleReply(); }}
+                    />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#64748b', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={isInternal} onChange={e => setIsInternal(e.target.checked)} />
+                            Internal note (not visible to user)
+                        </label>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <button className="modal-btn cancel" onClick={onClose}>Close</button>
+                            <button
+                                className="modal-btn primary"
+                                onClick={handleReply}
+                                disabled={sending || !commentText.trim()}
+                                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                            >
+                                <Send size={13} />
+                                {sending ? 'Sending…' : 'Send Reply'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

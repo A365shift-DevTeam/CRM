@@ -77,6 +77,18 @@ builder.Services.AddAuthorization(options =>
     }
 });
 
+// ─── Output Caching ───────────────────────────────────────
+builder.Services.AddOutputCache(opts =>
+{
+    // Default policy: cache per user (via auth cookie) for 30 seconds
+    opts.AddBasePolicy(b => b.SetVaryByQuery("*").Expire(TimeSpan.FromSeconds(30)));
+    // Named policy for read-heavy stats — 60 seconds per user
+    opts.AddPolicy("StatsCache", b => b
+        .Expire(TimeSpan.FromSeconds(60))
+        .SetVaryByQuery("*")
+        .Tag("stats"));
+});
+
 // ─── Controllers ───────────────────────────────────────────
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -151,6 +163,7 @@ app.UseCors("AllowFrontend");
 app.UseStaticFiles(); // Serve uploaded files from wwwroot
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseOutputCache();
 app.MapControllers();
 
 app.Run();

@@ -30,8 +30,8 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
     {
-        var existing = await _uow.Users.FindAsync(u => u.Email == request.Email);
-        if (existing.Any())
+        var exists = await _uow.Users.Query().AnyAsync(u => u.Email == request.Email);
+        if (exists)
             throw new InvalidOperationException("Email already registered.");
 
         var user = new Domain.Entities.User
@@ -44,7 +44,7 @@ public class AuthService : IAuthService
         await _uow.Users.AddAsync(user);
         await _uow.SaveChangesAsync();
 
-        var defaultRole = (await _uow.Roles.FindAsync(r => r.Name == "User")).FirstOrDefault();
+        var defaultRole = await _uow.Roles.Query().FirstOrDefaultAsync(r => r.Name == "User");
         if (defaultRole != null)
         {
             await _uow.UserRoles.AddAsync(new Domain.Entities.UserRole
@@ -61,7 +61,9 @@ public class AuthService : IAuthService
             Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
             Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions),
             Role = roleName, Permissions = permissions,
-            IsTotpEnabled = user.IsTotpEnabled
+            IsTotpEnabled = user.IsTotpEnabled,
+            TwoFactorRequired = user.TwoFactorRequired,
+            TwoFactorMethod = user.TwoFactorMethod
         };
     }
 
@@ -69,8 +71,7 @@ public class AuthService : IAuthService
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
     {
-        var users = await _uow.Users.FindAsync(u => u.Email == request.Email);
-        var user = users.FirstOrDefault()
+        var user = await _uow.Users.Query().FirstOrDefaultAsync(u => u.Email == request.Email)
             ?? throw new UnauthorizedAccessException("Invalid credentials.");
 
         if (!user.IsActive)
@@ -87,6 +88,22 @@ public class AuthService : IAuthService
         // Check both the admin-controlled flag and user-enabled TOTP
         if (user.TwoFactorRequired || user.IsTotpEnabled)
         {
+            // TOTP is required by admin but user hasn't configured it yet — let them in, prompt setup
+            if (user.TwoFactorMethod == "totp" && !user.IsTotpEnabled)
+            {
+                var (rn, perms) = await GetUserRoleAndPermissionsAsync(user.Id);
+                return new LoginResponse
+                {
+                    Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
+                    Token = GenerateJwtToken(user.Id, user.Email, rn, perms),
+                    Role = rn, Permissions = perms,
+                    IsTotpEnabled = false,
+                    TwoFactorRequired = user.TwoFactorRequired,
+                    TwoFactorMethod = user.TwoFactorMethod,
+                    TotpSetupRequired = true
+                };
+            }
+
             var method = user.IsTotpEnabled ? "totp" : user.TwoFactorMethod;
             var partialToken = GeneratePartialToken(user.Id, user.Email, method);
             return new LoginResponse
@@ -105,7 +122,9 @@ public class AuthService : IAuthService
             Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions),
             Role = roleName, Permissions = permissions,
             Requires2FA = false,
-            IsTotpEnabled = user.IsTotpEnabled
+            IsTotpEnabled = user.IsTotpEnabled,
+            TwoFactorRequired = user.TwoFactorRequired,
+            TwoFactorMethod = user.TwoFactorMethod
         };
     }
 
@@ -156,7 +175,9 @@ public class AuthService : IAuthService
             Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
             Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions),
             Role = roleName, Permissions = permissions,
-            IsTotpEnabled = user.IsTotpEnabled
+            IsTotpEnabled = user.IsTotpEnabled,
+            TwoFactorRequired = user.TwoFactorRequired,
+            TwoFactorMethod = user.TwoFactorMethod
         };
     }
 
@@ -189,7 +210,9 @@ public class AuthService : IAuthService
             Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
             Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions),
             Role = roleName, Permissions = permissions,
-            IsTotpEnabled = user.IsTotpEnabled
+            IsTotpEnabled = user.IsTotpEnabled,
+            TwoFactorRequired = user.TwoFactorRequired,
+            TwoFactorMethod = user.TwoFactorMethod
         };
     }
 
@@ -249,12 +272,77 @@ public class AuthService : IAuthService
         await _uow.SaveChangesAsync();
     }
 
+    // ── Email OTP Self-Enrollment ────────────────────────────
+
+    public async Task SendEmailOtpEnableAsync(int userId)
+    {
+        var user = await _uow.Users.GetByIdAsync(userId)
+            ?? throw new KeyNotFoundException("User not found.");
+
+        if (user.TwoFactorRequired && user.TwoFactorMethod == "email" && !user.IsTotpEnabled)
+            throw new InvalidOperationException("Email OTP is already enabled.");
+
+        var code = System.Security.Cryptography.RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
+        user.OtpCode = BCrypt.Net.BCrypt.HashPassword(code);
+        user.OtpExpiry = DateTime.UtcNow.AddMinutes(10);
+        await _uow.Users.UpdateAsync(user);
+        await _uow.SaveChangesAsync();
+
+        await _emailService.SendOtpEmailAsync(user.Email, user.DisplayName ?? user.Email, code);
+    }
+
+    public async Task VerifyAndEnableEmailOtpAsync(int userId, string code)
+    {
+        var user = await _uow.Users.GetByIdAsync(userId)
+            ?? throw new KeyNotFoundException("User not found.");
+
+        if (user.OtpCode is null || user.OtpExpiry is null || user.OtpExpiry < DateTime.UtcNow)
+            throw new InvalidOperationException("OTP expired. Request a new code.");
+
+        if (!BCrypt.Net.BCrypt.Verify(code, user.OtpCode))
+            throw new UnauthorizedAccessException("Invalid code. Please try again.");
+
+        user.OtpCode = null;
+        user.OtpExpiry = null;
+        user.TwoFactorRequired = true;
+        user.TwoFactorMethod = "email";
+        await _uow.Users.UpdateAsync(user);
+        await _uow.SaveChangesAsync();
+    }
+
+    public async Task DisableEmailOtpAsync(int userId)
+    {
+        var user = await _uow.Users.GetByIdAsync(userId)
+            ?? throw new KeyNotFoundException("User not found.");
+
+        if (user.IsTotpEnabled)
+            throw new InvalidOperationException("TOTP is active. Disable it first.");
+
+        user.TwoFactorRequired = false;
+        await _uow.Users.UpdateAsync(user);
+        await _uow.SaveChangesAsync();
+    }
+
+    // ── Admin TOTP Management ────────────────────────────────
+
+    public async Task AdminResetUserTotpAsync(int userId)
+    {
+        var user = await _uow.Users.Query().FirstOrDefaultAsync(u => u.Id == userId)
+            ?? throw new KeyNotFoundException($"User {userId} not found.");
+
+        user.IsTotpEnabled = false;
+        user.TotpSecret = null;
+        user.TwoFactorRequired = false;
+        user.TwoFactorMethod = "email";
+        await _uow.Users.UpdateAsync(user);
+        await _uow.SaveChangesAsync();
+    }
+
     // ── Password Reset ───────────────────────────────────────
 
     public async Task<string> RequestPasswordResetAsync(string email)
     {
-        var users = await _uow.Users.FindAsync(u => u.Email == email);
-        var user = users.FirstOrDefault()
+        var user = await _uow.Users.Query().FirstOrDefaultAsync(u => u.Email == email)
             ?? throw new KeyNotFoundException("No account found with that email.");
 
         var token = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
@@ -267,9 +355,8 @@ public class AuthService : IAuthService
 
     public async Task ResetPasswordAsync(string token, string newPassword)
     {
-        var users = await _uow.Users.FindAsync(u =>
-            u.ResetToken == token && u.ResetTokenExpiry > DateTime.UtcNow);
-        var user = users.FirstOrDefault()
+        var user = await _uow.Users.Query()
+            .FirstOrDefaultAsync(u => u.ResetToken == token && u.ResetTokenExpiry > DateTime.UtcNow)
             ?? throw new InvalidOperationException("Invalid or expired reset token.");
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);

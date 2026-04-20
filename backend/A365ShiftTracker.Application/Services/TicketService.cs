@@ -154,6 +154,88 @@ public class TicketService : ITicketService
         return comments.OrderBy(c => c.CreatedAt).Select(MapCommentToDto).ToList();
     }
 
+    // ── Admin methods ─────────────────────────────────────────────
+
+    public async Task<PagedResult<TicketDto>> GetAllForAdminAsync(int page, int pageSize)
+    {
+        var paged = await _uow.Tickets.GetPagedAsync(
+            _ => true, page, pageSize,
+            q => q.OrderByDescending(t => t.CreatedAt));
+
+        var userIds = paged.Items.Select(t => t.UserId).Distinct().ToList();
+        var users = await _uow.Users.Query()
+            .Where(u => userIds.Contains(u.Id))
+            .Select(u => new { u.Id, u.Email })
+            .ToListAsync();
+        var emailMap = users.ToDictionary(u => u.Id, u => u.Email);
+
+        return new PagedResult<TicketDto>
+        {
+            Items = paged.Items.Select(t =>
+            {
+                var dto = MapToDto(t);
+                dto.RaisedByEmail = emailMap.TryGetValue(t.UserId, out var e) ? e : null;
+                return dto;
+            }),
+            TotalCount = paged.TotalCount, Page = paged.Page, PageSize = paged.PageSize
+        };
+    }
+
+    public async Task<TicketDto?> GetByIdForAdminAsync(int ticketId)
+    {
+        var ticket = await _uow.Tickets.Query()
+            .Include(t => t.Comments)
+            .FirstOrDefaultAsync(t => t.Id == ticketId);
+        if (ticket == null) return null;
+
+        var user = await _uow.Users.Query()
+            .Where(u => u.Id == ticket.UserId)
+            .Select(u => new { u.Email })
+            .FirstOrDefaultAsync();
+
+        ticket.Comments = ticket.Comments.OrderBy(c => c.CreatedAt).ToList();
+        var dto = MapToDto(ticket);
+        dto.RaisedByEmail = user?.Email;
+        return dto;
+    }
+
+    public async Task<TicketCommentDto> AdminReplyAsync(int ticketId, CreateTicketCommentRequest req, int adminUserId)
+    {
+        var ticket = await _uow.Tickets.Query().FirstOrDefaultAsync(t => t.Id == ticketId)
+            ?? throw new KeyNotFoundException("Ticket not found.");
+
+        var comment = new TicketComment
+        {
+            TicketId = ticketId,
+            Comment = req.Comment,
+            IsInternal = req.IsInternal,
+            AuthorUserId = adminUserId,
+            AuthorName = req.AuthorName
+        };
+
+        await _uow.TicketComments.AddAsync(comment);
+
+        // Auto-set status to In Progress if ticket is still Open
+        if (ticket.Status == "Open")
+            ticket.Status = "In Progress";
+
+        await _uow.SaveChangesAsync();
+        return MapCommentToDto(comment);
+    }
+
+    public async Task<TicketDto?> AdminSetStatusAsync(int ticketId, string status)
+    {
+        var ticket = await _uow.Tickets.Query().FirstOrDefaultAsync(t => t.Id == ticketId);
+        if (ticket == null) return null;
+
+        ticket.Status = status;
+        if (status == "Resolved") ticket.ResolvedAt = DateTime.UtcNow;
+        if (status == "Closed") ticket.ClosedAt = DateTime.UtcNow;
+
+        await _uow.SaveChangesAsync();
+        return MapToDto(ticket);
+    }
+
     private static TicketDto MapToDto(Ticket t) => new()
     {
         Id = t.Id,

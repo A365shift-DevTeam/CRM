@@ -68,7 +68,8 @@
       "Bash(curl -sI https://cli.coderabbit.ai/)",
       "Bash(curl -s https://cli.coderabbit.ai/)",
       "Bash(python -c \"import sys; print\\(sys.stdin.read\\(\\)[:2000]\\)\")",
-      "Bash(xargs cat *)"
+      "Bash(xargs cat *)",
+      "Bash(dotnet *)"
     ]
   }
 }

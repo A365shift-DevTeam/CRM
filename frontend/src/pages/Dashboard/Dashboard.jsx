@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   AreaChart, Area, BarChart, Bar,
@@ -14,12 +15,100 @@ import { notificationService } from '../../services/notificationService';
 import { useAuth } from '../../context/AuthContext';
 import { formatGlobalCurrency } from '../../utils/currencyUtils';
 import {
-  TrendingUp, TrendingDown, Banknote, Hourglass, Landmark,
-  FileText, UserPlus, AlertTriangle, Lightbulb,
-  CheckCircle2, Clock, X, ArrowUpRight, ArrowDownRight,
-  Activity, Target, Briefcase, Users, ChevronRight, Filter,
+  AlertTriangle, Lightbulb,
+  CheckCircle2, Clock, X,
+  Activity, Users, ChevronRight,
 } from 'lucide-react';
 import './Dashboard.css';
+
+const DASHBOARD_MENU_CARDS = [
+  {
+    title: 'Acquisition',
+    accent: '#5B61F6',
+    items: [
+      { label: 'Company', to: '/company' },
+      { label: 'Contacts', to: '/contact' },
+      { label: 'Leads', to: '/leads' },
+    ],
+  },
+  {
+    title: 'Sales',
+    accent: '#22C55E',
+    items: [
+      { label: 'Connect', to: '/sales' },
+      { label: 'Demo', to: '/sales' },
+      { label: 'Proposal', to: '/sales' },
+      { label: 'Negotiation', to: '/sales' },
+      { label: 'Closure', to: '/sales' },
+    ],
+  },
+  {
+    title: 'Delivery',
+    accent: '#F59E0B',
+    items: [
+      { label: 'Projects', to: '/projects' },
+      { label: 'Tasks', to: '/todolist' },
+      { label: 'Timesheet', to: '/timesheet' },
+      { label: 'Resources', to: '/documents' },
+    ],
+  },
+  {
+    title: 'FinOps',
+    accent: '#EF4444',
+    items: [
+      { label: 'Invoices', to: '/invoice' },
+      { label: 'Payments', to: '/finance' },
+      { label: 'Revenue', to: '/finance' },
+      { label: 'Expenses', to: '/finance' },
+      { label: 'Profit', to: '/finance' },
+    ],
+  },
+  {
+    title: 'Legal',
+    accent: '#8B5CF6',
+    items: [
+      { label: 'NDA', to: '/legal' },
+      { label: 'MSA', to: '/legal' },
+      { label: 'SOW', to: '/legal' },
+      { label: 'Contracts', to: '/legal' },
+    ],
+  },
+  {
+    title: 'Intelligence',
+    accent: '#0EA5E9',
+    items: [
+      { label: 'Reports', to: '/reports' },
+      { label: 'Analytics', to: '/reports' },
+      { label: 'Forecast', to: '/reports' },
+    ],
+  },
+  {
+    title: 'People',
+    accent: '#14B8A6',
+    items: [
+      { label: 'Employees', to: '/hr' },
+      { label: 'Attendance', to: '/hr' },
+      { label: 'Performance', to: '/hr' },
+    ],
+  },
+  {
+    title: 'Admin',
+    accent: '#6B7280',
+    items: [
+      { label: 'Settings', to: '/settings' },
+      { label: 'Access', to: '/admin' },
+      { label: 'Audit Logs', to: '/admin' },
+    ],
+  },
+  {
+    title: 'AI',
+    accent: '#EC4899',
+    items: [
+      { label: 'Agents', to: '/ai-agents' },
+      { label: 'Automations', to: '/ai-agents/ai-followup' },
+    ],
+  },
+];
 
 /* ─────────────────────────────────────────
    Animated Counter
@@ -94,48 +183,6 @@ function SparkLine({ data = [], color = '#4361EE', height = 42 }) {
       <path d={path} stroke={color} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
       <circle cx={last.x} cy={last.y} r="2.5" fill={color} />
     </svg>
-  );
-}
-
-/* ─────────────────────────────────────────
-   KPI Card
-───────────────────────────────────────── */
-const KPI_THEMES = {
-  blue:   { color: '#4361EE', bg: 'rgba(67,97,238,0.09)' },
-  emerald:{ color: '#10B981', bg: 'rgba(16,185,129,0.09)' },
-  amber:  { color: '#F59E0B', bg: 'rgba(245,158,11,0.09)' },
-  violet: { color: '#8B5CF6', bg: 'rgba(139,92,246,0.09)' },
-};
-
-function KPICard({ title, value, prefix = '', suffix = '', decimals = 0, formatFn, trend = 0, icon: Icon, colorKey = 'blue', sparkData = [], delay = 0 }) {
-  const { color, bg } = KPI_THEMES[colorKey] || KPI_THEMES.blue;
-  const isUp = trend >= 0;
-
-  return (
-    <motion.div
-      className="kpi-card"
-      style={{ '--kpi-accent': color, '--kpi-bg': bg }}
-      initial={{ opacity: 0, y: 28 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, delay, ease: [0.25, 0.1, 0.25, 1] }}
-    >
-      <div className="kpi-card-top">
-        <div className="kpi-icon-wrap" style={{ background: bg }}>
-          <Icon size={18} style={{ color }} />
-        </div>
-        <div className={`kpi-trend-badge ${isUp ? 'kpi-trend-up' : 'kpi-trend-down'}`}>
-          {isUp ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />}
-          {Math.abs(trend).toFixed(1)}%
-        </div>
-      </div>
-      <div className="kpi-label">{title}</div>
-      <div className="kpi-number">
-        <AnimatedCounter to={value} decimals={decimals} prefix={prefix} suffix={suffix} formatFn={formatFn} />
-      </div>
-      <div className="kpi-spark">
-        <SparkLine data={sparkData} color={color} height={42} />
-      </div>
-    </motion.div>
   );
 }
 
@@ -718,6 +765,37 @@ function QuickStats({ contacts, tasks, timesheetEntries }) {
   );
 }
 
+function DashboardMenuCards() {
+  return (
+    <motion.div
+      className="dash-menu-grid"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, delay: 0.24 }}
+    >
+      {DASHBOARD_MENU_CARDS.map((menuCard, cardIndex) => (
+        <motion.article
+          key={menuCard.title}
+          className="dash-menu-card"
+          style={{ '--menu-accent': menuCard.accent }}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.28 + (cardIndex * 0.04) }}
+        >
+          <h3 className="dash-menu-title">{menuCard.title}</h3>
+          <div className="dash-menu-chip-wrap">
+            {menuCard.items.map((item) => (
+              <Link key={`${menuCard.title}-${item.label}`} to={item.to} className="dash-menu-chip">
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </motion.article>
+      ))}
+    </motion.div>
+  );
+}
+
 /* ─────────────────────────────────────────
    Alert Sidebar
 ───────────────────────────────────────── */
@@ -840,17 +918,6 @@ export default function Dashboard() {
     fetchFinance(); fetchTasks(); fetchAlerts();
   }, [currentUser]);
 
-  /* ── KPI Stats ── */
-  const kpiStats = useMemo(() => {
-    const activeProjects = projects.filter((p) => p.status !== 'Closed' && p.status !== 'Lost').length;
-    const wonProjects = projects.filter((p) => p.status === 'Won' || p.activeStage === 4).length;
-    const totalBilling = incomes.reduce((s, i) => s + (Number(i.amount) || 0), 0);
-    const pendingIncomes = incomes.filter((i) => i.status === 'Pending' || i.status === 'Raised');
-    const pendingPayments = pendingIncomes.reduce((s, i) => s + (Number(i.amount) || 0), 0);
-    const conversionRate = projects.length > 0 ? Number(((wonProjects / projects.length) * 100).toFixed(1)) : 0;
-    return { activeProjects, totalBilling, pendingPayments, conversionRate };
-  }, [projects, incomes]);
-
   /* ── Monthly Chart Data ── */
   const monthlyData = useMemo(() => {
     const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -875,25 +942,6 @@ export default function Dashboard() {
     });
     return months;
   }, [incomes, expenses]);
-
-  /* ── Trends ── */
-  const trends = useMemo(() => {
-    const cur = monthlyData[monthlyData.length - 1] || { income: 0, expense: 0 };
-    const prev = monthlyData[monthlyData.length - 2] || { income: 0, expense: 0 };
-    const revenueTrend = prev.income > 0 ? ((cur.income - prev.income) / prev.income) * 100 : 0;
-    const pendingTrend = prev.expense > 0 ? ((cur.expense - prev.expense) / prev.expense) * 100 : 0;
-    return { revenueTrend, pendingTrend };
-  }, [monthlyData]);
-
-  /* ── Spark data ── */
-  const sparkRevenue = useMemo(() => monthlyData.map((m) => m.income), [monthlyData]);
-  const sparkExpense = useMemo(() => monthlyData.map((m) => m.expense), [monthlyData]);
-  const sparkProjects = useMemo(() =>
-    Array.from({ length: 6 }, (_, i) => Math.max(0, kpiStats.activeProjects - (5 - i))),
-  [kpiStats.activeProjects]);
-  const sparkConversion = useMemo(() =>
-    [35, 42, 38, 55, 48, kpiStats.conversionRate].map((v) => Math.max(0, v)),
-  [kpiStats.conversionRate]);
 
   /* ── Recent Invoices ── */
   const recentInvoices = useMemo(() => {
@@ -1020,49 +1068,8 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* ── KPI Grid ── */}
-        <div className="kpi-grid">
-          <KPICard
-            title="Active Projects"
-            value={kpiStats.activeProjects}
-            icon={Briefcase}
-            colorKey="blue"
-            trend={trends.revenueTrend}
-            sparkData={sparkProjects}
-            delay={0}
-          />
-          <KPICard
-            title="Total Revenue"
-            value={kpiStats.totalBilling}
-            formatFn={(v) => formatGlobalCurrency(v, 'INR', { maximumFractionDigits: 0 })}
-            icon={Banknote}
-            colorKey="emerald"
-            trend={trends.revenueTrend}
-            sparkData={sparkRevenue}
-            delay={0.07}
-          />
-          <KPICard
-            title="Pending Payments"
-            value={kpiStats.pendingPayments}
-            formatFn={(v) => formatGlobalCurrency(v, 'INR', { maximumFractionDigits: 0 })}
-            icon={Hourglass}
-            colorKey="amber"
-            trend={-Math.abs(trends.pendingTrend)}
-            sparkData={sparkExpense}
-            delay={0.14}
-          />
-          <KPICard
-            title="Conversion Rate"
-            value={kpiStats.conversionRate}
-            suffix="%"
-            decimals={1}
-            icon={Target}
-            colorKey="violet"
-            trend={trends.revenueTrend}
-            sparkData={sparkConversion}
-            delay={0.21}
-          />
-        </div>
+        {/* ── Menu Cards ── */}
+        <DashboardMenuCards />
 
         {/* ── Revenue Chart ── */}
         <RevenueChart data={monthlyData} />

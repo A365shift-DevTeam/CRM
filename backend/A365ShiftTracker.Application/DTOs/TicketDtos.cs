@@ -26,6 +26,7 @@ public class TicketDto
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public string? CreatedByName { get; set; }
+    public string? RaisedByEmail { get; set; }
     public List<TicketCommentDto> Comments { get; set; } = new();
 }
 
@@ -72,6 +73,11 @@ public class CreateTicketCommentRequest
     public string Comment { get; set; } = string.Empty;
     public bool IsInternal { get; set; } = false;
     public string AuthorName { get; set; } = string.Empty;
+}
+
+public class AdminSetStatusRequest
+{
+    public string Status { get; set; } = string.Empty;
 }
 
 public class AiGenerateTicketRequest

@@ -3,6 +3,7 @@ using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace A365ShiftTracker.API.Controllers;
 
@@ -16,6 +17,7 @@ public class ReportsController : BaseApiController
     public ReportsController(IReportService service) => _service = service;
 
     [HttpGet("revenue")]
+    [OutputCache(PolicyName = "StatsCache")]
     public async Task<ActionResult<ApiResponse<List<MonthlyRevenueDto>>>> GetRevenue(
         [FromQuery] DateTime from, [FromQuery] DateTime to)
     {
@@ -25,6 +27,7 @@ public class ReportsController : BaseApiController
     }
 
     [HttpGet("expenses-by-category")]
+    [OutputCache(PolicyName = "StatsCache")]
     public async Task<ActionResult<ApiResponse<List<CategoryExpenseDto>>>> GetExpensesByCategory(
         [FromQuery] DateTime from, [FromQuery] DateTime to)
     {
@@ -34,6 +37,7 @@ public class ReportsController : BaseApiController
     }
 
     [HttpGet("pipeline-conversion")]
+    [OutputCache(PolicyName = "StatsCache")]
     public async Task<ActionResult<ApiResponse<PipelineConversionDto>>> GetPipelineConversion()
     {
         var userId = GetCurrentUserId();
@@ -42,6 +46,7 @@ public class ReportsController : BaseApiController
     }
 
     [HttpGet("contact-growth")]
+    [OutputCache(PolicyName = "StatsCache")]
     public async Task<ActionResult<ApiResponse<List<ContactGrowthDto>>>> GetContactGrowth(
         [FromQuery] DateTime from, [FromQuery] DateTime to)
     {

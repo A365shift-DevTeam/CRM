@@ -45,6 +45,9 @@ public class UserDto
     public DateTime? LastLoginAt { get; set; }
     public List<string> Roles { get; set; } = new();
     public List<string> Permissions { get; set; } = new(); // flattened permission codes
+    public bool TwoFactorRequired { get; set; }
+    public string TwoFactorMethod { get; set; } = "email";
+    public bool IsTotpEnabled { get; set; }
 }
 
 public class UpdateUserRolesRequest

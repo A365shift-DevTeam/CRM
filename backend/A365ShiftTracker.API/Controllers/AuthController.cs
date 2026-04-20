@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using A365ShiftTracker.Application.Common;
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
@@ -103,6 +104,39 @@ public class AuthController : ControllerBase
         var userId = int.Parse(sub);
         await _authService.DisableTotpAsync(userId);
         return Ok(ApiResponse<bool>.Ok(true, "Authenticator app disabled."));
+    }
+
+    [HttpPost("email-otp/send-enable")]
+    [Authorize]
+    public async Task<ActionResult<ApiResponse<bool>>> EmailOtpSendEnable()
+    {
+        var sub = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? throw new UnauthorizedAccessException("Not authenticated.");
+        await _authService.SendEmailOtpEnableAsync(int.Parse(sub));
+        return Ok(ApiResponse<bool>.Ok(true, "Verification code sent to your email."));
+    }
+
+    [HttpPost("email-otp/verify-enable")]
+    [Authorize]
+    public async Task<ActionResult<ApiResponse<bool>>> EmailOtpVerifyEnable(VerifyEmailOtpEnableRequest request)
+    {
+        var sub = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? throw new UnauthorizedAccessException("Not authenticated.");
+        await _authService.VerifyAndEnableEmailOtpAsync(int.Parse(sub), request.Code);
+        return Ok(ApiResponse<bool>.Ok(true, "Email OTP enabled successfully."));
+    }
+
+    [HttpPost("email-otp/disable")]
+    [Authorize]
+    public async Task<ActionResult<ApiResponse<bool>>> EmailOtpDisable()
+    {
+        var sub = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? throw new UnauthorizedAccessException("Not authenticated.");
+        await _authService.DisableEmailOtpAsync(int.Parse(sub));
+        return Ok(ApiResponse<bool>.Ok(true, "Email OTP disabled."));
     }
 
     [HttpPost("logout")]

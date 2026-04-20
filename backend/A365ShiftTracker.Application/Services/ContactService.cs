@@ -3,6 +3,7 @@ using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
 using A365ShiftTracker.Domain.Common;
 using A365ShiftTracker.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace A365ShiftTracker.Application.Services;
 
@@ -67,9 +68,23 @@ public class ContactService : IContactService
 
     public async Task<IEnumerable<ContactDto>> GetVendorsAsync(int userId)
     {
-        var vendors = await _uow.Contacts.FindAsync(c =>
-            c.UserId == userId && (c.EntityType == "Vendor" || c.Status == "Vendor"));
-        return vendors.Select(MapToDto);
+        return await _uow.Contacts.Query()
+            .Where(c => c.UserId == userId && (c.EntityType == "Vendor" || c.Status == "Vendor"))
+            .Select(c => new ContactDto
+            {
+                Id = c.Id, CompanyId = c.CompanyId, Name = c.Name, JobTitle = c.JobTitle, Phone = c.Phone,
+                Email = c.Email, Company = c.Company, Location = c.Location,
+                ClientAddress = c.ClientAddress, ClientCountry = c.ClientCountry,
+                Gstin = c.Gstin, Pan = c.Pan, Cin = c.Cin,
+                InternationalTaxId = c.InternationalTaxId, MsmeStatus = c.MsmeStatus,
+                TdsSection = c.TdsSection, TdsRate = c.TdsRate,
+                EntityType = c.EntityType, Status = c.Status,
+                Rating = c.Rating, Reviews = c.Reviews, Years = c.Years,
+                Margin = c.Margin, Avatar = c.Avatar, MatchScore = c.MatchScore,
+                MatchLabel = c.MatchLabel, MatchPercentage = c.MatchPercentage,
+                Services = c.Services, Notes = c.Notes, Score = c.Score
+            })
+            .ToListAsync();
     }
 
     // --- Columns (shared across users) ---
@@ -235,16 +250,16 @@ public class ContactService : IContactService
 
     public async Task ReorderColumnsAsync(List<string> orderedColIds)
     {
-        var allColumns = await _uow.ContactColumns.GetAllAsync();
-        foreach (var col in allColumns)
+        var columns = await _uow.ContactColumns.Query()
+            .Where(c => orderedColIds.Contains(c.ColId))
+            .ToListAsync();
+
+        foreach (var col in columns)
         {
             var newOrder = orderedColIds.IndexOf(col.ColId);
-            if (newOrder >= 0)
-            {
-                col.Order = newOrder;
-                await _uow.ContactColumns.UpdateAsync(col);
-            }
+            if (newOrder >= 0) col.Order = newOrder;
         }
+
         await _uow.SaveChangesAsync();
     }
 
