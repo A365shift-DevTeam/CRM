@@ -59,7 +59,7 @@ public class AuthService : IAuthService
         return new AuthResponse
         {
             Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
-            Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions),
+            Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions, user.DisplayName),
             Role = roleName, Permissions = permissions,
             IsTotpEnabled = user.IsTotpEnabled,
             TwoFactorRequired = user.TwoFactorRequired,
@@ -95,7 +95,7 @@ public class AuthService : IAuthService
                 return new LoginResponse
                 {
                     Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
-                    Token = GenerateJwtToken(user.Id, user.Email, rn, perms),
+                    Token = GenerateJwtToken(user.Id, user.Email, rn, perms, user.DisplayName),
                     Role = rn, Permissions = perms,
                     IsTotpEnabled = false,
                     TwoFactorRequired = user.TwoFactorRequired,
@@ -119,7 +119,7 @@ public class AuthService : IAuthService
         return new LoginResponse
         {
             Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
-            Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions),
+            Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions, user.DisplayName),
             Role = roleName, Permissions = permissions,
             Requires2FA = false,
             IsTotpEnabled = user.IsTotpEnabled,
@@ -173,7 +173,7 @@ public class AuthService : IAuthService
         return new LoginResponse
         {
             Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
-            Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions),
+            Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions, user.DisplayName),
             Role = roleName, Permissions = permissions,
             IsTotpEnabled = user.IsTotpEnabled,
             TwoFactorRequired = user.TwoFactorRequired,
@@ -208,7 +208,7 @@ public class AuthService : IAuthService
         return new LoginResponse
         {
             Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
-            Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions),
+            Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions, user.DisplayName),
             Role = roleName, Permissions = permissions,
             IsTotpEnabled = user.IsTotpEnabled,
             TwoFactorRequired = user.TwoFactorRequired,
@@ -369,9 +369,9 @@ public class AuthService : IAuthService
     // ── Token Helpers ────────────────────────────────────────
 
     public string GenerateJwtToken(int userId, string email)
-        => GenerateJwtToken(userId, email, "User", new List<string>());
+        => GenerateJwtToken(userId, email, "User", new List<string>(), null);
 
-    public string GenerateJwtToken(int userId, string email, string role, List<string> permissions)
+    public string GenerateJwtToken(int userId, string email, string role, List<string> permissions, string? displayName = null)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
         var claims = new List<Claim>
@@ -379,7 +379,8 @@ public class AuthService : IAuthService
             new(JwtRegisteredClaimNames.Sub, userId.ToString()),
             new(JwtRegisteredClaimNames.Email, email),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(ClaimTypes.Role, role)
+            new(ClaimTypes.Role, role),
+            new(ClaimTypes.Name, displayName ?? email)
         };
         foreach (var perm in permissions)
             claims.Add(new Claim("permission", perm));

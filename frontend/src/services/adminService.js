@@ -25,11 +25,11 @@ export const adminService = {
 
     // Support Tickets
     getTickets: (page = 1, pageSize = 25) =>
-        apiClient.get(`/admin/tickets?page=${page}&pageSize=${pageSize}`).then(r => r.data?.data),
+        apiClient.get(`/admin/tickets?page=${page}&pageSize=${pageSize}`),
     getTicket: (id) =>
-        apiClient.get(`/admin/tickets/${id}`).then(r => r.data?.data),
+        apiClient.get(`/admin/tickets/${id}`),
     replyToTicket: (id, comment, isInternal, authorName) =>
-        apiClient.post(`/admin/tickets/${id}/reply`, { comment, isInternal, authorName }).then(r => r.data?.data),
+        apiClient.post(`/admin/tickets/${id}/reply`, { comment, isInternal, authorName }),
     setTicketStatus: (id, status) =>
-        apiClient.patch(`/admin/tickets/${id}/status`, { status }).then(r => r.data?.data),
+        apiClient.patch(`/admin/tickets/${id}/status`, { status }),
 };

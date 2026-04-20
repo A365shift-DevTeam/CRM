@@ -67,7 +67,10 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
 
     public Task DeleteAsync(T entity)
     {
-        _dbSet.Remove(entity);
+        if (entity is AuditableEntity auditable)
+            auditable.IsDeleted = true;
+        else
+            _dbSet.Remove(entity);
         return Task.CompletedTask;
     }
 

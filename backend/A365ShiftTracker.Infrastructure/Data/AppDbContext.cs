@@ -3,9 +3,11 @@ using System.Threading.Channels;
 using A365ShiftTracker.Domain.Common;
 using A365ShiftTracker.Domain.Entities;
 using A365ShiftTracker.Infrastructure.Converters;
+using Dapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Npgsql;
 
 namespace A365ShiftTracker.Infrastructure.Data;
 
@@ -470,6 +472,18 @@ public class AppDbContext : DbContext
             e.Property(i => i.TotalAmount).HasConversion(decConv);
         });
 
+        // ─── Global soft-delete query filter ──────────────
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes()
+            .Where(t => typeof(AuditableEntity).IsAssignableFrom(t.ClrType) && !t.ClrType.IsAbstract))
+        {
+            var param = System.Linq.Expressions.Expression.Parameter(entityType.ClrType, "e");
+            var prop = System.Linq.Expressions.Expression.Property(param, nameof(AuditableEntity.IsDeleted));
+            var filter = System.Linq.Expressions.Expression.Lambda(
+                System.Linq.Expressions.Expression.Equal(prop, System.Linq.Expressions.Expression.Constant(false)),
+                param);
+            entityType.SetQueryFilter(filter);
+        }
+
         // ─── Snake case column naming convention ───────────
         foreach (var entity in modelBuilder.Model.GetEntityTypes())
         {
@@ -490,11 +504,18 @@ public class AppDbContext : DbContext
                      ?? claimsPrincipal?.FindFirstValue("sub");
         var userId = int.TryParse(userIdStr, out var uid) ? (int?)uid : null;
         var userName = claimsPrincipal?.FindFirstValue(ClaimTypes.Name)
-                    ?? claimsPrincipal?.FindFirstValue("name")
-                    ?? "System";
+                    ?? claimsPrincipal?.FindFirstValue("name");
+
+        // Name claim missing (old token or background context) — look up display_name from DB
+        if (string.IsNullOrEmpty(userName) && userId.HasValue)
+            userName = await GetDisplayNameAsync(userId.Value);
+
+        userName ??= "System";
         var ipAddress = _httpContextAccessor?.HttpContext?.Connection?.RemoteIpAddress?.ToString();
 
         var auditEntries = new List<AuditLog>();
+
+        var softDeleteFields = new HashSet<string> { "IsDeleted", "DeletedAt", "DeletedByUserId", "DeletedByName" };
 
         foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
         {
@@ -526,35 +547,65 @@ public class AppDbContext : DbContext
             }
             else if (entry.State == EntityState.Modified)
             {
-                entry.Entity.UpdatedAt = now;
-                if (userId.HasValue)
-                {
-                    entry.Entity.UpdatedByUserId = userId;
-                    entry.Entity.UpdatedByName = userName;
-                }
+                var isSoftDelete = entry.Entity.IsDeleted &&
+                    entry.Property(nameof(AuditableEntity.IsDeleted)).IsModified &&
+                    !(bool)(entry.Property(nameof(AuditableEntity.IsDeleted)).OriginalValue ?? false);
 
-                var skipFields = new HashSet<string> { "UpdatedAt", "UpdatedByUserId", "UpdatedByName" };
-
-                foreach (var prop in entry.Properties
-                    .Where(p => p.IsModified && !skipFields.Contains(p.Metadata.Name)))
+                if (isSoftDelete)
                 {
-                    var oldVal = prop.OriginalValue?.ToString();
-                    var newVal = prop.CurrentValue?.ToString();
-                    if (oldVal == newVal) continue;
+                    entry.Entity.DeletedAt = now;
+                    entry.Entity.DeletedByUserId = userId;
+                    entry.Entity.DeletedByName = userName;
 
                     auditEntries.Add(new AuditLog
                     {
                         EntityName = entry.Entity.GetType().Name,
                         EntityId = entry.Entity.Id,
-                        FieldName = prop.Metadata.Name,
-                        OldValue = oldVal,
-                        NewValue = newVal,
-                        Action = "Updated",
+                        FieldName = "_record",
+                        OldValue = "existed",
+                        NewValue = null,
+                        Action = "Deleted",
                         ChangedByUserId = userId ?? 0,
                         ChangedByName = userName,
                         ChangedAt = now,
                         IpAddress = ipAddress
                     });
+                }
+                else
+                {
+                    entry.Entity.UpdatedAt = now;
+                    if (userId.HasValue)
+                    {
+                        entry.Entity.UpdatedByUserId = userId;
+                        entry.Entity.UpdatedByName = userName;
+                    }
+
+                    var skipFields = new HashSet<string>(softDeleteFields)
+                    {
+                        "UpdatedAt", "UpdatedByUserId", "UpdatedByName"
+                    };
+
+                    foreach (var prop in entry.Properties
+                        .Where(p => p.IsModified && !skipFields.Contains(p.Metadata.Name)))
+                    {
+                        var oldVal = prop.OriginalValue?.ToString();
+                        var newVal = prop.CurrentValue?.ToString();
+                        if (oldVal == newVal) continue;
+
+                        auditEntries.Add(new AuditLog
+                        {
+                            EntityName = entry.Entity.GetType().Name,
+                            EntityId = entry.Entity.Id,
+                            FieldName = prop.Metadata.Name,
+                            OldValue = oldVal,
+                            NewValue = newVal,
+                            Action = "Updated",
+                            ChangedByUserId = userId ?? 0,
+                            ChangedByName = userName,
+                            ChangedAt = now,
+                            IpAddress = ipAddress
+                        });
+                    }
                 }
             }
             else if (entry.State == EntityState.Deleted)
@@ -633,6 +684,22 @@ public class AppDbContext : DbContext
             DateTimeKind.Local => value.ToUniversalTime(),
             _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
         };
+    }
+
+    private async Task<string?> GetDisplayNameAsync(int userId)
+    {
+        try
+        {
+            var connStr = _configuration?.GetConnectionString("DefaultConnection");
+            if (connStr == null) return null;
+            using var conn = new NpgsqlConnection(connStr);
+            return await conn.ExecuteScalarAsync<string?>(
+                "SELECT display_name FROM users WHERE id = @Id", new { Id = userId });
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static string ToSnakeCase(string name)

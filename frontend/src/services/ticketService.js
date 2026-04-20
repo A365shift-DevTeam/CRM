@@ -4,29 +4,29 @@ const base = '/tickets';
 
 export const ticketService = {
   getAll: () =>
-    apiClient.get(base).then(r => r.data?.data ?? []),
+    apiClient.get(base).then(r => r?.items ?? []),
 
   getById: (id) =>
-    apiClient.get(`${base}/${id}`).then(r => r.data?.data),
+    apiClient.get(`${base}/${id}`),
 
   create: (data) =>
-    apiClient.post(base, data).then(r => r.data?.data),
+    apiClient.post(base, data),
 
   update: (id, data) =>
-    apiClient.put(`${base}/${id}`, data).then(r => r.data?.data),
+    apiClient.put(`${base}/${id}`, data),
 
   delete: (id) =>
-    apiClient.delete(`${base}/${id}`).then(r => r.data),
+    apiClient.delete(`${base}/${id}`),
 
   getStats: () =>
-    apiClient.get(`${base}/stats`).then(r => r.data?.data),
+    apiClient.get(`${base}/stats`),
 
   aiGenerate: (rawText) =>
-    apiClient.post(`${base}/ai-generate`, { rawText }).then(r => r.data?.data),
+    apiClient.post(`${base}/ai-generate`, { rawText }),
 
   getComments: (ticketId) =>
-    apiClient.get(`${base}/${ticketId}/comments`).then(r => r.data?.data ?? []),
+    apiClient.get(`${base}/${ticketId}/comments`).then(r => r ?? []),
 
   addComment: (ticketId, data) =>
-    apiClient.post(`${base}/${ticketId}/comments`, data).then(r => r.data?.data),
+    apiClient.post(`${base}/${ticketId}/comments`, data),
 };

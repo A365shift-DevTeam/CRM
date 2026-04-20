@@ -13,6 +13,10 @@ public abstract class AuditableEntity : BaseEntity
     public int? UpdatedByUserId { get; set; }
     public string? CreatedByName { get; set; }
     public string? UpdatedByName { get; set; }
+    public bool IsDeleted { get; set; } = false;
+    public DateTime? DeletedAt { get; set; }
+    public int? DeletedByUserId { get; set; }
+    public string? DeletedByName { get; set; }
 }
 
 /// <summary>

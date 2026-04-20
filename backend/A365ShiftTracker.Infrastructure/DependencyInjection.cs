@@ -3,6 +3,7 @@ using A365ShiftTracker.Application.Common;
 using A365ShiftTracker.Application.Interfaces;
 using A365ShiftTracker.Application.Services;
 using A365ShiftTracker.Domain.Entities;
+using A365ShiftTracker.Infrastructure.Dapper;
 using A365ShiftTracker.Infrastructure.Data;
 using A365ShiftTracker.Infrastructure.Helpers;
 using A365ShiftTracker.Infrastructure.Repositories;
@@ -35,6 +36,9 @@ public static class DependencyInjection
         services.AddHttpContextAccessor();
         services.AddMemoryCache();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+        // Dapper (singleton — connection string doesn't change, connections are created per-use)
+        services.AddSingleton<IDapperContext, DapperContext>();
 
         // Repositories
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));

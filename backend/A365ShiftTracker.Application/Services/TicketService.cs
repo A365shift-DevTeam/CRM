@@ -2,6 +2,7 @@ using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
 using A365ShiftTracker.Domain.Common;
 using A365ShiftTracker.Domain.Entities;
+using Dapper;
 using Microsoft.EntityFrameworkCore;
 
 namespace A365ShiftTracker.Application.Services;
@@ -9,39 +10,189 @@ namespace A365ShiftTracker.Application.Services;
 public class TicketService : ITicketService
 {
     private readonly IUnitOfWork _uow;
+    private readonly IDapperContext _db;
 
-    public TicketService(IUnitOfWork uow)
+    public TicketService(IUnitOfWork uow, IDapperContext db)
     {
         _uow = uow;
+        _db = db;
     }
+
+    // ── Reads (Dapper) ────────────────────────────────────────────
 
     public async Task<PagedResult<TicketDto>> GetAllAsync(int userId, int page, int pageSize)
     {
-        var paged = await _uow.Tickets.GetPagedAsync(
-            t => t.UserId == userId, page, pageSize,
-            q => q.OrderByDescending(t => t.CreatedAt));
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        page = Math.Max(1, page);
+
+        const string countSql = "SELECT COUNT(*) FROM tickets WHERE user_id = @UserId AND is_deleted = FALSE";
+        const string itemsSql = """
+            SELECT id, ticket_number, title, description, type, priority, status, category,
+                   contact_id, company_id, project_id, lead_id, assigned_to_user_id, assigned_to_name,
+                   due_date, resolved_at, closed_at, is_ai_generated, ai_source, ai_confidence,
+                   ai_raw_input, created_at, updated_at, created_by_name
+            FROM tickets
+            WHERE user_id = @UserId AND is_deleted = FALSE
+            ORDER BY created_at DESC
+            LIMIT @PageSize OFFSET @Offset
+            """;
+
+        using var conn = _db.CreateConnection();
+        var total = await conn.ExecuteScalarAsync<int>(countSql, new { UserId = userId });
+        var items = await conn.QueryAsync<TicketDto>(itemsSql, new
+        {
+            UserId = userId,
+            PageSize = pageSize,
+            Offset = (page - 1) * pageSize
+        });
+
         return new PagedResult<TicketDto>
         {
-            Items = paged.Items.Select(MapToDto),
-            TotalCount = paged.TotalCount, Page = paged.Page, PageSize = paged.PageSize
+            Items = items,
+            TotalCount = total,
+            Page = page,
+            PageSize = pageSize
         };
     }
 
     public async Task<TicketDto?> GetByIdAsync(int id, int userId)
     {
-        var ticket = await _uow.Tickets.Query()
-            .Include(t => t.Comments)
-            .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
+        const string ticketSql = """
+            SELECT id, ticket_number, title, description, type, priority, status, category,
+                   contact_id, company_id, project_id, lead_id, assigned_to_user_id, assigned_to_name,
+                   due_date, resolved_at, closed_at, is_ai_generated, ai_source, ai_confidence,
+                   ai_raw_input, created_at, updated_at, created_by_name
+            FROM tickets
+            WHERE id = @Id AND user_id = @UserId AND is_deleted = FALSE
+            """;
+        const string commentsSql = """
+            SELECT id, ticket_id, comment, is_internal, author_user_id, author_name, created_at
+            FROM ticket_comments
+            WHERE ticket_id = @TicketId
+            ORDER BY created_at ASC
+            """;
+
+        using var conn = _db.CreateConnection();
+        var ticket = await conn.QueryFirstOrDefaultAsync<TicketDto>(ticketSql, new { Id = id, UserId = userId });
         if (ticket == null) return null;
-        ticket.Comments = ticket.Comments.OrderBy(c => c.CreatedAt).ToList();
-        return MapToDto(ticket);
+
+        var comments = await conn.QueryAsync<TicketCommentDto>(commentsSql, new { TicketId = id });
+        ticket.Comments = comments.ToList();
+        return ticket;
     }
+
+    public async Task<TicketStatsDto> GetStatsAsync(int userId)
+    {
+        const string sql = """
+            SELECT
+                COUNT(*) FILTER (WHERE status = 'Open')        AS open,
+                COUNT(*) FILTER (WHERE status = 'In Progress') AS in_progress,
+                COUNT(*) FILTER (WHERE status = 'Pending')     AS pending,
+                COUNT(*) FILTER (WHERE status = 'Resolved')    AS resolved,
+                COUNT(*) FILTER (WHERE status = 'Closed')      AS closed,
+                COUNT(*) FILTER (WHERE priority = 'Critical')  AS critical,
+                COUNT(*) FILTER (WHERE priority = 'High')      AS high,
+                COUNT(*) FILTER (WHERE priority = 'Medium')    AS medium,
+                COUNT(*) FILTER (WHERE priority = 'Low')       AS low
+            FROM tickets
+            WHERE user_id = @UserId AND is_deleted = FALSE
+            """;
+
+        using var conn = _db.CreateConnection();
+        return await conn.QueryFirstAsync<TicketStatsDto>(sql, new { UserId = userId });
+    }
+
+    public async Task<List<TicketCommentDto>> GetCommentsAsync(int ticketId, int userId)
+    {
+        const string verifySql = "SELECT COUNT(*) FROM tickets WHERE id = @TicketId AND user_id = @UserId AND is_deleted = FALSE";
+        const string commentsSql = """
+            SELECT id, ticket_id, comment, is_internal, author_user_id, author_name, created_at
+            FROM ticket_comments
+            WHERE ticket_id = @TicketId
+            ORDER BY created_at ASC
+            """;
+
+        using var conn = _db.CreateConnection();
+        var owned = await conn.ExecuteScalarAsync<int>(verifySql, new { TicketId = ticketId, UserId = userId });
+        if (owned == 0) return [];
+
+        var comments = await conn.QueryAsync<TicketCommentDto>(commentsSql, new { TicketId = ticketId });
+        return comments.ToList();
+    }
+
+    // ── Admin reads (Dapper) ──────────────────────────────────────
+
+    public async Task<PagedResult<TicketDto>> GetAllForAdminAsync(int page, int pageSize)
+    {
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        page = Math.Max(1, page);
+
+        const string countSql = "SELECT COUNT(*) FROM tickets WHERE is_deleted = FALSE";
+        const string itemsSql = """
+            SELECT t.id, t.ticket_number, t.title, t.description, t.type, t.priority, t.status,
+                   t.category, t.contact_id, t.company_id, t.project_id, t.lead_id,
+                   t.assigned_to_user_id, t.assigned_to_name, t.due_date, t.resolved_at, t.closed_at,
+                   t.is_ai_generated, t.ai_source, t.ai_confidence, t.ai_raw_input,
+                   t.created_at, t.updated_at, t.created_by_name,
+                   u.email AS raised_by_email
+            FROM tickets t
+            LEFT JOIN users u ON u.id = t.user_id
+            WHERE t.is_deleted = FALSE
+            ORDER BY t.created_at DESC
+            LIMIT @PageSize OFFSET @Offset
+            """;
+
+        using var conn = _db.CreateConnection();
+        var total = await conn.ExecuteScalarAsync<int>(countSql);
+        var items = await conn.QueryAsync<TicketDto>(itemsSql, new
+        {
+            PageSize = pageSize,
+            Offset = (page - 1) * pageSize
+        });
+
+        return new PagedResult<TicketDto>
+        {
+            Items = items,
+            TotalCount = total,
+            Page = page,
+            PageSize = pageSize
+        };
+    }
+
+    public async Task<TicketDto?> GetByIdForAdminAsync(int ticketId)
+    {
+        const string ticketSql = """
+            SELECT t.id, t.ticket_number, t.title, t.description, t.type, t.priority, t.status,
+                   t.category, t.contact_id, t.company_id, t.project_id, t.lead_id,
+                   t.assigned_to_user_id, t.assigned_to_name, t.due_date, t.resolved_at, t.closed_at,
+                   t.is_ai_generated, t.ai_source, t.ai_confidence, t.ai_raw_input,
+                   t.created_at, t.updated_at, t.created_by_name,
+                   u.email AS raised_by_email
+            FROM tickets t
+            LEFT JOIN users u ON u.id = t.user_id
+            WHERE t.id = @TicketId AND t.is_deleted = FALSE
+            """;
+        const string commentsSql = """
+            SELECT id, ticket_id, comment, is_internal, author_user_id, author_name, created_at
+            FROM ticket_comments
+            WHERE ticket_id = @TicketId
+            ORDER BY created_at ASC
+            """;
+
+        using var conn = _db.CreateConnection();
+        var ticket = await conn.QueryFirstOrDefaultAsync<TicketDto>(ticketSql, new { TicketId = ticketId });
+        if (ticket == null) return null;
+
+        var comments = await conn.QueryAsync<TicketCommentDto>(commentsSql, new { TicketId = ticketId });
+        ticket.Comments = comments.ToList();
+        return ticket;
+    }
+
+    // ── Writes (EF Core) ─────────────────────────────────────────
 
     public async Task<TicketDto> CreateAsync(CreateTicketRequest req, int userId)
     {
-        // Generate ticket number: TKT-{YYYY}-{sequential padded to 4}
-        var existingCount = await _uow.Tickets.CountAsync(t => t.UserId == userId);
-        var number = $"TKT-{DateTime.UtcNow.Year}-{(existingCount + 1):D4}";
+        var number = await NextTicketNumberAsync();
 
         var entity = new Ticket
         {
@@ -107,23 +258,6 @@ public class TicketService : ITicketService
         return true;
     }
 
-    public async Task<TicketStatsDto> GetStatsAsync(int userId)
-    {
-        var all = await _uow.Tickets.FindAsync(t => t.UserId == userId);
-        return new TicketStatsDto
-        {
-            Open = all.Count(t => t.Status == "Open"),
-            InProgress = all.Count(t => t.Status == "In Progress"),
-            Pending = all.Count(t => t.Status == "Pending"),
-            Resolved = all.Count(t => t.Status == "Resolved"),
-            Closed = all.Count(t => t.Status == "Closed"),
-            Critical = all.Count(t => t.Priority == "Critical"),
-            High = all.Count(t => t.Priority == "High"),
-            Medium = all.Count(t => t.Priority == "Medium"),
-            Low = all.Count(t => t.Priority == "Low"),
-        };
-    }
-
     public async Task<TicketCommentDto> AddCommentAsync(int ticketId, CreateTicketCommentRequest req, int userId)
     {
         var ticket = await _uow.Tickets.Query()
@@ -144,61 +278,6 @@ public class TicketService : ITicketService
         return MapCommentToDto(comment);
     }
 
-    public async Task<List<TicketCommentDto>> GetCommentsAsync(int ticketId, int userId)
-    {
-        // Verify ownership
-        var ticket = await _uow.Tickets.Query()
-            .FirstOrDefaultAsync(t => t.Id == ticketId && t.UserId == userId);
-        if (ticket == null) return new List<TicketCommentDto>();
-        var comments = await _uow.TicketComments.FindAsync(c => c.TicketId == ticketId);
-        return comments.OrderBy(c => c.CreatedAt).Select(MapCommentToDto).ToList();
-    }
-
-    // ── Admin methods ─────────────────────────────────────────────
-
-    public async Task<PagedResult<TicketDto>> GetAllForAdminAsync(int page, int pageSize)
-    {
-        var paged = await _uow.Tickets.GetPagedAsync(
-            _ => true, page, pageSize,
-            q => q.OrderByDescending(t => t.CreatedAt));
-
-        var userIds = paged.Items.Select(t => t.UserId).Distinct().ToList();
-        var users = await _uow.Users.Query()
-            .Where(u => userIds.Contains(u.Id))
-            .Select(u => new { u.Id, u.Email })
-            .ToListAsync();
-        var emailMap = users.ToDictionary(u => u.Id, u => u.Email);
-
-        return new PagedResult<TicketDto>
-        {
-            Items = paged.Items.Select(t =>
-            {
-                var dto = MapToDto(t);
-                dto.RaisedByEmail = emailMap.TryGetValue(t.UserId, out var e) ? e : null;
-                return dto;
-            }),
-            TotalCount = paged.TotalCount, Page = paged.Page, PageSize = paged.PageSize
-        };
-    }
-
-    public async Task<TicketDto?> GetByIdForAdminAsync(int ticketId)
-    {
-        var ticket = await _uow.Tickets.Query()
-            .Include(t => t.Comments)
-            .FirstOrDefaultAsync(t => t.Id == ticketId);
-        if (ticket == null) return null;
-
-        var user = await _uow.Users.Query()
-            .Where(u => u.Id == ticket.UserId)
-            .Select(u => new { u.Email })
-            .FirstOrDefaultAsync();
-
-        ticket.Comments = ticket.Comments.OrderBy(c => c.CreatedAt).ToList();
-        var dto = MapToDto(ticket);
-        dto.RaisedByEmail = user?.Email;
-        return dto;
-    }
-
     public async Task<TicketCommentDto> AdminReplyAsync(int ticketId, CreateTicketCommentRequest req, int adminUserId)
     {
         var ticket = await _uow.Tickets.Query().FirstOrDefaultAsync(t => t.Id == ticketId)
@@ -215,7 +294,6 @@ public class TicketService : ITicketService
 
         await _uow.TicketComments.AddAsync(comment);
 
-        // Auto-set status to In Progress if ticket is still Open
         if (ticket.Status == "Open")
             ticket.Status = "In Progress";
 
@@ -235,6 +313,24 @@ public class TicketService : ITicketService
         await _uow.SaveChangesAsync();
         return MapToDto(ticket);
     }
+
+    // ── Helpers ──────────────────────────────────────────────────
+
+    private async Task<string> NextTicketNumberAsync()
+    {
+        var year = DateTime.UtcNow.Year;
+        const string sql = """
+            SELECT COALESCE(
+                MAX(CAST(SPLIT_PART(ticket_number, '-', 3) AS INTEGER)), 0)
+            FROM tickets
+            WHERE ticket_number LIKE @Pattern
+            """;
+        using var conn = _db.CreateConnection();
+        var maxSeq = await conn.ExecuteScalarAsync<int>(sql, new { Pattern = $"TKT-{year}-%" });
+        return $"TKT-{year}-{(maxSeq + 1):D4}";
+    }
+
+    // ── Mappers (used only by write paths that return newly created/updated entities) ──
 
     private static TicketDto MapToDto(Ticket t) => new()
     {
