@@ -30,8 +30,8 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
     {
-        var existing = await _uow.Users.FindAsync(u => u.Email == request.Email);
-        if (existing.Any())
+        var exists = await _uow.Users.Query().AnyAsync(u => u.Email == request.Email);
+        if (exists)
             throw new InvalidOperationException("Email already registered.");
 
         var user = new Domain.Entities.User
@@ -44,7 +44,7 @@ public class AuthService : IAuthService
         await _uow.Users.AddAsync(user);
         await _uow.SaveChangesAsync();
 
-        var defaultRole = (await _uow.Roles.FindAsync(r => r.Name == "User")).FirstOrDefault();
+        var defaultRole = await _uow.Roles.Query().FirstOrDefaultAsync(r => r.Name == "User");
         if (defaultRole != null)
         {
             await _uow.UserRoles.AddAsync(new Domain.Entities.UserRole
@@ -71,8 +71,7 @@ public class AuthService : IAuthService
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
     {
-        var users = await _uow.Users.FindAsync(u => u.Email == request.Email);
-        var user = users.FirstOrDefault()
+        var user = await _uow.Users.Query().FirstOrDefaultAsync(u => u.Email == request.Email)
             ?? throw new UnauthorizedAccessException("Invalid credentials.");
 
         if (!user.IsActive)
@@ -328,8 +327,7 @@ public class AuthService : IAuthService
 
     public async Task AdminResetUserTotpAsync(int userId)
     {
-        var users = await _uow.Users.FindAsync(u => u.Id == userId);
-        var user = users.FirstOrDefault()
+        var user = await _uow.Users.Query().FirstOrDefaultAsync(u => u.Id == userId)
             ?? throw new KeyNotFoundException($"User {userId} not found.");
 
         user.IsTotpEnabled = false;
@@ -344,8 +342,7 @@ public class AuthService : IAuthService
 
     public async Task<string> RequestPasswordResetAsync(string email)
     {
-        var users = await _uow.Users.FindAsync(u => u.Email == email);
-        var user = users.FirstOrDefault()
+        var user = await _uow.Users.Query().FirstOrDefaultAsync(u => u.Email == email)
             ?? throw new KeyNotFoundException("No account found with that email.");
 
         var token = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
@@ -358,9 +355,8 @@ public class AuthService : IAuthService
 
     public async Task ResetPasswordAsync(string token, string newPassword)
     {
-        var users = await _uow.Users.FindAsync(u =>
-            u.ResetToken == token && u.ResetTokenExpiry > DateTime.UtcNow);
-        var user = users.FirstOrDefault()
+        var user = await _uow.Users.Query()
+            .FirstOrDefaultAsync(u => u.ResetToken == token && u.ResetTokenExpiry > DateTime.UtcNow)
             ?? throw new InvalidOperationException("Invalid or expired reset token.");
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);

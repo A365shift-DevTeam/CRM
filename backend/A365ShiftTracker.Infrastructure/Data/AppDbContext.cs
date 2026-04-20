@@ -1,3 +1,4 @@
+using System.Threading.Channels;
 using A365ShiftTracker.Application.Common;
 using A365ShiftTracker.Domain.Common;
 using A365ShiftTracker.Domain.Entities;
@@ -11,12 +12,18 @@ public class AppDbContext : DbContext
 {
     private readonly ICurrentUserService? _currentUser;
     private readonly IConfiguration? _configuration;
+    private readonly ChannelWriter<IReadOnlyList<AuditLog>>? _auditChannel;
 
-    public AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserService? currentUser = null, IConfiguration? configuration = null)
+    public AppDbContext(
+        DbContextOptions<AppDbContext> options,
+        ICurrentUserService? currentUser = null,
+        IConfiguration? configuration = null,
+        ChannelWriter<IReadOnlyList<AuditLog>>? auditChannel = null)
         : base(options)
     {
         _currentUser = currentUser;
         _configuration = configuration;
+        _auditChannel = auditChannel;
     }
 
     public DbSet<User> Users => Set<User>();
@@ -574,12 +581,21 @@ public class AppDbContext : DbContext
 
         if (auditEntries.Count > 0)
         {
-            AuditLogs.AddRange(auditEntries);
-            await base.SaveChangesAsync(cancellationToken);
+            if (_auditChannel != null)
+                await _auditChannel.WriteAsync(auditEntries, cancellationToken);
+            else
+            {
+                AuditLogs.AddRange(auditEntries);
+                await base.SaveChangesAsync(cancellationToken);
+            }
         }
 
         return result;
     }
+
+    // Used by AuditBackgroundService to persist audit logs without re-triggering audit collection.
+    public Task<int> SaveChangesWithoutAuditAsync(CancellationToken cancellationToken = default)
+        => base.SaveChangesAsync(cancellationToken);
 
     private void NormalizeDateTimeKinds()
     {

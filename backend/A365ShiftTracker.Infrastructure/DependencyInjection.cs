@@ -1,6 +1,8 @@
+using System.Threading.Channels;
 using A365ShiftTracker.Application.Common;
 using A365ShiftTracker.Application.Interfaces;
 using A365ShiftTracker.Application.Services;
+using A365ShiftTracker.Domain.Entities;
 using A365ShiftTracker.Infrastructure.Data;
 using A365ShiftTracker.Infrastructure.Helpers;
 using A365ShiftTracker.Infrastructure.Repositories;
@@ -8,6 +10,7 @@ using A365ShiftTracker.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace A365ShiftTracker.Infrastructure;
 
@@ -15,6 +18,13 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        // Audit log background channel (singleton, bounded to 1000 batches)
+        var auditChannel = Channel.CreateBounded<IReadOnlyList<AuditLog>>(
+            new BoundedChannelOptions(1000) { FullMode = BoundedChannelFullMode.DropOldest });
+        services.AddSingleton(auditChannel.Reader);
+        services.AddSingleton(auditChannel.Writer);
+        services.AddHostedService<AuditBackgroundService>();
+
         // Database
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"),
