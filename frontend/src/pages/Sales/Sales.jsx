@@ -5,7 +5,15 @@ import { FaWhatsapp } from 'react-icons/fa6'
 import { Button, Modal, Form, Dropdown } from 'react-bootstrap'
 import PageToolbar from '../../components/PageToolbar/PageToolbar'
 import './Sales.css'
-import StageSettingsModal from './StageSettingsModal'
+import StageSettingsModal, {
+    getDefaultDeliveryStages,
+    getDefaultFinanceStages,
+    getDefaultLegalStages,
+    DELIVERY_STORAGE_KEY,
+    FINANCE_STORAGE_KEY,
+    LEGAL_STORAGE_KEY,
+    loadStoredStages
+} from './StageSettingsModal'
 import BusinessProcessModal from './BusinessProcessModal'
 import { projectService } from '../../services/api'
 import { incomeService } from '../../services/incomeService'
@@ -77,18 +85,23 @@ const getClientColor = (name) => {
     return CLIENT_COLORS[Math.abs(hash) % CLIENT_COLORS.length]
 }
 
-const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onDelete, onEdit, onInvoice, onTimesheet, onLegal, delay, clientName, brandingName, title, history = [] }) => {
+const SalesCard = ({ projectId, project, stages, deliveryStages, financeStages, legalStages, activeStage, onStageChange, onDelete, onEdit, onInvoice, onTimesheet, onLegal, delay, clientName, brandingName, title, history = [] }) => {
     const toast = useToast()
     const { themeColor } = useTheme()
     const [showNotification, setShowNotification] = useState(false)
     const [stageTransition, setStageTransition] = useState({ from: '', to: '' })
     const [iconsExpanded, setIconsExpanded] = useState(false)
+    const [selectedDept, setSelectedDept] = useState('sales')
 
     const client = { name: clientName || 'Unknown Client', color: getClientColor(clientName || projectId) }
 
+    // Resolve which stages and active index to show
+    const displayStages = selectedDept === 'sales' ? stages : (selectedDept === 'delivery' ? deliveryStages : (selectedDept === 'finance' ? financeStages : legalStages))
+    const displayActiveStage = selectedDept === 'sales' ? activeStage : (selectedDept === 'delivery' ? (project.deliveryStage || 0) : (selectedDept === 'finance' ? (project.financeStage || 0) : (project.legalStage || 0)))
+
     // Calculate Progress Percentage
-    const maxStageIndex = stages.length > 0 ? stages.length - 1 : 1;
-    const rawPercentage = (activeStage / maxStageIndex) * 100;
+    const maxStageIndex = displayStages.length > 0 ? displayStages.length - 1 : 1;
+    const rawPercentage = (displayActiveStage / maxStageIndex) * 100;
     const progressPercentage = Math.min(100, Math.round(rawPercentage));
 
     const handleDragStart = (e) => {
@@ -107,10 +120,11 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
         e.currentTarget.classList.remove('drag-over')
 
         // Open modal for confirmation and data entry
-        if (index !== activeStage) {
+        if (index !== displayActiveStage) {
             setStageTransition({
-                from: stages[activeStage]?.label || 'Unknown',
-                to: stages[index]?.label || 'Unknown'
+                from: displayStages[displayActiveStage]?.label || 'Unknown',
+                to: displayStages[index]?.label || 'Unknown',
+                dept: selectedDept
             })
             // Do NOT update stage yet - wait for modal save
             setShowNotification(true)
@@ -120,8 +134,9 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
     const handleStageClick = (index) => {
         // Open modal for confirmation/history regardless of whether it's the active stage
         setStageTransition({
-            from: stages[activeStage]?.label || 'Unknown',
-            to: stages[index]?.label || 'Unknown'
+            from: displayStages[displayActiveStage]?.label || 'Unknown',
+            to: displayStages[index]?.label || 'Unknown',
+            dept: selectedDept
         })
         setShowNotification(true)
     }
@@ -137,7 +152,29 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
             )}
 
             {/* Title Row */}
-            <div className="sales-card-title">{title || 'Untitled Project'}</div>
+            <div className="d-flex justify-content-between align-items-center mb-1">
+                <div className="sales-card-title m-0">{title || 'Untitled Project'}</div>
+                
+                {/* Department Radio Buttons */}
+                <div className="dept-radio-group">
+                    <label className={selectedDept === 'sales' ? 'active' : ''}>
+                        <input type="radio" name={`dept-${projectId}`} checked={selectedDept === 'sales'} onChange={() => setSelectedDept('sales')} />
+                        Sales
+                    </label>
+                    <label className={selectedDept === 'delivery' ? 'active' : ''}>
+                        <input type="radio" name={`dept-${projectId}`} checked={selectedDept === 'delivery'} onChange={() => setSelectedDept('delivery')} />
+                        Delivery
+                    </label>
+                    <label className={selectedDept === 'finance' ? 'active' : ''}>
+                        <input type="radio" name={`dept-${projectId}`} checked={selectedDept === 'finance'} onChange={() => setSelectedDept('finance')} />
+                        Finance
+                    </label>
+                    <label className={selectedDept === 'legal' ? 'active' : ''}>
+                        <input type="radio" name={`dept-${projectId}`} checked={selectedDept === 'legal'} onChange={() => setSelectedDept('legal')} />
+                        Legal
+                    </label>
+                </div>
+            </div>
 
             {/* Header Row: ID + Meta + Icons */}
             <div className="d-flex justify-content-between align-items-center mb-2">
@@ -218,10 +255,10 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
                 {/* Center: Pipeline */}
                 <div className="d-flex align-items-center" style={{ overflowX: 'auto', padding: '26px 4px 4px', scrollbarWidth: 'none' }}>
                     <div className="pipeline-wrapper">
-                        {stages.map((stage, index) => {
-                            const isLast = index === stages.length - 1;
-                            const isActive = index === activeStage;
-                            const isPast = index < activeStage;
+                        {displayStages.map((stage, index) => {
+                            const isLast = index === displayStages.length - 1;
+                            const isActive = index === displayActiveStage;
+                            const isPast = index < displayActiveStage;
 
                             let isOverdue = false;
                             if (stage.endDate) {
@@ -247,7 +284,7 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
                                     <div className="position-relative">
                                         {isActive && (
                                             <div className="running-man-icon" draggable onDragStart={handleDragStart}>
-                                                <i className="fa-solid fa-person-running" style={{ color: themeColor || '#4361EE', fontSize: '20px' }} />
+                                                <i className="fa-solid fa-person-running" style={{ color: themeColor || (selectedDept === 'sales' ? '#4361EE' : selectedDept === 'delivery' ? '#8B5CF6' : selectedDept === 'finance' ? '#10B981' : '#F43F5E'), fontSize: '20px' }} />
                                             </div>
                                         )}
                                         <div
@@ -289,14 +326,14 @@ const SalesCard = ({ projectId, project, stages, activeStage, onStageChange, onD
                 handleSave={(data) => {
                     console.log('Form data saved:', data)
                     if (data.stageIndex !== undefined) {
-                        onStageChange(data.stageIndex, data)
+                        onStageChange(data.stageIndex, { ...data, dept: stageTransition.dept })
                     }
                     setShowNotification(false)
                 }}
                 projectId={projectId}
-                stages={stages}
-                activeStage={activeStage}
-                targetStage={stages.findIndex(s => s.label === stageTransition.to)}
+                stages={displayStages}
+                activeStage={displayActiveStage}
+                targetStage={displayStages.findIndex(s => s.label === stageTransition.to)}
                 delay={delay}
                 history={history}
             />
@@ -322,6 +359,9 @@ function Sales() {
     // Distinct stages for each menu type
     const [productStages, setProductStages] = useState(() => getStoredStages('Product'))
     const [serviceStages, setServiceStages] = useState(() => getStoredStages('Service'))
+    const [deliveryStages, setDeliveryStages] = useState(() => loadStoredStages(DELIVERY_STORAGE_KEY, getDefaultDeliveryStages))
+    const [financeStages, setFinanceStages] = useState(() => loadStoredStages(FINANCE_STORAGE_KEY, getDefaultFinanceStages))
+    const [legalStages, setLegalStages] = useState(() => loadStoredStages(LEGAL_STORAGE_KEY, getDefaultLegalStages))
 
     // Global Labels
     const [productLabel, setProductLabel] = useState(() => localStorage.getItem('app_product_label') || 'Products')
@@ -406,18 +446,36 @@ function Sales() {
         if (!p) { stageLockRef.current.delete(lockKey); return; }
 
         const currentStages = [...getProjectStages(p)];
-        const savedStageIndex = logData?.savedStageIndex !== undefined ? logData.savedStageIndex : p.activeStage;
+        const savedStageIndex = logData?.savedStageIndex !== undefined ? logData.savedStageIndex : (logData?.dept === 'delivery' ? p.deliveryStage || 0 : logData?.dept === 'finance' ? p.financeStage || 0 : logData?.dept === 'legal' ? p.legalStage || 0 : p.activeStage);
         
-        currentStages[savedStageIndex] = {
-            ...currentStages[savedStageIndex],
-            startDate: logData?.startDate || currentStages[savedStageIndex].startDate,
-            endDate: logData?.endDate || currentStages[savedStageIndex].endDate,
-            actualDate: logData?.actualDate || currentStages[savedStageIndex].actualDate
-        };
+        // If it's sales, update the stages object, else just update the project pointer
+        if (logData?.dept === 'sales' || !logData?.dept) {
+            currentStages[savedStageIndex] = {
+                ...currentStages[savedStageIndex],
+                startDate: logData?.startDate || currentStages[savedStageIndex].startDate,
+                endDate: logData?.endDate || currentStages[savedStageIndex].endDate,
+                actualDate: logData?.actualDate || currentStages[savedStageIndex].actualDate
+            };
+        }
 
-        const oldStageLabel = currentStages[p.activeStage]?.label || 'Unknown'
-        const newStageLabel = currentStages[newStageIndex]?.label || 'Unknown'
-        const transitionStr = `${oldStageLabel} to ${newStageLabel}`
+        let oldStageLabel = 'Unknown';
+        let newStageLabel = 'Unknown';
+        
+        if (logData?.dept === 'delivery') {
+            oldStageLabel = deliveryStages[p.deliveryStage || 0]?.label || 'Unknown';
+            newStageLabel = deliveryStages[newStageIndex]?.label || 'Unknown';
+        } else if (logData?.dept === 'finance') {
+            oldStageLabel = financeStages[p.financeStage || 0]?.label || 'Unknown';
+            newStageLabel = financeStages[newStageIndex]?.label || 'Unknown';
+        } else if (logData?.dept === 'legal') {
+            oldStageLabel = legalStages[p.legalStage || 0]?.label || 'Unknown';
+            newStageLabel = legalStages[newStageIndex]?.label || 'Unknown';
+        } else {
+            oldStageLabel = currentStages[p.activeStage]?.label || 'Unknown';
+            newStageLabel = currentStages[newStageIndex]?.label || 'Unknown';
+        }
+        
+        const transitionStr = `${oldStageLabel} to ${newStageLabel}`;
 
         const newEntry = {
             timestamp: new Date().toISOString(),
@@ -434,26 +492,33 @@ function Sales() {
 
         const updatedHistory = [newEntry, ...(p.history || [])];
 
-        const uiUpdates = {
-            activeStage: newStageIndex,
-            history: updatedHistory,
-            stages: currentStages
-        };
-
-        // Send ALL fields the backend expects (UpdateProjectRequest extends CreateProjectRequest)
-        // so missing fields don't get overwritten with nulls/defaults
-        const apiUpdates = {
+        let uiUpdates = { history: updatedHistory };
+        let apiUpdates = {
             customId: p.customId || '',
             title: p.title || '',
             clientName: p.clientName || '',
-            activeStage: newStageIndex,
             delay: p.delay || 0,
             type: p.type || 'Product',
             history: updatedHistory,
-            stages: currentStages,
+            stages: currentStages, // Only holds sales custom stages, but passing it keeps it updated
             startDate: p.startDate || null,
             endDate: p.endDate || null,
         };
+
+        if (logData?.dept === 'delivery') {
+            uiUpdates.deliveryStage = newStageIndex;
+            apiUpdates.deliveryStage = newStageIndex;
+        } else if (logData?.dept === 'finance') {
+            uiUpdates.financeStage = newStageIndex;
+            apiUpdates.financeStage = newStageIndex;
+        } else if (logData?.dept === 'legal') {
+            uiUpdates.legalStage = newStageIndex;
+            apiUpdates.legalStage = newStageIndex;
+        } else {
+            uiUpdates.activeStage = newStageIndex;
+            uiUpdates.stages = currentStages;
+            apiUpdates.activeStage = newStageIndex;
+        }
 
         // Optimistic UI update
         setProjects(prev => prev.map(proj =>
@@ -804,6 +869,10 @@ function Sales() {
             localStorage.setItem('app_product_label', labels.productLabel)
             localStorage.setItem('app_service_label', labels.serviceLabel)
 
+            if (labels.deliveryStages) setDeliveryStages(labels.deliveryStages)
+            if (labels.financeStages) setFinanceStages(labels.financeStages)
+            if (labels.legalStages) setLegalStages(labels.legalStages)
+
             // Dispatch storage event to sync other tabs/components
             window.dispatchEvent(new Event('storage'))
         }
@@ -1013,6 +1082,9 @@ function Sales() {
                         projectId={project.id}
                         project={project}
                         stages={getProjectStages(project)}
+                        deliveryStages={deliveryStages}
+                        financeStages={financeStages}
+                        legalStages={legalStages}
                         activeStage={project.activeStage}
                         history={project.history}
                         rating={project.rating}
