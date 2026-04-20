@@ -1,8 +1,9 @@
+using System.Security.Claims;
 using System.Threading.Channels;
-using A365ShiftTracker.Application.Common;
 using A365ShiftTracker.Domain.Common;
 using A365ShiftTracker.Domain.Entities;
 using A365ShiftTracker.Infrastructure.Converters;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
@@ -10,18 +11,20 @@ namespace A365ShiftTracker.Infrastructure.Data;
 
 public class AppDbContext : DbContext
 {
-    private readonly ICurrentUserService? _currentUser;
+    // IHttpContextAccessor is singleton — safe for DbContext pooling.
+    // ICurrentUserService (scoped) was replaced to allow AddDbContextPool.
+    private readonly IHttpContextAccessor? _httpContextAccessor;
     private readonly IConfiguration? _configuration;
     private readonly ChannelWriter<IReadOnlyList<AuditLog>>? _auditChannel;
 
     public AppDbContext(
         DbContextOptions<AppDbContext> options,
-        ICurrentUserService? currentUser = null,
+        IHttpContextAccessor? httpContextAccessor = null,
         IConfiguration? configuration = null,
         ChannelWriter<IReadOnlyList<AuditLog>>? auditChannel = null)
         : base(options)
     {
-        _currentUser = currentUser;
+        _httpContextAccessor = httpContextAccessor;
         _configuration = configuration;
         _auditChannel = auditChannel;
     }
@@ -201,6 +204,7 @@ public class AppDbContext : DbContext
             e.HasIndex(c => c.Status);
             e.HasIndex(c => c.Company);
             e.HasIndex(c => c.UserId);
+            e.HasIndex(c => new { c.UserId, c.CreatedAt }); // ReportService contact growth queries
             e.Property(c => c.Name).HasConversion(strConv);
             e.Property(c => c.Phone).HasConversion(strConv);
             e.Property(c => c.Gstin).HasConversion(strConv);
@@ -280,6 +284,7 @@ public class AppDbContext : DbContext
             e.ToTable("expenses");
             e.Property(ex => ex.Details).HasColumnType("jsonb");
             e.HasIndex(ex => ex.UserId);
+            e.HasIndex(ex => new { ex.UserId, ex.Date }); // ReportService date-range filter
             e.Property(ex => ex.Amount).HasConversion(decConv);
         });
 
@@ -288,6 +293,7 @@ public class AppDbContext : DbContext
         {
             e.ToTable("incomes");
             e.HasIndex(i => i.UserId);
+            e.HasIndex(i => new { i.UserId, i.Date }); // ReportService date-range filter
             e.Property(i => i.Amount).HasConversion(decConv);
         });
 
@@ -337,7 +343,7 @@ public class AppDbContext : DbContext
         {
             e.ToTable("notifications");
             e.HasIndex(n => n.UserId);
-            e.HasIndex(n => n.IsRead);
+            e.HasIndex(n => new { n.UserId, n.IsRead }); // unread count queries
         });
 
         // ─── Saved Filters ──────────────────────────────
@@ -479,9 +485,14 @@ public class AppDbContext : DbContext
         NormalizeDateTimeKinds();
 
         var now = DateTime.UtcNow;
-        var userId = _currentUser?.UserId;
-        var userName = _currentUser?.UserName ?? "System";
-        var ipAddress = _currentUser?.IpAddress;
+        var claimsPrincipal = _httpContextAccessor?.HttpContext?.User;
+        var userIdStr = claimsPrincipal?.FindFirstValue(ClaimTypes.NameIdentifier)
+                     ?? claimsPrincipal?.FindFirstValue("sub");
+        var userId = int.TryParse(userIdStr, out var uid) ? (int?)uid : null;
+        var userName = claimsPrincipal?.FindFirstValue(ClaimTypes.Name)
+                    ?? claimsPrincipal?.FindFirstValue("name")
+                    ?? "System";
+        var ipAddress = _httpContextAccessor?.HttpContext?.Connection?.RemoteIpAddress?.ToString();
 
         var auditEntries = new List<AuditLog>();
 

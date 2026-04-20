@@ -25,10 +25,11 @@ public static class DependencyInjection
         services.AddSingleton(auditChannel.Writer);
         services.AddHostedService<AuditBackgroundService>();
 
-        // Database
-        services.AddDbContext<AppDbContext>(options =>
+        // Database — pooled context reduces per-request allocation significantly
+        services.AddDbContextPool<AppDbContext>((sp, options) =>
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"),
-                npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(3)));
+                npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(3))
+            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
 
         // Current user service
         services.AddHttpContextAccessor();
