@@ -223,103 +223,78 @@
 }
 .dash-alert-viewall:hover { background: rgba(67, 97, 238, 0.08); }
 
-/* ── KPI Grid ── */
-.kpi-grid {
+/* ── Dashboard Menu Grid ── */
+.dash-menu-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 20px;
 }
 
-/* ── KPI Card ── */
-.kpi-card {
-  background: #FFFFFF;
-  border-radius: var(--radius-xl);
-  padding: 22px 22px 16px;
-  border: 1px solid var(--border-light);
-  box-shadow: var(--shadow-card);
+.dash-menu-card {
   position: relative;
+  background: #F8FAFE;
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
+  min-height: 142px;
+  padding: 24px 28px;
   overflow: hidden;
-  cursor: default;
-  transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 24px rgba(148, 163, 184, 0.12);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.kpi-card::before {
+
+.dash-menu-card::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: var(--kpi-accent, var(--accent-primary));
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--menu-accent, #4361EE);
+  border-radius: 20px 0 0 20px;
 }
-/* Subtle glow orb in bg */
-.kpi-card::after {
-  content: '';
-  position: absolute;
-  top: -40px; right: -40px;
-  width: 120px; height: 120px;
-  background: radial-gradient(circle, var(--kpi-bg, rgba(67,97,238,0.1)) 0%, transparent 70%);
-  pointer-events: none;
-  border-radius: 50%;
+
+.dash-menu-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(148, 163, 184, 0.18);
 }
-.kpi-card:hover {
-  box-shadow: var(--shadow-card-hover);
-  transform: translateY(-3px);
+
+.dash-menu-title {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-size: clamp(20px, 2.2vw, 28px);
+  font-weight: 400;
+  color: #020617;
+  letter-spacing: -0.03em;
+  line-height: 1;
 }
-.kpi-card-top {
+
+.dash-menu-chip-wrap {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
-.kpi-icon-wrap {
-  width: 38px;
-  height: 38px;
-  border-radius: 11px;
-  display: flex;
+
+.dash-menu-chip {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-}
-.kpi-trend-badge {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 4px 9px;
-  border-radius: 999px;
-  letter-spacing: 0.01em;
-}
-.kpi-trend-up {
-  background: rgba(16, 185, 129, 0.1);
-  color: #059669;
-  border: 1px solid rgba(16, 185, 129, 0.2);
-}
-.kpi-trend-down {
-  background: rgba(244, 63, 94, 0.08);
-  color: #E11D48;
-  border: 1px solid rgba(244, 63, 94, 0.16);
-}
-.kpi-label {
+  background: #E9EDF8;
+  color: #4F46E5;
+  border: 1px solid #E2E8F6;
+  border-radius: 11px;
+  padding: 7px 12px;
   font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  margin-bottom: 4px;
+  font-weight: 400;
+  text-decoration: none;
+  line-height: 1.2;
+  transition: all 0.2s ease;
 }
-.kpi-number {
-  font-family: var(--font-display);
-  font-size: 26px;
-  font-weight: 800;
-  color: var(--text-primary);
-  line-height: 1.1;
-  letter-spacing: -0.03em;
-  margin-bottom: 14px;
-}
-.kpi-spark {
-  margin: 0 -4px -4px;
-  height: 42px;
-  opacity: 0.9;
+
+.dash-menu-chip:hover {
+  background: #DEE6FA;
+  color: #3730A3;
+  border-color: #CCD9F7;
 }
 
 /* ── Chart Card (shared) ── */
@@ -1001,16 +976,18 @@
    RESPONSIVE
 ───────────────────────────────────────────── */
 @media (max-width: 1280px) {
-  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .dash-menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dash-two-col { grid-template-columns: 1fr; }
   .dash-content { padding: 20px 20px 32px; gap: 18px; }
 }
 
 @media (max-width: 768px) {
-  .kpi-grid { grid-template-columns: 1fr; }
+  .dash-menu-grid { grid-template-columns: 1fr; gap: 14px; }
+  .dash-menu-card { min-height: 130px; padding: 18px 16px 16px 18px; }
+  .dash-menu-title { font-size: clamp(18px, 5.4vw, 22px); margin-bottom: 12px; }
+  .dash-menu-chip { font-size: 11px; padding: 6px 10px; border-radius: 10px; }
   .dash-content { padding: 16px 16px 28px; gap: 16px; }
   .dash-title { font-size: 22px; }
-  .kpi-number { font-size: 22px; }
   .dash-alert-sidebar { width: 100%; }
   .quick-stats-grid { grid-template-columns: 1fr 1fr; }
   .funnel-enterprise-layout { grid-template-columns: 1fr; gap: 14px; }
