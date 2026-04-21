@@ -69,7 +69,10 @@
       "Bash(curl -s https://cli.coderabbit.ai/)",
       "Bash(python -c \"import sys; print\\(sys.stdin.read\\(\\)[:2000]\\)\")",
       "Bash(xargs cat *)",
-      "Bash(dotnet *)"
+      "Bash(dotnet *)",
+      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); gh pr list --state open --json number,title,isDraft,author)",
+      "PowerShell(gh auth *)",
+      "Bash(gh auth *)"
     ]
   }
 }
