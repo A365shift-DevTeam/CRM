@@ -107,23 +107,23 @@
 }
 
 .stage-modal .btn-success {
-    background-color: #10b981;
-    border-color: #10b981;
+    background-color: var(--button-brand, #5286A5);
+    border-color: var(--button-brand, #5286A5);
     color: #fff;
 }
 
 .stage-modal .btn-success:hover {
-    background-color: #059669;
-    border-color: #059669;
+    background-color: var(--button-brand-hover, #416F8A);
+    border-color: var(--button-brand-hover, #416F8A);
 }
 
 .stage-modal .btn-outline-success {
-    color: #10b981;
-    border-color: #10b981;
+    color: var(--button-brand, #5286A5);
+    border-color: var(--button-brand, #5286A5);
 }
 
 .stage-modal .btn-outline-success:hover {
-    background-color: #10b981;
+    background-color: var(--button-brand, #5286A5);
     color: #fff;
 }
 

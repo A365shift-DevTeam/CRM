@@ -262,7 +262,7 @@ export default function Settings() {
                             )}
 
                             {!totpEnabled && !emailOtpEnabled && emailOtpStep === 'idle' && (
-                                <button onClick={handleEmailOtpSendCode} className="px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ background: '#4361EE', border: 'none', cursor: 'pointer' }}>
+                                <button onClick={handleEmailOtpSendCode} className="px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ background: 'var(--button-brand, #5286A5)', border: 'none', cursor: 'pointer' }}>
                                     Enable Email OTP
                                 </button>
                             )}
@@ -287,7 +287,7 @@ export default function Settings() {
                                             type="submit"
                                             disabled={emailOtpCode.length < 6}
                                             className="px-4 py-2 rounded-lg text-sm font-medium text-white"
-                                            style={{ background: '#4361EE', border: 'none', cursor: emailOtpCode.length < 6 ? 'not-allowed' : 'pointer', opacity: emailOtpCode.length < 6 ? 0.6 : 1 }}
+                                            style={{ background: 'var(--button-brand, #5286A5)', border: 'none', cursor: emailOtpCode.length < 6 ? 'not-allowed' : 'pointer', opacity: emailOtpCode.length < 6 ? 0.6 : 1 }}
                                         >
                                             Confirm
                                         </button>
@@ -339,7 +339,7 @@ export default function Settings() {
                             )}
 
                             {!totpEnabled && !totpSetup && (
-                                <button onClick={handleTotpSetup} className="px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ background: '#10b981', border: 'none', cursor: 'pointer' }}>
+                                <button onClick={handleTotpSetup} className="px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ background: 'var(--button-brand, #5286A5)', border: 'none', cursor: 'pointer' }}>
                                     Enable Authenticator App
                                 </button>
                             )}
@@ -359,7 +359,7 @@ export default function Settings() {
                                     </p>
                                     <form onSubmit={handleTotpVerifySetup} className="flex gap-2">
                                         <input type="text" inputMode="numeric" maxLength={6} value={totpCode} onChange={e => setTotpCode(e.target.value.replace(/\D/g,''))} placeholder="Enter 6-digit code" className="flex-1 px-3 py-2 rounded-lg text-sm" style={{ background: 'var(--input-bg, #fff)', border: '1px solid var(--border-color, #e2e8f0)', color: 'var(--text-primary, #1e293b)' }} />
-                                        <button type="submit" disabled={totpCode.length < 6} className="px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ background: '#10b981', border: 'none', cursor: totpCode.length < 6 ? 'not-allowed' : 'pointer', opacity: totpCode.length < 6 ? 0.6 : 1 }}>
+                                        <button type="submit" disabled={totpCode.length < 6} className="px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ background: 'var(--button-brand, #5286A5)', border: 'none', cursor: totpCode.length < 6 ? 'not-allowed' : 'pointer', opacity: totpCode.length < 6 ? 0.6 : 1 }}>
                                             Confirm
                                         </button>
                                     </form>

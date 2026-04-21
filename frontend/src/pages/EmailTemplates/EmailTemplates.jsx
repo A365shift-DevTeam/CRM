@@ -70,7 +70,7 @@ export default function EmailTemplates() {
                     <Form.Group className="mb-3"><Form.Label className="fw-bold" style={{ fontSize: '0.85rem' }}>Body</Form.Label><Form.Control as="textarea" rows={6} className="glass-input" value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} /></Form.Group>
                     <Form.Group className="mb-3"><Form.Label className="fw-bold" style={{ fontSize: '0.85rem' }}>Variables (comma-separated)</Form.Label><Form.Control className="glass-input" placeholder="companyName, contactName" value={form.variables} onChange={e => setForm({ ...form, variables: e.target.value })} /></Form.Group>
                 </Modal.Body>
-                <Modal.Footer><Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button><Button onClick={handleSave} style={{ background: '#3b82f6', border: 'none' }}>Save</Button></Modal.Footer>
+                <Modal.Footer><Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button><Button onClick={handleSave} style={{ background: 'var(--button-brand, #5286A5)', border: 'none' }}>Save</Button></Modal.Footer>
             </Modal>
         </div>
     );

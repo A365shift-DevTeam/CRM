@@ -138,7 +138,7 @@ const FinanceSettingsModal = ({ show, onHide, currentConfig, onSaveConfig }) => 
                         size="sm"
                         onClick={() => handleAddNew(type)}
                         className="d-flex align-items-center"
-                        style={{ background: '#10b981', borderColor: '#10b981', fontWeight: 600 }}
+                        style={{ background: 'var(--button-brand, #5286A5)', borderColor: 'var(--button-brand, #5286A5)', fontWeight: 600 }}
                     >
                         <Plus size={16} className="me-1" />
                         Add Field
@@ -241,7 +241,7 @@ const FinanceSettingsModal = ({ show, onHide, currentConfig, onSaveConfig }) => 
                 </Modal.Body>
                 <Modal.Footer className="border-top pt-3">
                     <Button variant="secondary" onClick={onHide}>Close</Button>
-                    <Button onClick={handleFinalSave} style={{ background: '#10b981', borderColor: '#10b981', fontWeight: 600 }}>
+                    <Button onClick={handleFinalSave} style={{ background: 'var(--button-brand, #5286A5)', borderColor: 'var(--button-brand, #5286A5)', fontWeight: 600 }}>
                         Save Changes
                     </Button>
                 </Modal.Footer>
@@ -362,7 +362,7 @@ const FinanceSettingsModal = ({ show, onHide, currentConfig, onSaveConfig }) => 
                 </Modal.Body>
                 <Modal.Footer className="border-top pt-3">
                     <Button variant="secondary" onClick={() => setShowEditModal(false)}>Cancel</Button>
-                    <Button onClick={handleSaveField} style={{ background: '#10b981', borderColor: '#10b981', fontWeight: 600 }}>
+                    <Button onClick={handleSaveField} style={{ background: 'var(--button-brand, #5286A5)', borderColor: 'var(--button-brand, #5286A5)', fontWeight: 600 }}>
                         {editingField?.field ? 'Update' : 'Add'} Field
                     </Button>
                 </Modal.Footer>

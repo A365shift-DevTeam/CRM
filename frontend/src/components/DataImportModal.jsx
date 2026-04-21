@@ -69,7 +69,7 @@ export default function DataImportModal({ show, onHide, entityType = 'contacts',
                     <div className="text-center py-4">
                         <p style={{ color: '#64748b' }}>Upload a CSV or Excel file</p>
                         <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" onChange={handleFile} style={{ display: 'none' }} />
-                        <Button onClick={() => fileRef.current?.click()} style={{ background: '#3b82f6', border: 'none' }}>Choose File</Button>
+                        <Button onClick={() => fileRef.current?.click()} style={{ background: 'var(--button-brand, #5286A5)', border: 'none' }}>Choose File</Button>
                     </div>
                 )}
                 {step === 2 && (
@@ -87,7 +87,7 @@ export default function DataImportModal({ show, onHide, entityType = 'contacts',
                         ))}
                         <div className="d-flex gap-2 mt-3">
                             <Button variant="secondary" size="sm" onClick={() => setStep(1)}>Back</Button>
-                            <Button size="sm" onClick={() => setStep(3)} style={{ background: '#3b82f6', border: 'none' }}>Preview</Button>
+                            <Button size="sm" onClick={() => setStep(3)} style={{ background: 'var(--button-brand, #5286A5)', border: 'none' }}>Preview</Button>
                         </div>
                     </div>
                 )}
@@ -104,7 +104,7 @@ export default function DataImportModal({ show, onHide, entityType = 'contacts',
                         </div>
                         <div className="d-flex gap-2 mt-3">
                             <Button variant="secondary" size="sm" onClick={() => setStep(2)}>Back</Button>
-                            <Button size="sm" onClick={handleImport} disabled={importing} style={{ background: '#10b981', border: 'none' }}>{importing ? 'Importing...' : `Import ${fileData.length} rows`}</Button>
+                            <Button size="sm" onClick={handleImport} disabled={importing} style={{ background: 'var(--button-brand, #5286A5)', border: 'none' }}>{importing ? 'Importing...' : `Import ${fileData.length} rows`}</Button>
                         </div>
                     </div>
                 )}

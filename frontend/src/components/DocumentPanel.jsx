@@ -47,7 +47,7 @@ export default function DocumentPanel({ entityType, entityId }) {
                         <input className="glass-input" type="number" placeholder="Size (bytes)" value={form.fileSize || ''} onChange={e => setForm({ ...form, fileSize: parseInt(e.target.value) || 0 })} style={{ flex: 1 }} />
                     </div>
                     <div className="d-flex gap-2 mt-2">
-                        <button onClick={handleAdd} style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', padding: '4px 12px', fontSize: '0.8rem' }}>Save</button>
+                        <button onClick={handleAdd} style={{ background: 'var(--button-brand, #5286A5)', color: '#fff', border: 'none', borderRadius: '6px', padding: '4px 12px', fontSize: '0.8rem' }}>Save</button>
                         <button onClick={() => setShowForm(false)} style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '4px 12px', fontSize: '0.8rem', color: '#64748b' }}>Cancel</button>
                     </div>
                 </div>

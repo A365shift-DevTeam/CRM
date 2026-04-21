@@ -154,7 +154,7 @@ export default function AITicketModal({ show, onHide, onConfirm }) {
         {step === 1 && (
           <>
             <Button variant="outline-secondary" onClick={() => setStep(0)}>Back</Button>
-            <Button onClick={() => setStep(2)} style={{ background: '#4361EE', border: 'none' }}>
+            <Button onClick={() => setStep(2)} style={{ background: 'var(--button-brand, #5286A5)', border: 'none' }}>
               <ChevronRight size={14} style={{ marginRight: 4 }} />Looks Good
             </Button>
           </>

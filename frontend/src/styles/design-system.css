@@ -53,6 +53,14 @@
   --shadow-lift:  0 8px 24px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06);
   --shadow-modal: 0 20px 60px rgba(0,0,0,0.20), 0 8px 24px rgba(0,0,0,0.10);
   --shadow-btn:   0 2px 8px rgba(0,122,255,0.28);
+  --button-brand: #5286A5;
+  --button-brand-hover: #416F8A;
+  --button-brand-soft: rgba(82, 134, 165, 0.12);
+  --button-brand-border: rgba(82, 134, 165, 0.35);
+  --button-brand-shadow: 0 3px 12px rgba(82, 134, 165, 0.28);
+  --button-brand-shadow-hover: 0 5px 18px rgba(82, 134, 165, 0.38);
+  --btn-green-gradient: linear-gradient(135deg, #5286A5 0%, #5286A5 100%);
+  --btn-green-gradient-hover: linear-gradient(135deg, #416F8A 0%, #5286A5 100%);
 
   /* ── Typography ── */
   --font-sf: -apple-system, BlinkMacSystemFont, 'Nunito', 'Helvetica Neue', sans-serif;
@@ -61,7 +69,7 @@
 /* ═══ iOS Button System ═══ */
 
 .btn-ios-primary {
-  background: var(--ios-blue) !important;
+  background: var(--button-brand) !important;
   color: #fff !important;
   border: none !important;
   border-radius: var(--r-sm) !important;
@@ -76,10 +84,10 @@
   align-items: center !important;
   justify-content: center !important;
   gap: 6px !important;
-  box-shadow: var(--shadow-btn) !important;
+  box-shadow: var(--button-brand-shadow) !important;
   letter-spacing: -0.01em !important;
 }
-.btn-ios-primary:hover  { opacity: 0.88 !important; box-shadow: 0 4px 16px rgba(0,122,255,0.38) !important; }
+.btn-ios-primary:hover  { opacity: 0.92 !important; background: var(--button-brand-hover) !important; box-shadow: var(--button-brand-shadow-hover) !important; }
 .btn-ios-primary:active { transform: scale(0.97) !important; opacity: 0.80 !important; }
 
 .btn-ios-secondary {

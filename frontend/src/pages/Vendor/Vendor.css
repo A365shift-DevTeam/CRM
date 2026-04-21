@@ -233,22 +233,23 @@
 
 /* Professional Apply Button */
 .btn-gradient-primary {
-    background: var(--accent-primary, #4361EE);
+    background: var(--button-brand, #5286A5);
     color: white;
     border: none;
     border-radius: 10px;
     padding: 9px 18px;
     font-weight: 700;
     font-size: 13px;
-    box-shadow: 0 2px 8px rgba(67, 97, 238, 0.25);
+    box-shadow: var(--button-brand-shadow, 0 3px 12px rgba(82,134,165,0.28));
     transition: all 0.18s;
     font-family: var(--font-family, 'DM Sans', sans-serif);
 }
 
 .btn-gradient-primary:hover {
+    background: var(--button-brand-hover, #416F8A);
     opacity: 0.92;
     transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(67, 97, 238, 0.35);
+    box-shadow: var(--button-brand-shadow-hover, 0 5px 18px rgba(82,134,165,0.38));
 }
 
 /* ───── Main Content (Center) ───── */

@@ -548,21 +548,22 @@
   padding: 0 24px;
   border: none;
   border-radius: 10px;
-  background: #4361EE;
+  background: var(--button-brand, #5286A5);
   color: #FFFFFF;
   font-size: 13.5px;
   font-weight: 600;
   font-family: var(--font-family, 'DM Sans', sans-serif);
   cursor: pointer;
   transition: all 0.18s;
-  box-shadow: 0 2px 8px rgba(67, 97, 238, 0.28);
+  box-shadow: var(--button-brand-shadow, 0 3px 12px rgba(82,134,165,0.28));
   letter-spacing: 0.01em;
 }
 
 .ssm-btn-save:hover {
+  background: var(--button-brand-hover, #416F8A);
   opacity: 0.92;
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(67, 97, 238, 0.38);
+  box-shadow: var(--button-brand-shadow-hover, 0 5px 18px rgba(82,134,165,0.38));
 }
 
 .ssm-btn-save:active {

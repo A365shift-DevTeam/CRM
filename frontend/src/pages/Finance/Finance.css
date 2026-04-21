@@ -27,7 +27,7 @@
 
 /* ── Finance action buttons ── */
 .finance-btn-primary {
-  background: var(--ios-green, #34C759) !important;
+  background: var(--button-brand, #5286A5) !important;
   color: #fff !important;
   border: none !important;
   border-radius: var(--r-sm, 10px) !important;
@@ -37,10 +37,10 @@
   min-height: 44px !important;
   cursor: pointer !important;
   font-family: var(--font-sf) !important;
-  box-shadow: 0 2px 8px rgba(52,199,89,0.25) !important;
+  box-shadow: var(--button-brand-shadow, 0 3px 12px rgba(82,134,165,0.28)) !important;
   transition: opacity 0.15s !important;
 }
-.finance-btn-primary:hover { opacity: 0.88 !important; }
+.finance-btn-primary:hover { opacity: 0.92 !important; background: var(--button-brand-hover, #416F8A) !important; }
 
 /* ── Finance tab pills (Settings modal) ── */
 
@@ -67,10 +67,10 @@
 }
 
 .finance-settings-modal .finance-field-tabs .nav-link.active {
-  background: #10b981 !important;
+  background: var(--button-brand, #5286A5) !important;
   color: #fff !important;
-  border-color: #10b981 !important;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+  border-color: var(--button-brand, #5286A5) !important;
+  box-shadow: var(--button-brand-shadow, 0 3px 12px rgba(82,134,165,0.28));
 }
 
 /* Dropdown Menu Styles */
@@ -292,7 +292,7 @@
 .finance-table-row:hover .fin-action-btn { opacity: 1; }
 .fin-action-btn:hover { transform: translateY(-1px); opacity: 1 !important; }
 .fin-action-btn.view:hover  { background: rgba(6,182,212,0.1);  color: #06B6D4; }
-.fin-action-btn.edit:hover  { background: rgba(67,97,238,0.1);  color: #4361EE; }
+.fin-action-btn.edit:hover  { background: var(--button-brand-soft, rgba(82,134,165,0.12));  color: var(--button-brand, #5286A5); }
 .fin-action-btn.del:hover   { background: rgba(244,63,94,0.1);  color: #F43F5E; }
 
 /* Finance pagination */

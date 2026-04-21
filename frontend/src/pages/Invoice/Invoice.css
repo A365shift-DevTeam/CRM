@@ -285,7 +285,7 @@
   gap: 7px;
   height: 36px;
   padding: 0 18px;
-  background: var(--accent-primary, #4361EE);
+  background: var(--button-brand, #5286A5);
   color: #FFFFFF;
   border: none;
   border-radius: 10px;
@@ -294,14 +294,15 @@
   font-family: var(--font-family, 'DM Sans', sans-serif);
   cursor: pointer;
   transition: all 0.18s;
-  box-shadow: 0 2px 8px rgba(67,97,238,0.28);
+  box-shadow: var(--button-brand-shadow, 0 3px 12px rgba(82,134,165,0.28));
   white-space: nowrap;
   letter-spacing: 0.01em;
 }
 .inv-btn-primary:hover {
+  background: var(--button-brand-hover, #416F8A);
   opacity: 0.9;
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(67,97,238,0.38);
+  box-shadow: var(--button-brand-shadow-hover, 0 5px 18px rgba(82,134,165,0.38));
 }
 .inv-btn-outline {
   display: inline-flex;
@@ -376,7 +377,7 @@
   flex-shrink: 0;
 }
 .inv-btn-icon:hover { background: #FEF2F2; border-color: #FECACA; color: #E11D48; }
-.inv-btn-icon.blue:hover { background: rgba(67,97,238,0.08); border-color: rgba(67,97,238,0.2); color: #4361EE; }
+.inv-btn-icon.blue:hover { background: var(--button-brand-soft, rgba(82,134,165,0.12)); border-color: var(--button-brand-border, rgba(82,134,165,0.35)); color: var(--button-brand, #5286A5); }
 .inv-btn-back {
   display: inline-flex;
   align-items: center;

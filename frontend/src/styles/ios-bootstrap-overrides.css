@@ -23,28 +23,28 @@
 
 /* Primary */
 .btn-primary {
-  background: var(--ios-blue) !important;
-  border-color: var(--ios-blue) !important;
+  background: var(--button-brand, #5286A5) !important;
+  border-color: transparent !important;
   color: #fff !important;
-  box-shadow: 0 2px 8px rgba(0,122,255,0.28) !important;
+  box-shadow: var(--button-brand-shadow, 0 3px 12px rgba(82,134,165,0.28)) !important;
 }
 .btn-primary:hover, .btn-primary:focus {
-  background: #0A84FF !important;
-  border-color: #0A84FF !important;
-  box-shadow: 0 4px 14px rgba(0,122,255,0.38) !important;
+  background: var(--button-brand-hover, #416F8A) !important;
+  border-color: transparent !important;
+  box-shadow: var(--button-brand-shadow-hover, 0 5px 18px rgba(82,134,165,0.38)) !important;
   opacity: 1 !important;
 }
 
 /* Success */
 .btn-success {
-  background: var(--ios-green) !important;
-  border-color: var(--ios-green) !important;
+  background: var(--button-brand, #5286A5) !important;
+  border-color: transparent !important;
   color: #fff !important;
-  box-shadow: 0 2px 8px rgba(52,199,89,0.28) !important;
+  box-shadow: var(--button-brand-shadow, 0 3px 12px rgba(82,134,165,0.28)) !important;
 }
 .btn-success:hover, .btn-success:focus {
-  background: #30D158 !important;
-  border-color: #30D158 !important;
+  background: var(--button-brand-hover, #416F8A) !important;
+  border-color: transparent !important;
   opacity: 1 !important;
 }
 

@@ -127,19 +127,6 @@ const Finance = () => {
     }, 0)
   }, [projectFinances])
 
-  // Group income by client for P&L breakdown
-  const revenueByClient = useMemo(() => {
-    const map = {};
-    incomes.forEach(inc => {
-      const key = inc.description?.split('—')[0]?.trim() || inc.description?.split('-')[0]?.trim() || 'Unknown';
-      map[key] = (map[key] || 0) + (parseFloat(inc.amount) || 0);
-    });
-    return Object.entries(map)
-      .map(([client, total]) => ({ client, total }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 5);
-  }, [incomes]);
-
   // Calculate overall statistics
   const overallStats = useMemo(() => {
     const isPaid = (item) => (item?.status || '').toString().trim().toLowerCase() === 'paid'
@@ -420,24 +407,6 @@ const Finance = () => {
         { label: 'Net Profit', value: formatCurrency(overallStats.netProfit), icon: <DollarSign size={24} />, color: 'blue', valueColor: overallStats.netProfit >= 0 ? '#10b981' : '#ef4444' },
         { label: 'This Month Net', value: formatCurrency(overallStats.netThisMonth), icon: <Calendar size={24} />, color: 'purple', valueColor: overallStats.netThisMonth >= 0 ? '#10b981' : '#ef4444' },
       ]} />
-
-      {revenueByClient.length > 0 && (
-        <div className="card border-0 shadow-sm mx-0 mb-3" style={{ borderRadius: 12 }}>
-          <div className="card-body p-3">
-            <div className="fw-semibold mb-2" style={{ fontSize: 13 }}>Top Clients by Revenue</div>
-            <table className="table table-sm mb-0">
-              <tbody>
-                {revenueByClient.map(({ client, total }) => (
-                  <tr key={client}>
-                    <td className="text-muted small">{client}</td>
-                    <td className="fw-semibold text-end small">{formatGlobalCurrency(total)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
 
       <PageToolbar
         title="Finance"

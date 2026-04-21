@@ -8,8 +8,8 @@ import {
 } from 'react-icons/fa6';
 import { Modal, Form, Button } from 'react-bootstrap';
 import PageToolbar from '../../components/PageToolbar/PageToolbar';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, File, Grid3x3, List } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Grid3x3, List, Plus } from 'lucide-react';
 
 const FILE_TYPES = {
   pdf:  { icon: FaFilePdf,   color: '#F43F5E', bg: 'rgba(244,63,94,0.09)',  label: 'PDF' },
@@ -63,7 +63,9 @@ export default function Documents() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'grid'
-  const [filterEntity, setFilterEntity] = useState('All');
+  const [panelFilterValues, setPanelFilterValues] = useState({});
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
 
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -116,61 +118,52 @@ export default function Documents() {
     if (file) setFormData({ ...formData, fileName: file.name, fileSize: file.size });
   };
 
-  const entityTypes = ['All', ...new Set(documents.map(d => d.entityType || 'General'))];
-
   const filtered = documents.filter(d => {
     const q = search.toLowerCase();
     const matchSearch = !search || d.fileName?.toLowerCase().includes(q) || d.entityType?.toLowerCase().includes(q);
-    const matchEntity = filterEntity === 'All' || d.entityType === filterEntity;
-    return matchSearch && matchEntity;
+    const matchEntity = !panelFilterValues.entityType || d.entityType === panelFilterValues.entityType;
+    const matchFileType = !panelFilterValues.fileType || (d.fileName || '').split('.').pop().toLowerCase() === panelFilterValues.fileType;
+    return matchSearch && matchEntity && matchFileType;
+  }).sort((a, b) => {
+    let av = sortBy === 'fileSize' ? (Number(a.fileSize) || 0) : String(a[sortBy] ?? '').toLowerCase();
+    let bv = sortBy === 'fileSize' ? (Number(b.fileSize) || 0) : String(b[sortBy] ?? '').toLowerCase();
+    if (sortBy === 'fileSize') return sortOrder === 'asc' ? av - bv : bv - av;
+    return sortOrder === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
   });
 
   return (
     <div className="docs-page">
-      {/* Header */}
-      <div className="docs-header">
-        <div>
-          <h2 className="docs-title">Documents</h2>
-          <p className="docs-subtitle">{filtered.length} files · Secure storage</p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', border: '1px solid #E1E8F4', borderRadius: 9, overflow: 'hidden', background: '#fff' }}>
-            <button className={`docs-view-btn ${viewMode === 'list' ? 'active' : ''}`}
-              onClick={() => setViewMode('list')} style={viewMode === 'list' ? { background: themeColor, color: '#fff' } : {}}>
-              <List size={14} />
-            </button>
-            <button className={`docs-view-btn ${viewMode === 'grid' ? 'active' : ''}`}
-              onClick={() => setViewMode('grid')} style={viewMode === 'grid' ? { background: themeColor, color: '#fff' } : {}}>
-              <Grid3x3 size={14} />
-            </button>
-          </div>
-          <button className="docs-upload-btn" style={{ background: themeColor }} onClick={() => setShowModal(true)}>
-            <FaCloudArrowUp size={14} />
-            Upload File
-          </button>
-        </div>
-      </div>
-
-      {/* Toolbar */}
-      <div className="docs-toolbar">
-        <div className="docs-search-wrap">
-          <Search size={14} className="docs-search-icon" />
-          <input className="docs-search" placeholder="Search documents…"
-            value={search} onChange={e => setSearch(e.target.value)} />
-          {search && <button className="docs-search-clear" onClick={() => setSearch('')}><X size={13} /></button>}
-        </div>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {entityTypes.map(t => (
-            <button key={t}
-              className={`docs-filter-btn ${filterEntity === t ? 'active' : ''}`}
-              onClick={() => setFilterEntity(t)}
-              style={filterEntity === t ? { color: themeColor, borderColor: themeColor, background: `${themeColor}10` } : {}}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-      </div>
+      <PageToolbar
+        title="Documents"
+        itemCount={filtered.length}
+        searchQuery={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search documents…"
+        panelFilters={[
+          { id: 'entityType', label: 'Category', type: 'select', options: ['General', 'Project', 'Client', 'Invoice'] },
+          { id: 'fileType', label: 'File Type', type: 'select', options: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'png', 'jpg', 'jpeg'] },
+        ]}
+        panelFilterValues={panelFilterValues}
+        onPanelFilterChange={(id, val) => setPanelFilterValues(prev => ({ ...prev, [id]: val }))}
+        onClearPanelFilters={() => setPanelFilterValues({})}
+        sortOptions={[
+          { id: 'createdAt', name: 'Date Uploaded' },
+          { id: 'fileName', name: 'Name' },
+          { id: 'fileSize', name: 'File Size' },
+        ]}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={(sb, so) => { setSortBy(sb); setSortOrder(so); }}
+        viewModes={[
+          { id: 'list', label: 'List', icon: <List size={15} /> },
+          { id: 'grid', label: 'Grid', icon: <Grid3x3 size={15} /> },
+        ]}
+        activeView={viewMode}
+        onViewChange={setViewMode}
+        actions={[
+          { label: 'Upload File', icon: <FaCloudArrowUp size={14} />, variant: 'primary', onClick: () => setShowModal(true) },
+        ]}
+      />
 
       {/* Content */}
       {loading ? (
@@ -334,63 +327,10 @@ export default function Documents() {
 
       <style>{`
         .docs-page {
-          padding: 24px 28px 40px;
+          padding: 0 16px 40px;
           max-width: 1400px; margin: 0 auto;
           font-family: var(--font-family, 'DM Sans', sans-serif);
         }
-        .docs-header {
-          display: flex; align-items: flex-start;
-          justify-content: space-between; flex-wrap: wrap;
-          gap: 16px; margin-bottom: 20px;
-        }
-        .docs-title {
-          font-family: var(--font-display, 'Outfit', sans-serif);
-          font-size: 22px; font-weight: 800;
-          color: #0F172A; margin: 0; letter-spacing: -0.03em;
-        }
-        .docs-subtitle { font-size: 12px; color: #94A3B8; margin: 3px 0 0; }
-        .docs-view-btn {
-          padding: 7px 10px; border: none; background: transparent;
-          cursor: pointer; color: #94A3B8; display: flex; align-items: center;
-          transition: all 0.15s;
-        }
-        .docs-view-btn:hover { color: #475569; }
-        .docs-upload-btn {
-          display: flex; align-items: center; gap: 7px;
-          color: #fff; border: none; padding: 9px 18px;
-          border-radius: 10px; font-size: 13px; font-weight: 700;
-          cursor: pointer; transition: filter 0.15s, transform 0.15s;
-          font-family: var(--font-family, 'DM Sans', sans-serif);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        .docs-upload-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
-        .docs-toolbar {
-          display: flex; align-items: center; gap: 14px;
-          flex-wrap: wrap; margin-bottom: 20px;
-        }
-        .docs-search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 340px; }
-        .docs-search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #94A3B8; }
-        .docs-search {
-          width: 100%; padding: 9px 32px 9px 34px;
-          border: 1px solid #E1E8F4; border-radius: 10px;
-          font-size: 13px; background: #fff; outline: none;
-          font-family: var(--font-family, 'DM Sans', sans-serif);
-          transition: border-color 0.15s, box-shadow 0.15s;
-        }
-        .docs-search:focus { border-color: var(--accent-primary, #4361EE); box-shadow: 0 0 0 3px rgba(67,97,238,0.1); }
-        .docs-search-clear {
-          position: absolute; right: 10px; top: 50%;
-          transform: translateY(-50%); background: none;
-          border: none; cursor: pointer; color: #94A3B8;
-        }
-        .docs-filter-btn {
-          padding: 7px 13px; border-radius: 9px;
-          border: 1px solid #E1E8F4; background: #fff;
-          font-size: 12px; font-weight: 600; cursor: pointer;
-          color: #64748B; transition: all 0.15s;
-          font-family: var(--font-family, 'DM Sans', sans-serif);
-        }
-        .docs-filter-btn:hover { background: #F4F7FD; }
         .docs-loading, .docs-empty {
           display: flex; flex-direction: column; align-items: center;
           justify-content: center; min-height: 260px; gap: 8px;

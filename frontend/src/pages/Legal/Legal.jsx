@@ -47,6 +47,8 @@ export default function Legal() {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [sortBy, setSortBy] = useState('title');
+  const [sortOrder, setSortOrder] = useState('asc');
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
 
@@ -69,8 +71,13 @@ export default function Legal() {
     if (search) list = list.filter(a => a.title.toLowerCase().includes(search.toLowerCase()) || (a.counterSignatory ?? '').toLowerCase().includes(search.toLowerCase()));
     if (typeFilter) list = list.filter(a => a.type === typeFilter);
     if (statusFilter) list = list.filter(a => a.status === statusFilter);
+    list = [...list].sort((a, b) => {
+      const av = String(a[sortBy] ?? '').toLowerCase();
+      const bv = String(b[sortBy] ?? '').toLowerCase();
+      return sortOrder === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
     setFiltered(list);
-  }, [agreements, search, typeFilter, statusFilter]);
+  }, [agreements, search, typeFilter, statusFilter, sortBy, sortOrder]);
 
   const openCreate = () => { setEditing(null); setShowModal(true); };
   const openEdit = (a) => { setEditing(a); setShowModal(true); };
@@ -134,21 +141,26 @@ export default function Legal() {
       <PageToolbar
         title="Legal Agreements"
         itemCount={filtered.length}
-        searchValue={search}
+        searchQuery={search}
         onSearchChange={setSearch}
         searchPlaceholder="Search agreements…"
-        extraControls={
-          <div style={{ display: 'flex', gap: 6 }}>
-            <select className="glass-input" style={{ fontSize: 12, padding: '6px 10px', borderRadius: 8, border: '1px solid #E1E8F4' }} value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
-              <option value="">All Types</option>
-              {['MSA', 'NDA', 'SOW', 'Internal Approval'].map(t => <option key={t}>{t}</option>)}
-            </select>
-            <select className="glass-input" style={{ fontSize: 12, padding: '6px 10px', borderRadius: 8, border: '1px solid #E1E8F4' }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-              <option value="">All Statuses</option>
-              {['Draft', 'Under Review', 'Approved', 'Signed', 'Expired', 'Terminated'].map(s => <option key={s}>{s}</option>)}
-            </select>
-          </div>
-        }
+        panelFilters={[
+          { id: 'type', label: 'Type', type: 'select', options: ['MSA', 'NDA', 'SOW', 'Internal Approval'] },
+          { id: 'status', label: 'Status', type: 'select', options: ['Draft', 'Under Review', 'Approved', 'Signed', 'Expired', 'Terminated'] },
+        ]}
+        panelFilterValues={{ type: typeFilter, status: statusFilter }}
+        onPanelFilterChange={(id, val) => { if (id === 'type') setTypeFilter(val); else setStatusFilter(val); }}
+        onClearPanelFilters={() => { setTypeFilter(''); setStatusFilter(''); }}
+        sortOptions={[
+          { id: 'title', name: 'Title' },
+          { id: 'type', name: 'Type' },
+          { id: 'status', name: 'Status' },
+          { id: 'effectiveDate', name: 'Effective Date' },
+          { id: 'expiryDate', name: 'Expiry Date' },
+        ]}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={(sb, so) => { setSortBy(sb); setSortOrder(so); }}
         actions={[{ label: 'New Agreement', icon: <Plus size={16} />, variant: 'primary', onClick: openCreate }]}
       />
 

@@ -163,7 +163,7 @@ export default function Login() {
                 <div className="flex items-center justify-end">
                   <Link to="/forgot-password" className="text-[12px]" style={{ color: '#64748B', textDecoration: 'none' }}>Forgot password?</Link>
                 </div>
-                <button type="submit" disabled={loading} className="w-full mt-1 flex items-center justify-center gap-2 py-[13px] rounded-xl font-semibold text-[13.5px] text-white" style={{ background: 'linear-gradient(135deg, #4361EE 0%, #3D54D8 100%)', boxShadow: '0 4px 22px rgba(67,97,238,0.45)', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.72 : 1, fontFamily: 'DM Sans, sans-serif' }}>
+                <button type="submit" disabled={loading} className="w-full mt-1 flex items-center justify-center gap-2 py-[13px] rounded-xl font-semibold text-[13.5px] text-white" style={{ background: 'var(--button-brand, #5286A5)', boxShadow: 'var(--button-brand-shadow-hover, 0 5px 18px rgba(82,134,165,0.38))', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.72 : 1, fontFamily: 'DM Sans, sans-serif' }}>
                   {loading ? <><Loader2 size={15} className="animate-spin" /><span>Signing in…</span></> : <><span>Sign in</span><ArrowRight size={15} /></>}
                 </button>
               </motion.form>
@@ -181,7 +181,7 @@ export default function Login() {
                   <label className="block text-[11px] font-semibold uppercase tracking-[0.08em] mb-2" style={{ color: '#64748B' }}>6-Digit Code</label>
                   <input type="text" inputMode="numeric" maxLength={6} value={otpCode} onChange={e => setOtpCode(e.target.value.replace(/\D/g,''))} placeholder="000000" required className="w-full px-4 py-3 rounded-xl text-white text-center text-[20px] tracking-[0.3em] transition-all" style={inputStyle} onFocus={e => Object.assign(e.target.style, focusStyle)} onBlur={e => Object.assign(e.target.style, blurStyle)} />
                 </div>
-                <button type="submit" disabled={loading || otpCode.length < 6} className="w-full flex items-center justify-center gap-2 py-[13px] rounded-xl font-semibold text-[13.5px] text-white" style={{ background: 'linear-gradient(135deg, #4361EE 0%, #3D54D8 100%)', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', opacity: (loading || otpCode.length < 6) ? 0.72 : 1 }}>
+                <button type="submit" disabled={loading || otpCode.length < 6} className="w-full flex items-center justify-center gap-2 py-[13px] rounded-xl font-semibold text-[13.5px] text-white" style={{ background: 'var(--button-brand, #5286A5)', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', opacity: (loading || otpCode.length < 6) ? 0.72 : 1 }}>
                   {loading ? <><Loader2 size={15} className="animate-spin" /><span>Verifying…</span></> : <><span>Verify Code</span><ArrowRight size={15} /></>}
                 </button>
                 <div className="text-center">
@@ -207,7 +207,7 @@ export default function Login() {
                   <label className="block text-[11px] font-semibold uppercase tracking-[0.08em] mb-2" style={{ color: '#64748B' }}>Authenticator Code</label>
                   <input type="text" inputMode="numeric" maxLength={6} value={otpCode} onChange={e => setOtpCode(e.target.value.replace(/\D/g,''))} placeholder="000000" required className="w-full px-4 py-3 rounded-xl text-white text-center text-[20px] tracking-[0.3em] transition-all" style={inputStyle} onFocus={e => Object.assign(e.target.style, focusStyle)} onBlur={e => Object.assign(e.target.style, blurStyle)} />
                 </div>
-                <button type="submit" disabled={loading || otpCode.length < 6} className="w-full flex items-center justify-center gap-2 py-[13px] rounded-xl font-semibold text-[13.5px] text-white" style={{ background: 'linear-gradient(135deg, #4361EE 0%, #3D54D8 100%)', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', opacity: (loading || otpCode.length < 6) ? 0.72 : 1 }}>
+                <button type="submit" disabled={loading || otpCode.length < 6} className="w-full flex items-center justify-center gap-2 py-[13px] rounded-xl font-semibold text-[13.5px] text-white" style={{ background: 'var(--button-brand, #5286A5)', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', opacity: (loading || otpCode.length < 6) ? 0.72 : 1 }}>
                   {loading ? <><Loader2 size={15} className="animate-spin" /><span>Verifying…</span></> : <><span>Verify</span><ArrowRight size={15} /></>}
                 </button>
                 <button type="button" onClick={() => { setStep('credentials'); setOtpCode(''); setError(''); }} className="w-full text-[12px] text-center" style={{ color: '#475569', background: 'none', border: 'none', cursor: 'pointer' }}>

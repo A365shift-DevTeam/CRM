@@ -1178,7 +1178,7 @@ function Sales() {
                     <Button variant="secondary" onClick={() => setShowAddModal(false)}>
                         Cancel
                     </Button>
-                    <Button onClick={handleCreateProject} style={{ background: '#10b981', borderColor: '#10b981', fontWeight: 600 }}>
+                    <Button onClick={handleCreateProject} style={{ background: 'var(--button-brand, #5286A5)', borderColor: 'var(--button-brand, #5286A5)', fontWeight: 600 }}>
                         Create Project
                     </Button>
                 </Modal.Footer>
@@ -1331,7 +1331,7 @@ function Sales() {
                                                 return { ...prev, stages: [...(prev.stages || []), newStage] }
                                             })
                                         }}
-                                        style={{ background: '#10b981', borderColor: '#10b981', fontSize: '0.8rem', fontWeight: 600 }}
+                                        style={{ background: 'var(--button-brand, #5286A5)', borderColor: 'var(--button-brand, #5286A5)', fontSize: '0.8rem', fontWeight: 600 }}
                                     >
                                         <Plus size={14} className="me-1" />
                                         Add Stage
@@ -1488,7 +1488,7 @@ function Sales() {
                     <Button variant="secondary" onClick={() => setShowEditModal(false)}>
                         Cancel
                     </Button>
-                    <Button onClick={handleSaveEditProject} style={{ background: '#10b981', borderColor: '#10b981', fontWeight: 600 }}>
+                    <Button onClick={handleSaveEditProject} style={{ background: 'var(--button-brand, #5286A5)', borderColor: 'var(--button-brand, #5286A5)', fontWeight: 600 }}>
                         <Edit size={14} className="me-1" /> Save Changes
                     </Button>
                 </Modal.Footer>

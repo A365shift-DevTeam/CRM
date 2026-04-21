@@ -51,6 +51,11 @@ export default function Company() {
   const [showConvertContactModal, setShowConvertContactModal] = useState(false);
   const [convertingCompany, setConvertingCompany] = useState(null);
   const [convertContactForm, setConvertContactForm] = useState({});
+  const [panelFilterValues, setPanelFilterValues] = useState({});
+  const [filterBy, setFilterBy] = useState('all');
+  const [filterValue, setFilterValue] = useState('');
+  const [sortBy, setSortBy] = useState('name');
+  const [sortOrder, setSortOrder] = useState('asc');
   const [showWizard, setShowWizard]   = useState(false);
   const [wizardStep, setWizardStep]   = useState(1);
   const [wizardForm, setWizardForm]   = useState({});
@@ -284,10 +289,23 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
     }
   };
 
-  const filtered = companies.filter(c =>
-    c.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.industry?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const industryOptions = [...new Set(companies.map(c => c.industry).filter(Boolean))].sort();
+  const countryOptions = [...new Set(companies.map(c => c.country).filter(Boolean))].sort();
+
+  const getFilterOptions = (col) => col === 'industry' ? industryOptions : col === 'country' ? countryOptions : [];
+
+  const filtered = companies.filter(c => {
+    const q = searchQuery.toLowerCase();
+    const matchSearch = !searchQuery || c.name?.toLowerCase().includes(q) || c.industry?.toLowerCase().includes(q);
+    const matchLegacy = filterBy === 'all' || !filterValue || String(c[filterBy] ?? '').toLowerCase() === filterValue.toLowerCase();
+    const matchIndustry = !panelFilterValues.industry || c.industry === panelFilterValues.industry;
+    const matchCountry = !panelFilterValues.country || c.country === panelFilterValues.country;
+    return matchSearch && matchLegacy && matchIndustry && matchCountry;
+  }).sort((a, b) => {
+    const av = String(a[sortBy] ?? '').toLowerCase();
+    const bv = String(b[sortBy] ?? '').toLowerCase();
+    return sortOrder === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+  });
 
   const stats = [
     { label: 'Total Companies', value: companies.length, icon: <Building size={22} />, color: 'blue' },
@@ -305,6 +323,29 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
         itemCount={filtered.length}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        filters={[
+          { id: 'industry', name: 'Industry' },
+          { id: 'country', name: 'Country' },
+        ]}
+        filterBy={filterBy}
+        filterValue={filterValue}
+        onFilterChange={(fb, fv) => { setFilterBy(fb); setFilterValue(fv); }}
+        getFilterOptions={getFilterOptions}
+        sortOptions={[
+          { id: 'name', name: 'Name' },
+          { id: 'industry', name: 'Industry' },
+          { id: 'country', name: 'Country' },
+        ]}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={(sb, so) => { setSortBy(sb); setSortOrder(so); }}
+        panelFilters={[
+          { id: 'industry', label: 'Industry', type: 'select', options: industryOptions },
+          { id: 'country', label: 'Country', type: 'select', options: countryOptions },
+        ]}
+        panelFilterValues={panelFilterValues}
+        onPanelFilterChange={(id, val) => setPanelFilterValues(prev => ({ ...prev, [id]: val }))}
+        onClearPanelFilters={() => setPanelFilterValues({})}
         actions={[{ label: 'Add Company', variant: 'primary', onClick: openWizard }]}
       />
 

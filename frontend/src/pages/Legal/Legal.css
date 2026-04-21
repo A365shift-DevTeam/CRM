@@ -83,7 +83,7 @@
 
 /* ── Action Buttons ── */
 .legal-btn-primary {
-  background: var(--ios-blue, #007AFF) !important;
+  background: var(--button-brand, #5286A5) !important;
   color: #fff !important;
   border: none !important;
   border-radius: var(--r-sm, 10px) !important;
@@ -94,9 +94,9 @@
   cursor: pointer !important;
   font-family: var(--font-sf) !important;
   transition: opacity 0.15s !important;
-  box-shadow: 0 2px 8px rgba(0,122,255,0.25) !important;
+  box-shadow: var(--button-brand-shadow, 0 3px 12px rgba(82,134,165,0.28)) !important;
 }
-.legal-btn-primary:hover { opacity: 0.88 !important; }
+.legal-btn-primary:hover { opacity: 0.92 !important; background: var(--button-brand-hover, #416F8A) !important; }
 
 .legal-btn-icon {
   display: inline-flex;
@@ -110,5 +110,5 @@
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
-.legal-btn-icon:hover { background: rgba(0,122,255,0.10); color: var(--ios-blue, #007AFF); }
+.legal-btn-icon:hover { background: var(--button-brand-soft, rgba(82,134,165,0.12)); color: var(--button-brand, #5286A5); }
 .legal-btn-icon.danger:hover { background: rgba(255,59,48,0.10); color: var(--ios-red, #FF3B30); }

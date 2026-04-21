@@ -207,7 +207,7 @@ export default function TicketModal({ show, onHide, editing, onSaved, currentUse
                   <button
                     onClick={handleSendReply}
                     disabled={sendingReply || !replyText.trim()}
-                    style={{ height: 38, padding: '0 16px', background: '#4361EE', color: '#fff', border: 'none', borderRadius: 10, cursor: sendingReply || !replyText.trim() ? 'not-allowed' : 'pointer', opacity: !replyText.trim() ? 0.5 : 1, display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, flexShrink: 0 }}
+                    style={{ height: 38, padding: '0 16px', background: 'var(--button-brand, #5286A5)', color: '#fff', border: 'none', borderRadius: 10, cursor: sendingReply || !replyText.trim() ? 'not-allowed' : 'pointer', opacity: !replyText.trim() ? 0.5 : 1, display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, flexShrink: 0 }}
                   >
                     <Send size={13} />
                     {sendingReply ? '…' : 'Send'}
@@ -318,7 +318,7 @@ export default function TicketModal({ show, onHide, editing, onSaved, currentUse
             <button
               onClick={handleCreate}
               disabled={submitting}
-              style={{ padding: '9px 22px', borderRadius: 10, border: 'none', background: '#4361EE', color: '#fff', fontSize: 13, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1, boxShadow: '0 4px 14px rgba(67,97,238,0.35)' }}
+              style={{ padding: '9px 22px', borderRadius: 10, border: 'none', background: 'var(--button-brand, #5286A5)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1, boxShadow: 'var(--button-brand-shadow-hover, 0 5px 18px rgba(82,134,165,0.38))' }}
             >
               {submitting ? 'Submitting…' : 'Submit Ticket'}
             </button>

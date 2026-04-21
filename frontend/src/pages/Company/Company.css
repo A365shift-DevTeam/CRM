@@ -119,15 +119,15 @@
   transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .wizard-stepper-step.active .wizard-stepper-circle {
-  background: #2ecc71;
-  border-color: #2ecc71;
+  background: var(--button-brand, #5286A5);
+  border-color: var(--button-brand, #5286A5);
   color: #fff;
   box-shadow: 0 0 0 5px rgba(46, 204, 113, 0.18), 0 4px 12px rgba(46, 204, 113, 0.25);
   transform: scale(1.08);
 }
 .wizard-stepper-step.done .wizard-stepper-circle {
-  background: #2ecc71;
-  border-color: #2ecc71;
+  background: var(--button-brand, #5286A5);
+  border-color: var(--button-brand, #5286A5);
   color: #fff;
   box-shadow: 0 2px 8px rgba(46, 204, 113, 0.2);
 }
@@ -155,11 +155,11 @@
   letter-spacing: 0.01em;
 }
 .wizard-stepper-step.active .wizard-stepper-label {
-  color: #2ecc71;
+  color: var(--button-brand, #5286A5);
   font-weight: 600;
 }
 .wizard-stepper-step.done .wizard-stepper-label {
-  color: #2ecc71;
+  color: var(--button-brand, #5286A5);
   font-weight: 500;
 }
 
@@ -174,7 +174,7 @@
   border-radius: 2px;
 }
 .wizard-stepper-connector.completed {
-  background: #2ecc71;
+  background: var(--button-brand, #5286A5);
 }
 
 /* ══════════════════════════════ 
@@ -354,16 +354,16 @@
 }
 .wizard-btn-skip:hover { color: #1a1d26; }
 .wizard-btn-primary {
-  background: #2ecc71;
+  background: var(--button-brand, #5286A5);
   color: #fff;
   padding: 11px 26px;
   border-radius: 10px;
   font-weight: 600;
 }
-.wizard-btn-primary:hover { background: #27ae60; }
+.wizard-btn-primary:hover { background: var(--button-brand-hover, #416F8A); }
 .wizard-btn-primary:active { transform: scale(0.98); }
 .wizard-btn-save {
-  background: #2ecc71;
+  background: var(--button-brand, #5286A5);
   color: #fff;
   padding: 11px 26px;
   display: flex;
@@ -371,7 +371,7 @@
   gap: 6px;
   font-weight: 600;
 }
-.wizard-btn-save:hover { background: #27ae60; }
+.wizard-btn-save:hover { background: var(--button-brand-hover, #416F8A); }
 .wizard-btn-save:active { transform: scale(0.98); }
 
 /* ══════════════════════════════ 

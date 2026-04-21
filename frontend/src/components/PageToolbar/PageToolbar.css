@@ -114,9 +114,9 @@
 }
 
 .pt-icon-btn.active {
-  background: var(--ios-blue, #007AFF) !important;
+  background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%) !important;
   color: #FFFFFF !important;
-  box-shadow: 0 2px 8px rgba(0,122,255,0.28) !important;
+  box-shadow: 0 2px 8px rgba(30,58,138,0.32) !important;
 }
 
 /* --- View Toggles --- */
@@ -148,7 +148,7 @@
 
 .pt-view-btn.active {
   background: #FFFFFF !important;
-  color: var(--ios-blue, #007AFF) !important;
+  color: #1d4ed8 !important;
   box-shadow: 0 1px 4px rgba(0,0,0,0.12) !important;
 }
 
@@ -185,16 +185,18 @@
 
 .pt-action-btn.pt-action-primary,
 .pt-action-btn.pt-action-success {
-  background: var(--ios-blue, #007AFF) !important;
+  background: linear-gradient(135deg, #155C86 0%, #155C86 100%) !important;
   color: #FFFFFF !important;
-  box-shadow: 0 2px 8px rgba(0,122,255,0.28) !important;
+  box-shadow: 0 2px 8px rgba(30,58,138,0.35) !important;
+  border: none !important;
 }
 
 .pt-action-btn.pt-action-primary:hover,
 .pt-action-btn.pt-action-success:hover {
-  opacity: 0.88;
-  box-shadow: 0 4px 14px rgba(0,122,255,0.36) !important;
+  background: linear-gradient(135deg, #155C86 0%, #155C86 100%) !important;
+  box-shadow: 0 4px 14px rgba(30,58,138,0.45) !important;
   transform: translateY(-1px);
+  opacity: 1;
 }
 
 .pt-action-btn.pt-action-primary:active,
@@ -274,29 +276,59 @@
   border-radius: var(--r-sm, 10px) !important;
 }
 
-/* --- Filter badge on panel button --- */
-.pt-panel-btn {
+/* --- Filter Icon Button (panel trigger) --- */
+.pt-filter-pill {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-sm, 10px);
+  border: none;
+  background: var(--ios-gray-1, #F2F2F7);
+  color: var(--ios-gray-5, #8E8E93);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  padding: 0;
+  font-family: var(--font-sf);
 }
 
-.pt-filter-badge {
+.pt-filter-pill:hover {
+  background: var(--ios-gray-2, #E5E5EA);
+  color: #000;
+  transform: none;
+  box-shadow: none;
+}
+
+.pt-filter-pill--active {
+  background: var(--ios-gray-2, #E5E5EA);
+  color: #000;
+}
+
+.pt-filter-pill--active:hover {
+  background: var(--ios-gray-2, #E5E5EA);
+  color: #000;
+  box-shadow: none;
+}
+
+.pt-filter-pill-badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 16px;
-  height: 16px;
-  background: var(--ios-blue, #007AFF);
+  top: 4px;
+  right: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 14px;
+  height: 14px;
+  background: #1d4ed8;
   color: #fff;
   border-radius: 999px;
   font-size: 9px;
   font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   padding: 0 3px;
+  line-height: 1;
   border: 1.5px solid #fff;
-  font-family: var(--font-sf);
-  pointer-events: none;
 }
 
 /* --- Responsive --- */

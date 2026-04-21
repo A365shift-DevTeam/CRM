@@ -35,7 +35,7 @@ export default function NotesPanel({ entityType, entityId }) {
             <h6 className="fw-bold mb-2" style={{ fontSize: '0.9rem', color: '#475569' }}>Notes</h6>
             <div className="d-flex gap-2 mb-3">
                 <textarea value={newNote} onChange={e => setNewNote(e.target.value)} placeholder="Add a note..." className="glass-input" rows={2} style={{ flex: 1, resize: 'none' }} />
-                <button onClick={addNote} style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 12px', cursor: 'pointer', alignSelf: 'flex-end' }}><FaPlus size={12} /></button>
+                <button onClick={addNote} style={{ background: 'var(--button-brand, #5286A5)', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 12px', cursor: 'pointer', alignSelf: 'flex-end' }}><FaPlus size={12} /></button>
             </div>
             {notes.map(n => (
                 <div key={n.id} style={{ padding: '10px 12px', marginBottom: '8px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
@@ -43,7 +43,7 @@ export default function NotesPanel({ entityType, entityId }) {
                         <div>
                             <textarea value={editContent} onChange={e => setEditContent(e.target.value)} className="glass-input" rows={2} style={{ width: '100%', resize: 'none', marginBottom: '8px' }} />
                             <div className="d-flex gap-2">
-                                <button onClick={() => saveEdit(n.id)} style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', padding: '4px 12px', fontSize: '0.8rem' }}>Save</button>
+                                <button onClick={() => saveEdit(n.id)} style={{ background: 'var(--button-brand, #5286A5)', color: '#fff', border: 'none', borderRadius: '6px', padding: '4px 12px', fontSize: '0.8rem' }}>Save</button>
                                 <button onClick={() => setEditingId(null)} style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '4px 12px', fontSize: '0.8rem', color: '#64748b' }}>Cancel</button>
                             </div>
                         </div>

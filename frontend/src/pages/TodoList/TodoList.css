@@ -132,8 +132,8 @@ select.task-form-control {
 }
 
 .btn-modal-create {
-    background-color: #10b981 !important;
-    border-color: #10b981 !important;
+    background: var(--button-brand, #5286A5) !important;
+    border-color: var(--button-brand, #5286A5) !important;
     color: white !important;
     font-weight: 600;
     padding: 8px 24px !important;
@@ -142,8 +142,8 @@ select.task-form-control {
 }
 
 .btn-modal-create:hover {
-    background-color: #059669 !important;
-    border-color: #059669 !important;
+    background: var(--button-brand-hover, #416F8A) !important;
+    border-color: var(--button-brand-hover, #416F8A) !important;
 }
 
 /* ===== View Settings (Customize Columns) Modal ===== */

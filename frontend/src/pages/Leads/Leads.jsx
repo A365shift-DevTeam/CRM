@@ -48,6 +48,11 @@ export default function Leads() {
   const [showQualifyModal, setShowQualifyModal] = useState(false);
   const [qualifyingLead, setQualifyingLead] = useState(null);
   const [qualifyForm, setQualifyForm] = useState({});
+  const [panelFilterValues, setPanelFilterValues] = useState({});
+  const [filterBy, setFilterBy] = useState('all');
+  const [filterValue, setFilterValue] = useState('');
+  const [sortBy, setSortBy] = useState('contactName');
+  const [sortOrder, setSortOrder] = useState('asc');
 
   useEffect(() => { loadLeads(); }, [page, pageSize]);
 
@@ -182,10 +187,24 @@ export default function Leads() {
     return 'score-badge score-cold';
   };
 
-  const filtered = leads.filter(l =>
-    l.contactName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    l.company?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const getFilterOptions = (col) => {
+    const vals = [...new Set(leads.map(l => l[col]).filter(Boolean))].sort();
+    return vals;
+  };
+
+  const filtered = leads.filter(l => {
+    const q = searchQuery.toLowerCase();
+    const matchSearch = !searchQuery || l.contactName?.toLowerCase().includes(q) || l.company?.toLowerCase().includes(q);
+    const matchLegacy = filterBy === 'all' || !filterValue || String(l[filterBy] ?? '') === filterValue;
+    const matchStage = !panelFilterValues.stage || l.stage === panelFilterValues.stage;
+    const matchScore = !panelFilterValues.score || l.score === panelFilterValues.score;
+    const matchSource = !panelFilterValues.source || l.source === panelFilterValues.source;
+    return matchSearch && matchLegacy && matchStage && matchScore && matchSource;
+  }).sort((a, b) => {
+    const av = String(a[sortBy] ?? '').toLowerCase();
+    const bv = String(b[sortBy] ?? '').toLowerCase();
+    return sortOrder === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+  });
 
   const stats = [
     { label: 'Total Leads', value: leads.length, icon: <User size={22} />, color: 'blue' },
@@ -203,6 +222,32 @@ export default function Leads() {
         itemCount={filtered.length}
         searchQuery={searchQuery}
         onSearchChange={(q) => { setSearchQuery(q); setPage(1); }}
+        filters={[
+          { id: 'stage', name: 'Stage' },
+          { id: 'score', name: 'Score' },
+          { id: 'source', name: 'Source' },
+        ]}
+        filterBy={filterBy}
+        filterValue={filterValue}
+        onFilterChange={(fb, fv) => { setFilterBy(fb); setFilterValue(fv); setPage(1); }}
+        getFilterOptions={getFilterOptions}
+        sortOptions={[
+          { id: 'contactName', name: 'Name' },
+          { id: 'company', name: 'Company' },
+          { id: 'score', name: 'Score' },
+          { id: 'stage', name: 'Stage' },
+        ]}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={(sb, so) => { setSortBy(sb); setSortOrder(so); }}
+        panelFilters={[
+          { id: 'stage', label: 'Stage', type: 'select', options: KANBAN_STAGES },
+          { id: 'score', label: 'Score', type: 'select', options: SCORES },
+          { id: 'source', label: 'Source', type: 'select', options: SOURCES },
+        ]}
+        panelFilterValues={panelFilterValues}
+        onPanelFilterChange={(id, val) => setPanelFilterValues(prev => ({ ...prev, [id]: val }))}
+        onClearPanelFilters={() => setPanelFilterValues({})}
         viewModes={[
           { id: 'list', icon: <List size={15} />, label: 'List' },
           { id: 'kanban', icon: <Columns size={15} />, label: 'Kanban' },

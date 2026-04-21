@@ -1047,7 +1047,7 @@ function Manage2FAModal({ user, onSaveEmailOtp, onResetTotp, onRequireTotp, onCl
                                 <button
                                     onClick={() => setConfirm('require-totp')}
                                     className="px-3 py-1 rounded-lg text-xs font-medium text-white"
-                                    style={{ background: '#10b981', border: 'none', cursor: 'pointer' }}
+                                    style={{ background: 'var(--button-brand, #5286A5)', border: 'none', cursor: 'pointer' }}
                                 >
                                     Require TOTP
                                 </button>

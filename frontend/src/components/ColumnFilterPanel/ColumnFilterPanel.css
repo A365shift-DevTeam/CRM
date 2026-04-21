@@ -134,7 +134,7 @@
 .cfp-clear-btn {
   border: none;
   background: transparent;
-  color: var(--ios-blue, #007AFF);
+  color: #059669;
   font-size: 12.5px;
   font-weight: 600;
   font-family: var(--font-sf);
@@ -195,7 +195,7 @@
 .cfp-filter-select:focus,
 .cfp-filter-input:focus {
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.18);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.20);
 }
 
 .cfp-filter-input::placeholder { color: var(--ios-gray-4, #AEAEB2); }
@@ -223,7 +223,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--ios-blue, #007AFF);
+  background: #22c55e;
   border: 1.5px solid #fff;
 }
 
@@ -273,7 +273,7 @@
 }
 
 .cfp-toggle--on {
-  background: var(--ios-green, #34C759);
+  background: var(--button-brand, #5286A5);
 }
 
 .cfp-toggle-thumb {

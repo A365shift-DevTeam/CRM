@@ -40,8 +40,9 @@ export default function Tickets() {
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [panelFilterValues, setPanelFilterValues] = useState({});
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
   const [showModal, setShowModal] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -67,10 +68,16 @@ export default function Tickets() {
       t.title.toLowerCase().includes(search.toLowerCase()) ||
       t.ticketNumber.toLowerCase().includes(search.toLowerCase())
     );
-    if (priorityFilter) list = list.filter(t => t.priority === priorityFilter);
-    if (statusFilter) list = list.filter(t => t.status === statusFilter);
+    const pf = panelFilterValues;
+    if (pf.priority) list = list.filter(t => t.priority === pf.priority);
+    if (pf.status) list = list.filter(t => t.status === pf.status);
+    list = [...list].sort((a, b) => {
+      const av = String(a[sortBy] ?? '').toLowerCase();
+      const bv = String(b[sortBy] ?? '').toLowerCase();
+      return sortOrder === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
     setFiltered(list);
-  }, [tickets, search, priorityFilter, statusFilter]);
+  }, [tickets, search, panelFilterValues, sortBy, sortOrder]);
 
   const openView = async (t) => {
     // Fetch full ticket with comments before opening
@@ -140,31 +147,25 @@ export default function Tickets() {
       <PageToolbar
         title="My Tickets"
         itemCount={filtered.length}
-        searchValue={search}
+        searchQuery={search}
         onSearchChange={setSearch}
         searchPlaceholder="Search tickets…"
-        extraControls={
-          <div style={{ display: 'flex', gap: 6 }}>
-            <select
-              className="glass-input"
-              style={{ fontSize: 12, padding: '6px 10px', borderRadius: 8, border: '1px solid #E1E8F4' }}
-              value={priorityFilter}
-              onChange={e => setPriorityFilter(e.target.value)}
-            >
-              <option value="">All Priorities</option>
-              {['Critical', 'High', 'Medium', 'Low'].map(p => <option key={p}>{p}</option>)}
-            </select>
-            <select
-              className="glass-input"
-              style={{ fontSize: 12, padding: '6px 10px', borderRadius: 8, border: '1px solid #E1E8F4' }}
-              value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value)}
-            >
-              <option value="">All Statuses</option>
-              {['Open', 'In Progress', 'Pending', 'Resolved', 'Closed'].map(s => <option key={s}>{s}</option>)}
-            </select>
-          </div>
-        }
+        sortOptions={[
+          { id: 'createdAt', name: 'Date Created' },
+          { id: 'priority', name: 'Priority' },
+          { id: 'status', name: 'Status' },
+          { id: 'title', name: 'Title' },
+        ]}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={(sb, so) => { setSortBy(sb); setSortOrder(so); }}
+        panelFilters={[
+          { id: 'priority', label: 'Priority', type: 'select', options: ['Critical', 'High', 'Medium', 'Low'] },
+          { id: 'status', label: 'Status', type: 'select', options: ['Open', 'In Progress', 'Pending', 'Resolved', 'Closed'] },
+        ]}
+        panelFilterValues={panelFilterValues}
+        onPanelFilterChange={(id, val) => setPanelFilterValues(prev => ({ ...prev, [id]: val }))}
+        onClearPanelFilters={() => setPanelFilterValues({})}
         actions={[
           { label: 'AI Generate', icon: <Sparkles size={16} />, variant: 'purple', onClick: () => setShowAiModal(true) },
           { label: 'Raise a Ticket', icon: <Plus size={16} />, variant: 'primary', onClick: openCreate },

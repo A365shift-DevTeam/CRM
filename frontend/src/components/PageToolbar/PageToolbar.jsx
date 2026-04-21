@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Dropdown, Form } from 'react-bootstrap'
-import { Filter, ArrowUpDown, Layers, SlidersHorizontal, Plus, Search } from 'lucide-react'
+import { Filter, ArrowUpDown, Layers, SlidersHorizontal, Settings, Plus, Search } from 'lucide-react'
 import { useTheme } from '../../context/ThemeContext'
 import ColumnFilterPanel from '../ColumnFilterPanel/ColumnFilterPanel'
 import './PageToolbar.css'
@@ -118,8 +118,8 @@ export default function PageToolbar({
         <div className="page-toolbar-right">
           <div className="page-toolbar-icons">
 
-            {/* Legacy Filter dropdown — shown only if no panelFilters */}
-            {onFilterChange && filters.length > 0 && panelFilters.length === 0 && (
+            {/* Legacy Filter dropdown */}
+            {onFilterChange && filters.length > 0 && (
               <Dropdown align="end">
                 <Dropdown.Toggle as="button" bsPrefix="p-0 border-0 bg-transparent"
                   className={`pt-icon-btn ${filterBy !== 'all' ? 'active' : ''}`} title="Filter">
@@ -213,13 +213,13 @@ export default function PageToolbar({
             {/* Combined Filter + Columns panel button */}
             {showPanelBtn && (
               <button
-                className={`pt-icon-btn pt-panel-btn ${panelOpen || activePanelFilterCount > 0 ? 'active' : ''}`}
-                title="Filter &amp; Columns"
+                className={`pt-filter-pill ${panelOpen || activePanelFilterCount > 0 ? 'pt-filter-pill--active' : ''}`}
+                title="Filter & Columns"
                 onClick={() => setPanelOpen(v => !v)}
               >
-                <SlidersHorizontal size={18} />
+                <SlidersHorizontal size={16} strokeWidth={2.2} />
                 {activePanelFilterCount > 0 && (
-                  <span className="pt-filter-badge">{activePanelFilterCount}</span>
+                  <span className="pt-filter-pill-badge">{activePanelFilterCount}</span>
                 )}
               </button>
             )}
@@ -227,7 +227,7 @@ export default function PageToolbar({
             {/* Legacy column manager button — shown only if no columns[] */}
             {!showPanelBtn && onManageColumns && (
               <button className="pt-icon-btn" title="Manage Columns" onClick={onManageColumns}>
-                <SlidersHorizontal size={18} />
+                <Settings size={18} />
               </button>
             )}
           </div>

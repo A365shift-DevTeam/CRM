@@ -47,6 +47,14 @@
   --radius-pill: 999px;
   --card-left-accent: #4361EE;
   --card-left-accent-gradient: linear-gradient(180deg, #4361EE 0%, #10B981 100%);
+  --button-brand: #5286A5;
+  --button-brand-hover: #416F8A;
+  --button-brand-soft: rgba(82, 134, 165, 0.12);
+  --button-brand-border: rgba(82, 134, 165, 0.35);
+  --button-brand-shadow: 0 3px 12px rgba(82, 134, 165, 0.28);
+  --button-brand-shadow-hover: 0 5px 18px rgba(82, 134, 165, 0.38);
+  --btn-green-gradient: linear-gradient(135deg, #5286A5 0%, #5286A5 100%);
+  --btn-green-gradient-hover: linear-gradient(135deg, #416F8A 0%, #5286A5 100%);
 }
 
 * {
@@ -110,7 +118,7 @@ html, body {
 
 /* Button Styles */
 .btn-neon {
-  background: linear-gradient(135deg, var(--accent-primary), #60a5fa);
+  background: var(--button-brand);
   border: none;
   color: #fff;
   padding: 0.75rem 1.5rem;
@@ -121,12 +129,64 @@ html, body {
   transition: all 0.3s ease;
   text-transform: uppercase;
   font-size: 0.9rem;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  box-shadow: var(--button-brand-shadow);
 }
 
 .btn-neon:hover {
+  background: var(--button-brand-hover);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  box-shadow: var(--button-brand-shadow-hover);
+}
+
+/* --- Global Navy Blue Button Override --- */
+.btn-primary,
+.btn-primary.disabled,
+.btn-primary:disabled {
+  background: var(--button-brand) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  box-shadow: var(--button-brand-shadow) !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active,
+.btn-primary.active,
+.show > .btn-primary.dropdown-toggle {
+  background: var(--button-brand-hover) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  box-shadow: var(--button-brand-shadow-hover) !important;
+}
+
+.btn-success,
+.btn-success.disabled,
+.btn-success:disabled {
+  background: linear-gradient(135deg, #155C86 0%, #1d4ed8 100%) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  box-shadow: 0 2px 8px rgba(30, 58, 138, 0.30) !important;
+}
+
+.btn-success:hover,
+.btn-success:focus,
+.btn-success:active,
+.btn-success.active {
+  background: linear-gradient(135deg, #155C86 0%, #2563eb 100%) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px #155C86 !important;
+}
+
+.btn-outline-success {
+  color: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+}
+
+.btn-outline-success:hover {
+  background: linear-gradient(135deg, #155C86 0%, #1d4ed8 100%) !important;
+  border-color: transparent !important;
+  color: #fff !important;
 }
 
 /* --- Global Light Theme Bootstrap Overrides --- */
