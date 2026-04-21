@@ -14,7 +14,7 @@ import StageSettingsModal, {
     LEGAL_STORAGE_KEY,
     loadStoredStages
 } from './StageSettingsModal'
-import BusinessProcessModal from './BusinessProcessModal'
+import SmartStageModal from './SmartStageModal'
 import { projectService } from '../../services/api'
 import { incomeService } from '../../services/incomeService'
 import { projectFinanceService } from '../../services/projectFinanceService'
@@ -155,24 +155,24 @@ const SalesCard = ({ projectId, project, stages, deliveryStages, financeStages, 
             <div className="d-flex justify-content-between align-items-center mb-1">
                 <div className="sales-card-title m-0">{title || 'Untitled Project'}</div>
                 
-                {/* Department Radio Buttons */}
-                <div className="dept-radio-group">
-                    <label className={selectedDept === 'sales' ? 'active' : ''}>
-                        <input type="radio" name={`dept-${projectId}`} checked={selectedDept === 'sales'} onChange={() => setSelectedDept('sales')} />
-                        Sales
-                    </label>
-                    <label className={selectedDept === 'delivery' ? 'active' : ''}>
-                        <input type="radio" name={`dept-${projectId}`} checked={selectedDept === 'delivery'} onChange={() => setSelectedDept('delivery')} />
-                        Delivery
-                    </label>
-                    <label className={selectedDept === 'finance' ? 'active' : ''}>
-                        <input type="radio" name={`dept-${projectId}`} checked={selectedDept === 'finance'} onChange={() => setSelectedDept('finance')} />
-                        Finance
-                    </label>
-                    <label className={selectedDept === 'legal' ? 'active' : ''}>
-                        <input type="radio" name={`dept-${projectId}`} checked={selectedDept === 'legal'} onChange={() => setSelectedDept('legal')} />
-                        Legal
-                    </label>
+                {/* iOS Segmented Department Control */}
+                <div className="ios-segmented dept-segmented" onClick={e => e.stopPropagation()}>
+                    {[
+                        { id: 'sales',    label: 'Sales',    dot: null },
+                        { id: 'delivery', label: 'Delivery', dot: '#AF52DE' },
+                        { id: 'finance',  label: 'Finance',  dot: project.financeStage > 0 ? '#34C759' : null },
+                        { id: 'legal',    label: 'Legal',    dot: project.legalStage > 0 ? '#FF9500' : null },
+                    ].map(({ id, label, dot }) => (
+                        <button
+                            key={id}
+                            type="button"
+                            className={`ios-segment${selectedDept === id ? ' active' : ''}`}
+                            onClick={() => setSelectedDept(id)}
+                        >
+                            {dot && <span className="ios-segment-dot" style={{ background: dot }} />}
+                            {label}
+                        </button>
+                    ))}
                 </div>
             </div>
 
@@ -319,18 +319,19 @@ const SalesCard = ({ projectId, project, stages, deliveryStages, financeStages, 
 
 
 
-            {/* Business Process Modal */}
-            <BusinessProcessModal
+            {/* Smart Stage Modal — context-aware for Sales / Delivery / Finance / Legal */}
+            <SmartStageModal
                 show={showNotification}
                 handleClose={() => setShowNotification(false)}
                 handleSave={(data) => {
-                    console.log('Form data saved:', data)
                     if (data.stageIndex !== undefined) {
                         onStageChange(data.stageIndex, { ...data, dept: stageTransition.dept })
                     }
                     setShowNotification(false)
                 }}
                 projectId={projectId}
+                project={project}
+                dept={selectedDept}
                 stages={displayStages}
                 activeStage={displayActiveStage}
                 targetStage={displayStages.findIndex(s => s.label === stageTransition.to)}

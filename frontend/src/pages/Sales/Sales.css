@@ -1,9 +1,9 @@
-/* Sales.css — Enterprise Pipeline Design */
+/* Sales.css — Apple iOS Enterprise Pipeline */
 
 .sales-page {
   padding: 24px;
-  background: var(--bg-primary, #EEF2F8);
-  font-family: var(--font-family, 'DM Sans', sans-serif);
+  background: var(--ios-bg, #F2F2F7);
+  font-family: var(--font-sf, -apple-system, BlinkMacSystemFont, 'Nunito', sans-serif);
   min-height: 100vh;
 }
 
@@ -17,16 +17,17 @@
 
 .sales-page .stat-card {
   background: #FFFFFF;
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: var(--r-md, 14px);
+  padding: 18px 20px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  border: 1px solid #E1E8F4;
-  box-shadow: 0 2px 16px rgba(15, 23, 42, 0.06), 0 1px 4px rgba(15, 23, 42, 0.04);
+  gap: 14px;
+  border: 1px solid var(--ios-sep, rgba(60,60,67,0.12));
+  box-shadow: var(--shadow-card, 0 2px 8px rgba(0,0,0,0.06));
   transition: box-shadow 0.2s ease, transform 0.2s ease;
   position: relative;
   overflow: hidden;
+  font-family: var(--font-sf);
 }
 
 .sales-page .stat-card::before {
@@ -34,12 +35,12 @@
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 3px;
-  border-radius: 16px 16px 0 0;
+  border-radius: 14px 14px 0 0;
 }
 
 .sales-page .stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.1);
+  box-shadow: var(--shadow-lift, 0 8px 24px rgba(0,0,0,0.10));
 }
 
 .stat-header {
@@ -96,81 +97,52 @@
 
 .sales-card {
   background: #FFFFFF;
-  border-radius: 14px;
-  padding: 12px 18px;
+  border-radius: var(--r-md, 14px);
+  padding: 12px 16px;
   position: relative;
-  border: 1px solid #E1E8F4;
-  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.04);
+  border: 1px solid var(--ios-sep, rgba(60,60,67,0.12));
+  box-shadow: var(--shadow-card, 0 2px 8px rgba(0,0,0,0.06));
   transition: box-shadow 0.2s ease, transform 0.18s ease;
   overflow: hidden;
+  font-family: var(--font-sf, -apple-system, BlinkMacSystemFont, 'Nunito', sans-serif);
 }
 
 .sales-card::before {
   content: '';
   position: absolute;
-  top: 0; left: 0;
-  width: 4px; height: 100%;
-  background: var(--dynamic-theme-color, #4361EE);
-  border-radius: 14px 0 0 14px;
-  opacity: 0.7;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--dynamic-theme-color, #007AFF);
+  border-radius: 14px 14px 0 0;
+  opacity: 0.80;
 }
 
 .sales-card:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.09);
-  border-color: #D0DAEA;
+  box-shadow: var(--shadow-lift, 0 8px 24px rgba(0,0,0,0.10));
 }
 
 .sales-card:hover::before {
   opacity: 1;
 }
 
-/* Card Title & Dept Controls */
+/* Card Title & iOS Dept Segmented Control */
 .sales-card-title {
   font-size: 13px;
-  font-weight: 800;
-  color: #0F172A;
-  letter-spacing: 0.01em;
-  font-family: var(--font-display, 'Outfit', sans-serif);
-}
-
-.dept-radio-group {
-  display: flex;
-  background: #F1F5F9;
-  border-radius: 8px;
-  padding: 3px;
-  gap: 2px;
-}
-
-.dept-radio-group label {
-  font-size: 10px;
   font-weight: 700;
-  font-family: var(--font-display, 'Outfit', sans-serif);
-  color: #64748B;
+  color: #000;
+  letter-spacing: -0.01em;
+  font-family: var(--font-sf, -apple-system, BlinkMacSystemFont, 'Nunito', sans-serif);
+}
+
+/* dept-segmented overrides for card context */
+.dept-segmented {
+  flex-shrink: 0;
+}
+
+.dept-segmented .ios-segment {
+  font-size: 11.5px;
   padding: 4px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.dept-radio-group label:hover {
-  color: #334155;
-  background: #E2E8F0;
-}
-
-.dept-radio-group label.active {
-  background: #FFFFFF;
-  color: var(--dynamic-theme-color, #4361EE);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
-}
-
-.dept-radio-group input[type="radio"] {
-  display: none;
 }
 
 /* Project ID & Meta */
@@ -196,10 +168,10 @@
   font-family: var(--font-display, 'Outfit', sans-serif);
 }
 
-/* ── Action Icons ── */
+/* ── Action Icons — iOS HIG (44×44 tap target, circular) ── */
 .card-icons-row {
   display: flex;
-  gap: 4px;
+  gap: 3px;
   align-items: center;
 }
 
@@ -207,27 +179,32 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px; height: 28px;
-  border-radius: 7px;
-  color: #94A3B8;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  color: var(--ios-gray-5, #8E8E93);
   cursor: pointer;
-  transition: all 0.15s;
-  background: transparent;
+  transition: background 0.15s, color 0.15s;
+  background: var(--ios-gray-1, #F2F2F7);
   flex-shrink: 0;
 }
 
 .icon-outline:hover {
-  background: #F0F5FF;
-  color: var(--accent-primary, #4361EE);
+  background: rgba(0,122,255,0.10);
+  color: var(--ios-blue, #007AFF);
+}
+
+.icon-outline.icon-edit:hover {
+  background: rgba(0,122,255,0.10);
+  color: var(--ios-blue, #007AFF);
 }
 
 .icon-outline.icon-delete:hover {
-  background: rgba(244,63,94,0.1);
-  color: #F43F5E;
+  background: rgba(255,59,48,0.10);
+  color: var(--ios-red, #FF3B30);
 }
 
 .icon-outline.icon-whatsapp:hover {
-  background: rgba(37,211,102,0.1);
+  background: rgba(37,211,102,0.10);
   color: #25D366;
 }
 
@@ -240,48 +217,54 @@
   gap: 0;
 }
 
-/* Stage box */
+/* Stage box — iOS pill style */
 .stage-card {
-  transition: all 0.18s;
+  transition: background 0.18s, border-color 0.18s, box-shadow 0.18s;
   font-weight: 600;
-  font-family: var(--font-family, 'DM Sans', sans-serif);
-  font-size: 11.5px;
-  border-radius: 10px !important;
-  min-width: 80px !important;
-  height: 28px !important;
-  letter-spacing: 0.01em;
+  font-family: var(--font-sf, -apple-system, BlinkMacSystemFont, 'Nunito', sans-serif);
+  font-size: 11px;
+  border-radius: 999px !important;
+  min-width: 72px !important;
+  height: 26px !important;
+  letter-spacing: -0.01em;
   white-space: nowrap;
   cursor: pointer;
 }
 
 .stage-card.past {
-  background: var(--dynamic-theme-color, #4361EE) !important;
+  background: var(--dynamic-theme-color, #007AFF) !important;
   color: #FFFFFF !important;
-  border: 1px solid var(--dynamic-theme-color, #4361EE) !important;
-  box-shadow: 0 2px 6px rgba(67,97,238,0.25);
+  border: none !important;
+  box-shadow: 0 1px 4px rgba(0,122,255,0.30) !important;
 }
 
 .stage-card.active {
-  background: #FFFBEB !important;
-  color: #92400E !important;
-  border: 2px solid #F59E0B !important;
-  box-shadow: 0 0 0 3px rgba(245,158,11,0.15);
-  font-weight: 800 !important;
+  background: #fff !important;
+  color: var(--dynamic-theme-color, #007AFF) !important;
+  border: 2px solid var(--dynamic-theme-color, #007AFF) !important;
+  box-shadow: 0 0 0 3px rgba(0,122,255,0.14) !important;
+  font-weight: 700 !important;
 }
 
 .stage-card.future {
-  background: #FFFFFF !important;
-  color: #94A3B8 !important;
-  border: 1px solid #E1E8F4 !important;
+  background: var(--ios-gray-1, #F2F2F7) !important;
+  color: var(--ios-gray-5, #8E8E93) !important;
+  border: none !important;
 }
 
 .stage-card.stage-overdue {
-  background: #FEF2F2 !important;
-  color: #B91C1C !important;
-  border: 2px solid #EF4444 !important;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
-  font-weight: 800 !important;
+  background: rgba(255,59,48,0.10) !important;
+  color: var(--ios-red, #FF3B30) !important;
+  border: 2px solid var(--ios-red, #FF3B30) !important;
+  box-shadow: 0 0 0 3px rgba(255,59,48,0.12) !important;
+  font-weight: 700 !important;
+  animation: ssm-overdue-pulse 1.8s ease-in-out infinite !important;
   z-index: 5;
+}
+
+@keyframes ssm-overdue-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(255,59,48,0.12) !important; }
+  50%       { box-shadow: 0 0 0 6px rgba(255,59,48,0.06) !important; }
 }
 
 /* Stage connector */
@@ -319,24 +302,24 @@
 }
 
 .ageing-badge.past-badge {
-  background: var(--dynamic-theme-color, #4361EE);
+  background: var(--dynamic-theme-color, #007AFF);
   color: #FFFFFF;
-  opacity: 0.7;
+  opacity: 0.75;
 }
 
 .ageing-badge.active-badge {
-  background: #F59E0B;
-  color: #0F172A;
+  background: var(--ios-orange, #FF9500);
+  color: #FFFFFF;
 }
 
 .ageing-badge.active-badge.overdue {
-  background: #F43F5E;
+  background: var(--ios-red, #FF3B30);
   color: #FFFFFF;
 }
 
 .ageing-badge.future-badge {
-  background: #F1F5F9;
-  color: #94A3B8;
+  background: var(--ios-gray-2, #E5E5EA);
+  color: var(--ios-gray-5, #8E8E93);
 }
 
 /* Branding section */
@@ -374,34 +357,117 @@
   filter: drop-shadow(0 1px 3px rgba(0,0,0,0.15));
 }
 
-/* ── View Mode Toggle ── */
+/* ── Product/Service Toggle (reuses ios-segmented from design-system) ── */
 .view-mode-toggle {
-  background: #F1F5F9;
-  padding: 4px;
-  border-radius: 10px;
+  background: var(--ios-gray-2, #E5E5EA);
+  padding: 2px;
+  border-radius: var(--r-sm, 10px);
   display: flex;
-  gap: 4px;
+  gap: 2px;
 }
 
 .view-mode-toggle .btn {
-  border: none;
-  background: transparent;
-  color: #64748B;
-  font-size: 12.5px;
+  border: none !important;
+  background: transparent !important;
+  color: var(--ios-gray-5, #8E8E93) !important;
+  font-size: 13px;
   font-weight: 600;
-  padding: 6px 14px;
-  border-radius: 7px;
+  padding: 5px 14px;
+  border-radius: 8px !important;
   transition: all 0.18s;
-  font-family: var(--font-family, 'DM Sans', sans-serif);
+  font-family: var(--font-sf, -apple-system, BlinkMacSystemFont, 'Nunito', sans-serif);
 }
 
-.view-mode-toggle .btn:hover { color: #0F172A; }
+.view-mode-toggle .btn:hover:not(.btn-primary) { color: #000 !important; }
 
 .view-mode-toggle .btn.btn-primary {
-  background: var(--accent-primary, #4361EE) !important;
-  border-color: var(--accent-primary, #4361EE) !important;
-  color: #FFFFFF !important;
-  box-shadow: 0 2px 8px rgba(67,97,238,0.25);
+  background: #FFFFFF !important;
+  border-color: transparent !important;
+  color: #000 !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.14) !important;
+  font-weight: 700 !important;
+}
+
+/* ── Sales page modal overrides ── */
+.sales-page .modal-content {
+  border-radius: var(--r-lg, 20px) !important;
+  border: none !important;
+  box-shadow: var(--shadow-modal) !important;
+  font-family: var(--font-sf) !important;
+}
+
+.sales-page .modal-header {
+  border-bottom: 1px solid var(--ios-sep, rgba(60,60,67,0.12)) !important;
+  padding: 16px 20px !important;
+}
+
+.sales-page .modal-footer {
+  border-top: 1px solid var(--ios-sep, rgba(60,60,67,0.12)) !important;
+  padding: 12px 20px !important;
+}
+
+.sales-page .modal-title {
+  font-weight: 700 !important;
+  font-size: 16px !important;
+  letter-spacing: -0.02em !important;
+  color: #000 !important;
+  font-family: var(--font-sf) !important;
+}
+
+.sales-page .form-control,
+.sales-page .form-select {
+  background: var(--ios-gray-1, #F2F2F7) !important;
+  border: none !important;
+  border-radius: var(--r-sm, 10px) !important;
+  font-family: var(--font-sf) !important;
+  font-size: 14px !important;
+  color: #000 !important;
+}
+
+.sales-page .form-control:focus,
+.sales-page .form-select:focus {
+  background: #fff !important;
+  box-shadow: 0 0 0 3.5px rgba(0,122,255,0.20) !important;
+}
+
+.sales-page .form-label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.07em !important;
+  color: var(--ios-gray-5, #8E8E93) !important;
+  font-family: var(--font-sf) !important;
+}
+
+/* Modal buttons */
+.sales-page .modal-footer .btn-secondary {
+  background: var(--ios-gray-1, #F2F2F7) !important;
+  border: none !important;
+  color: #000 !important;
+  border-radius: var(--r-sm, 10px) !important;
+  font-weight: 600 !important;
+  font-family: var(--font-sf) !important;
+}
+
+.sales-page .modal-footer .btn-success,
+.sales-page .modal-footer .btn-primary {
+  background: var(--ios-blue, #007AFF) !important;
+  border-color: var(--ios-blue, #007AFF) !important;
+  border-radius: var(--r-sm, 10px) !important;
+  font-weight: 700 !important;
+  font-family: var(--font-sf) !important;
+  box-shadow: 0 2px 8px rgba(0,122,255,0.25) !important;
+}
+
+/* Stage editor badges */
+.sales-page .stage-editor-section .badge {
+  font-family: var(--font-sf) !important;
+}
+
+.sales-page .stage-editor-item {
+  border-radius: var(--r-sm, 10px) !important;
+  border-color: var(--ios-sep, rgba(60,60,67,0.12)) !important;
+  font-family: var(--font-sf) !important;
 }
 
 /* ── Responsive ── */
