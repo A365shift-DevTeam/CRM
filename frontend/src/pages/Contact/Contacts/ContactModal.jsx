@@ -307,7 +307,6 @@ export const ContactModal = ({ show, onHide, contact, columns = [], onSave, onDe
       {renderCategorySection('Basic Information', fieldCategories.basic)}
       {renderCategorySection('Company & Location', fieldCategories.company)}
       {renderCategorySection('Classification', fieldCategories.classification)}
-      {renderCategorySection('Additional Information', fieldCategories.additional)}
       {contact?.id && (
         <div style={{ marginTop: 16, borderTop: '1px solid #E1E8F4', paddingTop: 12 }}>
           <div className="standard-modal-section-title">Change History</div>
