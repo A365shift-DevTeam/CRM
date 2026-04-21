@@ -20,7 +20,7 @@ import {
   Activity, Users, ChevronRight,
   Diamond, TrendingUp, Truck,
   Receipt, Scale, BarChart3,
-  UserCog, Shield, Bot,
+  UserCog, Shield, Bot, Plus,
 } from 'lucide-react';
 import './Dashboard.css';
 
@@ -839,10 +839,19 @@ function DashboardMenuCards({ healthData = {} }) {
             )}
 
             <div className="dash-menu-title-row">
-              <span className="dash-menu-icon" style={{ color: menuCard.accent }}>
-                <IconComp size={16} />
-              </span>
-              <h3 className="dash-menu-title">{menuCard.title}</h3>
+              <div className="dash-menu-title-left">
+                <span className="dash-menu-icon" style={{ color: menuCard.accent }}>
+                  <IconComp size={16} />
+                </span>
+                <h3 className="dash-menu-title">{menuCard.title}</h3>
+              </div>
+              <Link
+                to={menuCard.items[0]?.to || '#'}
+                className="dash-menu-add-btn"
+                title={`Add ${menuCard.title}`}
+              >
+                <Plus size={14} />
+              </Link>
             </div>
             <div className="dash-menu-chip-wrap">
               {menuCard.items.map((item) => (

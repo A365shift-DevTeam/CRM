@@ -268,9 +268,37 @@
 .dash-menu-title-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
   position: relative;
   z-index: 2;
+}
+
+.dash-menu-title-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dash-menu-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #F8FAFC;
+  color: #94A3B8;
+  border: 1px dashed #CBD5E1;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.dash-menu-add-btn:hover {
+  background: #155C86;
+  color: #FFFFFF;
+  border-color: #155C86;
+  border-style: solid;
+  transform: scale(1.05);
 }
 
 .dash-menu-icon {
