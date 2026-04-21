@@ -18,6 +18,9 @@ import {
   AlertTriangle, Lightbulb,
   CheckCircle2, Clock, X,
   Activity, Users, ChevronRight,
+  Diamond, TrendingUp, Truck,
+  Receipt, Scale, BarChart3,
+  UserCog, Shield, Bot,
 } from 'lucide-react';
 import './Dashboard.css';
 
@@ -25,6 +28,8 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'Acquisition',
     accent: '#5B61F6',
+    healthKey: 'acquisition',
+    icon: Diamond,
     items: [
       { label: 'Company', to: '/company' },
       { label: 'Contacts', to: '/contact' },
@@ -34,6 +39,8 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'Sales',
     accent: '#22C55E',
+    healthKey: 'sales',
+    icon: TrendingUp,
     items: [
       { label: 'Connect', to: '/sales' },
       { label: 'Demo', to: '/sales' },
@@ -45,6 +52,8 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'Delivery',
     accent: '#F59E0B',
+    healthKey: 'delivery',
+    icon: Truck,
     items: [
       { label: 'Projects', to: '/projects' },
       { label: 'Tasks', to: '/todolist' },
@@ -55,6 +64,8 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'FinOps',
     accent: '#EF4444',
+    healthKey: 'finops',
+    icon: Receipt,
     items: [
       { label: 'Invoices', to: '/invoice' },
       { label: 'Payments', to: '/finance' },
@@ -66,6 +77,8 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'Legal',
     accent: '#8B5CF6',
+    healthKey: 'legal',
+    icon: Scale,
     items: [
       { label: 'NDA', to: '/legal' },
       { label: 'MSA', to: '/legal' },
@@ -76,6 +89,9 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'Intelligence',
     accent: '#0EA5E9',
+    healthKey: 'intelligence',
+    icon: BarChart3,
+    specialClass: 'card-intelligence',
     items: [
       { label: 'Reports', to: '/reports' },
       { label: 'Analytics', to: '/reports' },
@@ -85,6 +101,8 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'People',
     accent: '#14B8A6',
+    healthKey: 'people',
+    icon: UserCog,
     items: [
       { label: 'Employees', to: '/hr' },
       { label: 'Attendance', to: '/hr' },
@@ -94,6 +112,8 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'Admin',
     accent: '#6B7280',
+    healthKey: 'admin',
+    icon: Shield,
     items: [
       { label: 'Settings', to: '/settings' },
       { label: 'Access', to: '/admin' },
@@ -101,14 +121,35 @@ const DASHBOARD_MENU_CARDS = [
     ],
   },
   {
-    title: 'AI',
-    accent: '#EC4899',
+    title: 'AI Hub',
+    accent: '#0A2463', // Deep Navy
+    healthKey: 'ai',
+    icon: Bot,
+    specialClass: 'card-ai-hub',
     items: [
+      { label: 'Prompts', to: '/ai-agents' },
+      { label: 'Models', to: '/ai-agents/ai-followup' },
       { label: 'Agents', to: '/ai-agents' },
-      { label: 'Automations', to: '/ai-agents/ai-followup' },
     ],
   },
 ];
+
+/* ─────────────────────────────────────────
+   Health Insight Labels
+───────────────────────────────────────── */
+function getHealthLabel(pct) {
+  if (pct >= 80) return 'Excellent';
+  if (pct >= 60) return 'Good';
+  if (pct >= 40) return 'Fair';
+  if (pct >= 20) return 'Needs Attention';
+  return 'Critical';
+}
+
+function getHealthColor(pct, accent) {
+  if (pct >= 70) return accent;
+  if (pct >= 40) return '#F59E0B';
+  return '#EF4444';
+}
 
 /* ─────────────────────────────────────────
    Animated Counter
@@ -765,7 +806,7 @@ function QuickStats({ contacts, tasks, timesheetEntries }) {
   );
 }
 
-function DashboardMenuCards() {
+function DashboardMenuCards({ healthData = {} }) {
   return (
     <motion.div
       className="dash-menu-grid"
@@ -773,25 +814,63 @@ function DashboardMenuCards() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay: 0.24 }}
     >
-      {DASHBOARD_MENU_CARDS.map((menuCard, cardIndex) => (
-        <motion.article
-          key={menuCard.title}
-          className="dash-menu-card"
-          style={{ '--menu-accent': menuCard.accent }}
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, delay: 0.28 + (cardIndex * 0.04) }}
-        >
-          <h3 className="dash-menu-title">{menuCard.title}</h3>
-          <div className="dash-menu-chip-wrap">
-            {menuCard.items.map((item) => (
-              <Link key={`${menuCard.title}-${item.label}`} to={item.to} className="dash-menu-chip">
-                {item.label}
-              </Link>
-            ))}
-          </div>
-        </motion.article>
-      ))}
+      {DASHBOARD_MENU_CARDS.map((menuCard, cardIndex) => {
+        const health = healthData[menuCard.healthKey];
+        const pct = health?.percent ?? 0;
+        const label = health?.label ?? getHealthLabel(pct);
+        const barColor = getHealthColor(pct, menuCard.accent);
+        const IconComp = menuCard.icon;
+
+        return (
+          <motion.article
+            key={menuCard.title}
+            className={`dash-menu-card ${menuCard.specialClass || ''}`}
+            style={{ '--menu-accent': menuCard.accent }}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.28 + (cardIndex * 0.04) }}
+          >
+            {/* Special gradient backgrounds */}
+            {menuCard.specialClass === 'card-intelligence' && (
+              <div className="card-gradient-intelligence" />
+            )}
+            {menuCard.specialClass === 'card-ai-hub' && (
+              <div className="card-gradient-ai-hub" />
+            )}
+
+            <div className="dash-menu-title-row">
+              <span className="dash-menu-icon" style={{ color: menuCard.accent }}>
+                <IconComp size={16} />
+              </span>
+              <h3 className="dash-menu-title">{menuCard.title}</h3>
+            </div>
+            <div className="dash-menu-chip-wrap">
+              {menuCard.items.map((item) => (
+                <Link key={`${menuCard.title}-${item.label}`} to={item.to} className="dash-menu-chip">
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+
+            {/* Health Insight Progress Line */}
+            <div className="dash-menu-health">
+              <div className="dash-menu-health-header">
+                <span className="dash-menu-health-label">{label}</span>
+                <span className="dash-menu-health-pct">{pct}%</span>
+              </div>
+              <div className="dash-menu-health-track">
+                <motion.div
+                  className="dash-menu-health-fill"
+                  style={{ background: barColor }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.max(pct, 2)}%` }}
+                  transition={{ duration: 0.8, delay: 0.4 + (cardIndex * 0.06), ease: [0.25, 0.1, 0.25, 1] }}
+                />
+              </div>
+            </div>
+          </motion.article>
+        );
+      })}
     </motion.div>
   );
 }
@@ -969,6 +1048,82 @@ export default function Dashboard() {
       .sort((a, b) => (b.id || 0) - (a.id || 0)).slice(0, 5),
   [tasks]);
 
+  /* ── Module Health Insights ── */
+  const moduleHealth = useMemo(() => {
+    const clamp = (v) => Math.max(0, Math.min(100, Math.round(v)));
+
+    // Acquisition: based on contacts pipeline fullness (target: 50 contacts = 100%)
+    const acqPct = clamp(contacts.length > 0 ? Math.min((contacts.length / 50) * 100, 100) : 0);
+
+    // Sales: based on won deals vs total deals ratio
+    const wonDeals = projects.filter(p => p.status === 'Won').length;
+    const lostDeals = projects.filter(p => p.status === 'Lost').length;
+    const activeDeals = projects.filter(p => !p.status || p.status === 'Active' || p.status === 'In Progress').length;
+    const totalDeals = projects.length;
+    const salesPct = clamp(totalDeals > 0
+      ? ((wonDeals * 2 + activeDeals) / (totalDeals * 2)) * 100
+      : 0);
+
+    // Delivery: task completion rate
+    const completedTasks = tasks.filter(t => (t.values?.status || t.status) === 'Completed').length;
+    const totalTasks = tasks.length;
+    const deliveryPct = clamp(totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0);
+
+    // FinOps: income vs expense health (positive margin = healthy)
+    const totalIncome = incomes.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    const totalExpense = expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const finopsPct = clamp(
+      totalIncome > 0
+        ? Math.min(((totalIncome - totalExpense) / totalIncome) * 100 + 50, 100)
+        : totalExpense > 0 ? 15 : 0
+    );
+
+    // Legal: projects with milestones/contracts (coverage)
+    const projectsWithMilestones = projects.filter(p => Array.isArray(p.milestones) && p.milestones.length > 0).length;
+    const legalPct = clamp(totalDeals > 0 ? (projectsWithMilestones / totalDeals) * 100 : 0);
+
+    // Intelligence: data sufficiency across modules
+    const dataPoints = [
+      contacts.length > 0 ? 1 : 0,
+      projects.length > 0 ? 1 : 0,
+      tasks.length > 0 ? 1 : 0,
+      incomes.length > 0 ? 1 : 0,
+      expenses.length > 0 ? 1 : 0,
+      timesheetEntries.length > 0 ? 1 : 0,
+    ];
+    const intelPct = clamp((dataPoints.reduce((a, b) => a + b, 0) / dataPoints.length) * 100);
+
+    // People: timesheet activity (target: at least 1 entry per project)
+    const peoplePct = clamp(
+      projects.length > 0
+        ? Math.min((timesheetEntries.length / (projects.length * 2)) * 100, 100)
+        : timesheetEntries.length > 0 ? 60 : 0
+    );
+
+    // Admin: system health (always stable if user is authenticated and data loads)
+    const adminPct = clamp(85 + Math.min(totalDeals * 2, 15));
+
+    // AI: alert monitoring health (fewer critical = healthier)
+    const critCount = alerts.filter(a => a.severity === 'critical').length;
+    const aiPct = clamp(alerts.length > 0
+      ? Math.max(100 - (critCount * 25), 20)
+      : 70);
+
+    const make = (pct) => ({ percent: pct, label: getHealthLabel(pct) });
+
+    return {
+      acquisition: make(acqPct),
+      sales: make(salesPct),
+      delivery: make(deliveryPct),
+      finops: make(finopsPct),
+      legal: make(legalPct),
+      intelligence: make(intelPct),
+      people: make(peoplePct),
+      admin: make(adminPct),
+      ai: make(aiPct),
+    };
+  }, [projects, contacts, tasks, incomes, expenses, timesheetEntries, alerts]);
+
   /* ── Alert rotation ── */
   useEffect(() => {
     if (alerts.length <= 1) return undefined;
@@ -1069,7 +1224,7 @@ export default function Dashboard() {
         )}
 
         {/* ── Menu Cards ── */}
-        <DashboardMenuCards />
+        <DashboardMenuCards healthData={moduleHealth} />
 
         {/* ── Revenue Chart ── */}
         <RevenueChart data={monthlyData} />
