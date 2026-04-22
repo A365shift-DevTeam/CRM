@@ -7,7 +7,11 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell
 } from 'recharts';
 import { projectService, taskService } from '../../services/api';
+import { companyService } from '../../services/companyService';
 import { contactService } from '../../services/contactService';
+import { documentService } from '../../services/documentService';
+import { leadService } from '../../services/leadService';
+import { legalService } from '../../services/legalService';
 import { timesheetService } from '../../services/timesheetService';
 import { expenseService } from '../../services/expenseService';
 import { incomeService } from '../../services/incomeService';
@@ -806,7 +810,7 @@ function QuickStats({ contacts, tasks, timesheetEntries }) {
   );
 }
 
-function DashboardMenuCards({ healthData = {} }) {
+function DashboardMenuCards({ cards = [], healthData = {} }) {
   return (
     <motion.div
       className="dash-menu-grid"
@@ -814,7 +818,7 @@ function DashboardMenuCards({ healthData = {} }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay: 0.24 }}
     >
-      {DASHBOARD_MENU_CARDS.map((menuCard, cardIndex) => {
+      {cards.map((menuCard, cardIndex) => {
         const health = healthData[menuCard.healthKey];
         const pct = health?.percent ?? 0;
         const label = health?.label ?? getHealthLabel(pct);
@@ -843,7 +847,10 @@ function DashboardMenuCards({ healthData = {} }) {
                 <span className="dash-menu-icon" style={{ color: menuCard.accent }}>
                   <IconComp size={16} />
                 </span>
-                <h3 className="dash-menu-title">{menuCard.title}</h3>
+                <div>
+                  <h3 className="dash-menu-title">{menuCard.title}</h3>
+                  <p className="dash-menu-subtitle">{menuCard.subtitle}</p>
+                </div>
               </div>
               <Link
                 to={menuCard.items[0]?.to || '#'}
@@ -861,8 +868,19 @@ function DashboardMenuCards({ healthData = {} }) {
               ))}
             </div>
 
-            {/* Health Insight Progress Line */}
             <div className="dash-menu-health">
+              <span className="dash-menu-metric-label">{menuCard.metricLabel}</span>
+              <div className="dash-menu-health-main">
+                <div className="dash-menu-health-value">
+                  <AnimatedCounter to={pct} suffix="%" duration={1000 + (cardIndex * 40)} />
+                </div>
+                <div className="dash-menu-health-side">
+                  <span className="dash-menu-health-chip" style={{ color: menuCard.accent }}>
+                    {menuCard.statText}
+                  </span>
+                  <span className="dash-menu-health-meta">{menuCard.statMeta}</span>
+                </div>
+              </div>
               <div className="dash-menu-health-header">
                 <span className="dash-menu-health-label">{label}</span>
                 <span className="dash-menu-health-pct">{pct}%</span>
@@ -956,7 +974,11 @@ export default function Dashboard() {
   const { currentUser } = useAuth();
 
   const [projects, setProjects] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [contacts, setContacts] = useState([]);
+  const [leads, setLeads] = useState([]);
+  const [documents, setDocuments] = useState([]);
+  const [legalAgreements, setLegalAgreements] = useState([]);
   const [timesheetEntries, setTimesheetEntries] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [incomes, setIncomes] = useState([]);
@@ -966,7 +988,11 @@ export default function Dashboard() {
   const [activeAlertIndex, setActiveAlertIndex] = useState(0);
 
   const [loadingProjects, setLoadingProjects] = useState(true);
+  const [loadingCompanies, setLoadingCompanies] = useState(true);
   const [loadingContacts, setLoadingContacts] = useState(true);
+  const [loadingLeads, setLoadingLeads] = useState(true);
+  const [loadingDocuments, setLoadingDocuments] = useState(true);
+  const [loadingLegal, setLoadingLegal] = useState(true);
   const [loadingTimesheet, setLoadingTimesheet] = useState(true);
   const [loadingFinance, setLoadingFinance] = useState(true);
   const [loadingTasks, setLoadingTasks] = useState(true);
@@ -977,12 +1003,14 @@ export default function Dashboard() {
     const controller = new AbortController();
     const { signal } = controller;
 
+    const toArray = (data) => (Array.isArray(data) ? data : (data?.items ?? data?.tasks ?? []));
+
     const fetchProjects = async () => {
       try {
         setLoadingProjects(true);
         const d = await projectService.getAll(1, 100);
         if (signal.aborted) return;
-        setProjects(Array.isArray(d) ? d : (d?.items ?? []));
+        setProjects(toArray(d));
       } catch (e) {
         if (signal.aborted) return;
         console.error('Dashboard projects:', e);
@@ -990,17 +1018,69 @@ export default function Dashboard() {
         if (!signal.aborted) setLoadingProjects(false);
       }
     };
+    const fetchCompanies = async () => {
+      try {
+        setLoadingCompanies(true);
+        const d = await companyService.getCompanies(1, 100);
+        if (signal.aborted) return;
+        setCompanies(toArray(d));
+      } catch (e) {
+        if (signal.aborted) return;
+        console.error('Dashboard companies:', e);
+      } finally {
+        if (!signal.aborted) setLoadingCompanies(false);
+      }
+    };
     const fetchContacts = async () => {
       try {
         setLoadingContacts(true);
         const d = await contactService.getContacts(1, 100);
         if (signal.aborted) return;
-        setContacts((d?.items ?? d) || []);
+        setContacts(toArray(d));
       } catch (e) {
         if (signal.aborted) return;
         console.error('Dashboard contacts:', e);
       } finally {
         if (!signal.aborted) setLoadingContacts(false);
+      }
+    };
+    const fetchLeads = async () => {
+      try {
+        setLoadingLeads(true);
+        const d = await leadService.getLeads(1, 100);
+        if (signal.aborted) return;
+        setLeads(toArray(d));
+      } catch (e) {
+        if (signal.aborted) return;
+        console.error('Dashboard leads:', e);
+      } finally {
+        if (!signal.aborted) setLoadingLeads(false);
+      }
+    };
+    const fetchDocuments = async () => {
+      try {
+        setLoadingDocuments(true);
+        const d = await documentService.getAll();
+        if (signal.aborted) return;
+        setDocuments(toArray(d));
+      } catch (e) {
+        if (signal.aborted) return;
+        console.error('Dashboard documents:', e);
+      } finally {
+        if (!signal.aborted) setLoadingDocuments(false);
+      }
+    };
+    const fetchLegal = async () => {
+      try {
+        setLoadingLegal(true);
+        const d = await legalService.getAll();
+        if (signal.aborted) return;
+        setLegalAgreements(toArray(d));
+      } catch (e) {
+        if (signal.aborted) return;
+        console.error('Dashboard legal:', e);
+      } finally {
+        if (!signal.aborted) setLoadingLegal(false);
       }
     };
     const fetchTimesheet = async () => {
@@ -1057,8 +1137,16 @@ export default function Dashboard() {
       }
     };
 
-    fetchProjects(); fetchContacts(); fetchTimesheet();
-    fetchFinance(); fetchTasks(); fetchAlerts();
+    fetchProjects();
+    fetchCompanies();
+    fetchContacts();
+    fetchLeads();
+    fetchDocuments();
+    fetchLegal();
+    fetchTimesheet();
+    fetchFinance();
+    fetchTasks();
+    fetchAlerts();
 
     return () => controller.abort();
   }, [currentUser]);
@@ -1119,7 +1207,8 @@ export default function Dashboard() {
     const clamp = (v) => Math.max(0, Math.min(100, Math.round(v)));
 
     // Acquisition: based on contacts pipeline fullness (target: 50 contacts = 100%)
-    const acqPct = clamp(contacts.length > 0 ? Math.min((contacts.length / 50) * 100, 100) : 0);
+    const acqBase = companies.length + contacts.length + leads.length;
+    const acqPct = clamp(acqBase > 0 ? Math.min((acqBase / 90) * 100, 100) : 0);
 
     // Sales: based on won deals vs total deals ratio
     const wonDeals = projects.filter(p => p.status === 'Won').length;
@@ -1146,16 +1235,23 @@ export default function Dashboard() {
 
     // Legal: projects with milestones/contracts (coverage)
     const projectsWithMilestones = projects.filter(p => Array.isArray(p.milestones) && p.milestones.length > 0).length;
-    const legalPct = clamp(totalDeals > 0 ? (projectsWithMilestones / totalDeals) * 100 : 0);
+    const legalCoverageBase = Math.max(totalDeals, legalAgreements.length, 1);
+    const legalPct = clamp(
+      ((projectsWithMilestones + legalAgreements.length) / (legalCoverageBase * 2)) * 100
+    );
 
     // Intelligence: data sufficiency across modules
     const dataPoints = [
+      companies.length > 0 ? 1 : 0,
       contacts.length > 0 ? 1 : 0,
+      leads.length > 0 ? 1 : 0,
       projects.length > 0 ? 1 : 0,
       tasks.length > 0 ? 1 : 0,
       incomes.length > 0 ? 1 : 0,
       expenses.length > 0 ? 1 : 0,
       timesheetEntries.length > 0 ? 1 : 0,
+      documents.length > 0 ? 1 : 0,
+      legalAgreements.length > 0 ? 1 : 0,
     ];
     const intelPct = clamp((dataPoints.reduce((a, b) => a + b, 0) / dataPoints.length) * 100);
 
@@ -1188,7 +1284,146 @@ export default function Dashboard() {
       admin: make(adminPct),
       ai: make(aiPct),
     };
-  }, [projects, contacts, tasks, incomes, expenses, timesheetEntries, alerts]);
+  }, [projects, companies, contacts, leads, tasks, incomes, expenses, legalAgreements, documents, timesheetEntries, alerts]);
+
+  const menuCards = useMemo(() => {
+    const totalDeals = projects.length;
+    const wonDeals = projects.filter((p) => p.status === 'Won').length;
+    const openDeals = projects.filter((p) => !p.status || p.status === 'Active' || p.status === 'In Progress').length;
+    const lostDeals = projects.filter((p) => p.status === 'Lost').length;
+    const completedTasks = tasks.filter((t) => (t.values?.status || t.status) === 'Completed').length;
+    const openTasks = Math.max(tasks.length - completedTasks, 0);
+    const totalIncome = incomes.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    const totalExpense = expenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    const netBalance = totalIncome - totalExpense;
+    const expiringSoon = legalAgreements.filter((agreement) => {
+      if (!agreement?.endDate) return false;
+      const endDate = new Date(agreement.endDate);
+      if (Number.isNaN(endDate.getTime())) return false;
+      const diffDays = Math.ceil((endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      return diffDays >= 0 && diffDays <= 30;
+    }).length;
+    const criticalAlertCount = alerts.filter((alert) => alert.severity === 'critical').length;
+    const dataSources = [
+      companies,
+      contacts,
+      leads,
+      projects,
+      tasks,
+      documents,
+      legalAgreements,
+      incomes,
+      expenses,
+      timesheetEntries,
+    ].filter((items) => items.length > 0).length;
+
+    const cardDetails = {
+      acquisition: {
+        subtitle: `${companies.length} companies · ${contacts.length} contacts · ${leads.length} leads`,
+        metricLabel: 'CRM coverage',
+        statText: `${companies.length + contacts.length + leads.length} live`,
+        statMeta: 'records tracked',
+        items: [
+          { label: `Companies ${companies.length}`, to: '/company' },
+          { label: `Contacts ${contacts.length}`, to: '/contact' },
+          { label: `Leads ${leads.length}`, to: '/leads' },
+        ],
+      },
+      sales: {
+        subtitle: `${totalDeals} deals · ${wonDeals} won · ${openDeals} active`,
+        metricLabel: 'Pipeline health',
+        statText: `${wonDeals}/${Math.max(totalDeals, 1)}`,
+        statMeta: 'won deals',
+        items: [
+          { label: `Active ${openDeals}`, to: '/sales' },
+          { label: `Won ${wonDeals}`, to: '/sales' },
+          { label: `Lost ${lostDeals}`, to: '/sales' },
+        ],
+      },
+      delivery: {
+        subtitle: `${documents.length} docs · ${tasks.length} tasks · ${timesheetEntries.length} timesheets`,
+        metricLabel: 'Execution health',
+        statText: `${completedTasks}/${Math.max(tasks.length, 1)}`,
+        statMeta: 'tasks complete',
+        items: [
+          { label: `Projects ${projects.length}`, to: '/projects' },
+          { label: `Open ${openTasks}`, to: '/todolist' },
+          { label: `Docs ${documents.length}`, to: '/documents' },
+        ],
+      },
+      finops: {
+        subtitle: `${incomes.length} income items · ${expenses.length} expense items`,
+        metricLabel: 'Financial health',
+        statText: formatGlobalCurrency(netBalance, 'INR', { maximumFractionDigits: 0 }),
+        statMeta: 'net balance',
+        items: [
+          { label: `Income ${incomes.length}`, to: '/finance' },
+          { label: `Expense ${expenses.length}`, to: '/finance' },
+          { label: `Invoices ${projects.filter((p) => Array.isArray(p.milestones) && p.milestones.length > 0).length}`, to: '/invoice' },
+        ],
+      },
+      legal: {
+        subtitle: `${legalAgreements.length} agreements · ${expiringSoon} expiring soon`,
+        metricLabel: 'Compliance health',
+        statText: `${expiringSoon}`,
+        statMeta: 'due in 30 days',
+        items: [
+          { label: `Agreements ${legalAgreements.length}`, to: '/legal' },
+          { label: `Expiring ${expiringSoon}`, to: '/legal' },
+          { label: `Contracts ${projects.filter((p) => Array.isArray(p.milestones) && p.milestones.length > 0).length}`, to: '/legal' },
+        ],
+      },
+      intelligence: {
+        subtitle: `${dataSources} data sources online · ${alerts.length} alerts in feed`,
+        metricLabel: 'Data coverage',
+        statText: `${dataSources}/10`,
+        statMeta: 'sources reporting',
+        items: [
+          { label: `Reports ${dataSources}`, to: '/reports' },
+          { label: `Alerts ${alerts.length}`, to: '/reports' },
+          { label: `Docs ${documents.length}`, to: '/reports' },
+        ],
+      },
+      people: {
+        subtitle: `${timesheetEntries.length} timesheets · ${openTasks} open tasks`,
+        metricLabel: 'Team throughput',
+        statText: `${timesheetEntries.length}`,
+        statMeta: 'time entries',
+        items: [
+          { label: `Timesheets ${timesheetEntries.length}`, to: '/timesheet' },
+          { label: `Tasks ${openTasks}`, to: '/todolist' },
+          { label: `Projects ${projects.length}`, to: '/projects' },
+        ],
+      },
+      admin: {
+        subtitle: `${alerts.length} alerts · ${criticalAlertCount} critical · ${documents.length} docs`,
+        metricLabel: 'System health',
+        statText: `${alerts.length}`,
+        statMeta: 'system notices',
+        items: [
+          { label: 'Settings', to: '/settings' },
+          { label: `Alerts ${alerts.length}`, to: '/admin' },
+          { label: `Audit ${documents.length}`, to: '/admin' },
+        ],
+      },
+      ai: {
+        subtitle: `${alerts.length} AI alerts · ${criticalAlertCount} critical signals`,
+        metricLabel: 'Model coverage',
+        statText: `${criticalAlertCount}`,
+        statMeta: 'critical alerts',
+        items: [
+          { label: `Prompts ${alerts.length}`, to: '/ai-agents' },
+          { label: `Models ${dataSources}`, to: '/ai-agents/ai-followup' },
+          { label: `Agents ${criticalAlertCount}`, to: '/ai-agents' },
+        ],
+      },
+    };
+
+    return DASHBOARD_MENU_CARDS.map((card) => ({
+      ...card,
+      ...cardDetails[card.healthKey],
+    }));
+  }, [projects, companies, contacts, leads, tasks, documents, legalAgreements, incomes, expenses, timesheetEntries, alerts]);
 
   /* ── Alert rotation ── */
   useEffect(() => {
@@ -1213,7 +1448,16 @@ export default function Dashboard() {
     return { label: 'General', className: 'bg-slate-100 text-slate-700' };
   };
 
-  const isLoading = loadingProjects || loadingContacts || loadingTimesheet || loadingFinance || loadingTasks;
+  const isLoading =
+    loadingProjects ||
+    loadingCompanies ||
+    loadingContacts ||
+    loadingLeads ||
+    loadingDocuments ||
+    loadingLegal ||
+    loadingTimesheet ||
+    loadingFinance ||
+    loadingTasks;
 
   if (isLoading) {
     return (
@@ -1290,7 +1534,7 @@ export default function Dashboard() {
         )}
 
         {/* ── Menu Cards ── */}
-        <DashboardMenuCards healthData={moduleHealth} />
+        <DashboardMenuCards cards={menuCards} healthData={moduleHealth} />
 
         {/* ── Revenue Chart ── */}
         <RevenueChart data={monthlyData} />
