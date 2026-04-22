@@ -1,0 +1,88 @@
+.audit-history-modal .modal-content {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.audit-kanban-board {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    overflow-x: auto;
+    padding-bottom: 8px;
+}
+
+.audit-kanban-column {
+    flex: 1;
+    min-width: 250px;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #E2E8F0;
+    max-height: calc(100vh - 120px);
+}
+
+.audit-kanban-column-header {
+    font-weight: 600;
+    color: #1E293B;
+    padding: 12px 16px;
+    border-bottom: 1px solid #E2E8F0;
+    background: #F8FAFC;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.audit-kanban-column-body {
+    padding: 12px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.audit-kanban-card {
+    background: #ffffff;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    padding: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.audit-kanban-card:hover {
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    transform: translateY(-2px);
+}
+
+.audit-kanban-card-header {
+    font-size: 13px;
+    color: #0F172A;
+    margin-bottom: 6px;
+}
+
+.audit-kanban-card-body {
+    font-size: 12px;
+    color: #475569;
+}
+
+.audit-desc {
+    margin-bottom: 6px;
+    color: #64748B;
+}
+
+.audit-amount {
+    font-weight: 600;
+    color: #10B981;
+    margin-bottom: 6px;
+}
+
+.audit-date {
+    display: flex;
+    align-items: center;
+    color: #94A3B8;
+    font-size: 11px;
+}
