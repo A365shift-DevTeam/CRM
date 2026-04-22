@@ -268,127 +268,127 @@ function DealPieChart({ projects }) {
 }
 
 /* ─────────────────────────────────────────
-   Sales Funnel Chart (Enterprise SVG)
+   Sales Funnel Chart (Horizontal Area Chart)
 ───────────────────────────────────────── */
 const FUNNEL_STAGES = [
-  { name: 'Demo',        color: '#4361EE' },
-  { name: 'Proposal',   color: '#06B6D4' },
-  { name: 'Negotiation',color: '#F59E0B' },
-  { name: 'Approval',   color: '#8B5CF6' },
-  { name: 'Won',        color: '#10B981' },
+  { name: 'Demo',        color: '#D1E66B' }, // Light green
+  { name: 'Proposal',    color: '#95CD70' }, // Medium-light green
+  { name: 'Negotiation', color: '#56A974' }, // Medium green
+  { name: 'Approval',    color: '#287F73' }, // Dark green
+  { name: 'Won',         color: '#154A56' }, // Very dark green
 ];
 
 function SalesFunnelChart({ projects }) {
-  const raw = useMemo(() => FUNNEL_STAGES.map((stage, idx) => ({
-    ...stage,
-    count: projects.filter((p) => p.activeStage === idx || p.status === stage.name).length,
-  })), [projects]);
+  const funnelData = useMemo(() => {
+    // 1. Get raw counts of projects CURRENTLY in each stage
+    const rawCounts = FUNNEL_STAGES.map((stage, idx) => 
+      projects.filter((p) => p.activeStage === idx || p.status === stage.name).length
+    );
+    
+    // 2. Compute cumulative counts (everyone who reached this stage or beyond)
+    const cumulative = [];
+    let sum = 0;
+    for (let i = rawCounts.length - 1; i >= 0; i--) {
+      sum += rawCounts[i];
+      cumulative[i] = sum;
+    }
+    
+    // 3. Map to final data structure
+    return FUNNEL_STAGES.map((stage, i) => {
+      const count = cumulative[i];
+      const nextCount = i < cumulative.length - 1 ? cumulative[i+1] : count;
+      const dropoff = count - nextCount;
+      const dropoffPct = count > 0 ? ((dropoff / count) * 100).toFixed(2) : 0;
+      
+      return {
+        ...stage,
+        count: count,
+        dropoff: dropoff,
+        dropoffPct: dropoffPct
+      };
+    });
+  }, [projects]);
 
-  const total = raw.reduce((sum, d) => sum + d.count, 0);
-  const trackedStages = raw.filter((s) => s.count > 0).length;
-
-  const SVG_W = 460;
-  const SVG_H = 280;
-  const CENTER_X = SVG_W / 2;
-  const SEGMENT_H = 50;
-  const TOP_GAP = 12;
-  const START_HALF_W = 200;
-  const MIN_HALF_W = 6;
-
-  const scaledHalfWidth = (idx, total) => {
-    const ratio = Math.max(0, (total - idx) / total);
-    return Math.max(MIN_HALF_W, Math.round(MIN_HALF_W + ratio * (START_HALF_W - MIN_HALF_W)));
-  };
+  const maxCount = funnelData[0]?.count || 1;
 
   return (
     <motion.div className="chart-card"
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.44 }}
+      style={{ padding: 0, overflow: 'hidden' }}
     >
-      <div className="chart-card-header">
+      <div className="chart-card-header" style={{ padding: '20px 24px', borderBottom: '1px solid #E2E8F0' }}>
         <div>
-          <h3 className="chart-card-title">Sales Funnel</h3>
-          <p className="chart-card-sub">Pipeline conversion by stage</p>
+          <h3 className="chart-card-title" style={{ fontSize: '18px', color: '#1E293B' }}>Sales Funnel</h3>
+          <p className="chart-card-sub" style={{ marginTop: '2px' }}>Pipeline conversion by stage</p>
         </div>
-        <div className="chart-total-badge">{trackedStages} Tracked</div>
       </div>
 
-      <div className="funnel-enterprise-layout">
-        <div className="funnel-canvas-wrap">
-          <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="funnel-canvas" role="img" aria-label="Sales funnel by stage">
-            {raw.map((stage, i) => {
-              const topWidth = scaledHalfWidth(i, raw.length);
-              const bottomWidth = scaledHalfWidth(i + 1, raw.length);
-              const yTop = TOP_GAP + i * SEGMENT_H;
-              const yBottom = yTop + SEGMENT_H - 2;
-              const points = `${CENTER_X - topWidth},${yTop} ${CENTER_X + topWidth},${yTop} ${CENTER_X + bottomWidth},${yBottom} ${CENTER_X - bottomWidth},${yBottom}`;
-              const showLabel = topWidth > 38 || bottomWidth > 38;
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', position: 'relative' }}>
+        {/* Columns Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${funnelData.length}, 1fr)`, width: '100%', zIndex: 10 }}>
+          {funnelData.map((stage, i) => (
+            <div key={stage.name} style={{ 
+              padding: '24px 20px 16px 20px', 
+              borderRight: i < funnelData.length - 1 ? '1px solid #E2E8F0' : 'none',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
+                {stage.name}
+              </div>
+              <div style={{ fontSize: '26px', fontWeight: 700, color: '#0F172A', marginBottom: '28px', fontFamily: 'Outfit, sans-serif' }}>
+                {stage.count.toLocaleString()}
+              </div>
+              
+              {i < funnelData.length - 1 ? (
+                <>
+                  <div style={{ fontSize: '11px', color: '#94A3B8', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+                    Dropped / Lost
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', fontWeight: 700, color: '#64748B' }}>
+                    <span>{stage.dropoff.toLocaleString()}</span>
+                    <span style={{ color: '#94A3B8', fontWeight: 500, fontSize: '12px' }}>{stage.dropoffPct}%</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize: '11px', color: '#94A3B8', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+                    Successfully Won
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', fontWeight: 700, color: '#10B981' }}>
+                    <span>{stage.count.toLocaleString()}</span>
+                    <span style={{ fontSize: '12px', fontWeight: 500 }}>100%</span>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
 
-              return (
-                <g key={stage.name}>
-                  <polygon points={points} fill={stage.color} opacity="0.97" />
-                  {showLabel && (
-                    <text
-                      x={CENTER_X}
-                      y={(yTop + yBottom) / 2 + 5}
-                      textAnchor="middle"
-                      fill="#fff"
-                      fontSize="11"
-                      fontWeight="700"
-                      fontFamily="DM Sans, sans-serif"
-                    >
-                      {stage.name}
-                    </text>
-                  )}
-                </g>
-              );
+        {/* SVG Area Chart */}
+        <div style={{ width: '100%', height: '140px', marginTop: '-20px', position: 'relative', zIndex: 1 }}>
+          <svg viewBox={`0 0 1000 140`} preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block' }}>
+            {funnelData.map((stage, i) => {
+              const W = 1000 / funnelData.length;
+              const H = 140;
+              const x0 = i * W;
+              const x1 = (i + 1) * W;
+              
+              const y0 = H - (stage.count / maxCount) * (H - 20);
+              const nextCount = i < funnelData.length - 1 ? funnelData[i+1].count : stage.count;
+              const y1 = H - (nextCount / maxCount) * (H - 20);
+              
+              const d = `M ${x0},${H} L ${x0},${y0} C ${x0 + W/2},${y0} ${x1 - W/2},${y1} ${x1},${y1} L ${x1},${H} Z`;
+              
+              return <path key={stage.name} d={d} fill={stage.color} opacity="0.95" />;
             })}
-            <line
-              x1={CENTER_X}
-              y1={TOP_GAP + raw.length * SEGMENT_H - 2}
-              x2={CENTER_X}
-              y2={SVG_H - 8}
-              stroke={raw[raw.length - 1]?.color || '#10B981'}
-              strokeWidth="2"
-              strokeLinecap="round"
-              opacity="0.8"
-            />
+            
+            {funnelData.map((_, i) => i > 0 && (
+              <line key={`line-${i}`} x1={i * (1000/funnelData.length)} y1={0} x2={i * (1000/funnelData.length)} y2={140} stroke="#ffffff" strokeWidth="2" opacity="0.4" />
+            ))}
           </svg>
         </div>
-
-        <div className="funnel-metric-list">
-          {raw.map((s, i) => {
-            const maxStageIndex = FUNNEL_STAGES.length - 1;
-            const stagePct = maxStageIndex > 0 ? Math.round((i / maxStageIndex) * 100) : 0;
-            return (
-              <motion.div
-                key={s.name}
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.35, delay: 0.4 + i * 0.07 }}
-                className="funnel-metric-row"
-              >
-                <span className="funnel-metric-dot" style={{ background: s.color }} />
-                <span className="funnel-metric-name">{s.name}</span>
-                <span className="funnel-metric-count">{s.count}</span>
-                <div className="funnel-metric-track">
-                  <motion.div
-                    style={{ height: '100%', borderRadius: 999, background: s.color }}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.max(stagePct, 4)}%` }}
-                    transition={{ duration: 0.6, delay: 0.5 + i * 0.07 }}
-                  />
-                </div>
-                <span className="funnel-metric-pct">{stagePct}%</span>
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="funnel-footer">
-        <span>Total in pipeline</span>
-        <span style={{ fontWeight: 700, color: '#0F172A' }}>{total} deals</span>
       </div>
     </motion.div>
   );
