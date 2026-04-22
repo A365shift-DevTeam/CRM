@@ -67,8 +67,9 @@ export default function MainLayout() {
         { path: '/company',  icon: <FaUserGroup size={14} />,   label: 'Company',   permission: 'contacts.view' },
         { path: '/contact',  icon: <FaUserGroup size={14} />,   label: 'Contacts',  permission: 'contacts.view' },
         { path: '/leads',    icon: <FaUserGroup size={14} />,   label: 'Leads',     permission: 'sales.view' },
+         { path: '/sales',    icon: <FaChartColumn size={14} />, label: 'Sales',     permission: 'sales.view' },
         { path: '/tickets',  icon: <FaListCheck size={14} />,   label: 'Tickets',   permission: 'dashboard.view' },
-        { path: '/sales',    icon: <FaChartColumn size={14} />, label: 'Sales',     permission: 'sales.view' },
+       
       ],
     },
     {

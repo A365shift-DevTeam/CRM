@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { reportService } from '../../services/reportService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import PageToolbar from '../../components/PageToolbar/PageToolbar';
+import DashboardAnalytics from './DashboardAnalytics';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 const monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -86,6 +87,11 @@ export default function Reports() {
                             <LineChart data={growth}><CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" /><XAxis dataKey="name" fontSize={12} /><YAxis fontSize={12} /><Tooltip /><Line type="monotone" dataKey="totalContacts" stroke="#10b981" strokeWidth={2} dot={{ fill: '#10b981' }} /><Line type="monotone" dataKey="newContacts" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6' }} /></LineChart>
                         </ResponsiveContainer>
                     </div>
+                </div>
+            )}
+            {!loading && (
+                <div style={{ marginTop: '24px' }}>
+                    <DashboardAnalytics />
                 </div>
             )}
         </div>
