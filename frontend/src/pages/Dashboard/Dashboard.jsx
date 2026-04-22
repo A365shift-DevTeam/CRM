@@ -20,13 +20,16 @@ import {
   Diamond, TrendingUp, Truck,
   Receipt, Scale, BarChart3,
   UserCog, Shield, Bot, Plus,
+  MoreHorizontal,
 } from 'lucide-react';
 import './Dashboard.css';
 
 const DASHBOARD_MENU_CARDS = [
   {
     title: 'Acquisition',
-    accent: '#5B61F6',
+    gradient: 'from-sky-500 to-blue-600',
+    accentBg: 'bg-sky-50',
+    accentText: 'text-sky-600',
     healthKey: 'acquisition',
     icon: Diamond,
     items: [
@@ -37,7 +40,9 @@ const DASHBOARD_MENU_CARDS = [
   },
   {
     title: 'Sales',
-    accent: '#22C55E',
+    gradient: 'from-amber-400 to-orange-500',
+    accentBg: 'bg-orange-50',
+    accentText: 'text-orange-600',
     healthKey: 'sales',
     icon: TrendingUp,
     items: [
@@ -50,7 +55,9 @@ const DASHBOARD_MENU_CARDS = [
   },
   {
     title: 'Delivery',
-    accent: '#F59E0B',
+    gradient: 'from-emerald-400 to-green-500',
+    accentBg: 'bg-emerald-50',
+    accentText: 'text-emerald-600',
     healthKey: 'delivery',
     icon: Truck,
     items: [
@@ -62,7 +69,9 @@ const DASHBOARD_MENU_CARDS = [
   },
   {
     title: 'FinOps',
-    accent: '#EF4444',
+    gradient: 'from-rose-400 to-red-500',
+    accentBg: 'bg-rose-50',
+    accentText: 'text-rose-600',
     healthKey: 'finops',
     icon: Receipt,
     items: [
@@ -75,7 +84,9 @@ const DASHBOARD_MENU_CARDS = [
   },
   {
     title: 'Legal',
-    accent: '#8B5CF6',
+    gradient: 'from-violet-400 to-indigo-500',
+    accentBg: 'bg-violet-50',
+    accentText: 'text-violet-600',
     healthKey: 'legal',
     icon: Scale,
     items: [
@@ -87,10 +98,11 @@ const DASHBOARD_MENU_CARDS = [
   },
   {
     title: 'Intelligence',
-    accent: '#0EA5E9',
+    gradient: 'from-cyan-400 to-sky-500',
+    accentBg: 'bg-cyan-50',
+    accentText: 'text-cyan-600',
     healthKey: 'intelligence',
     icon: BarChart3,
-    specialClass: 'card-intelligence',
     items: [
       { label: 'Reports', to: '/reports' },
       { label: 'Analytics', to: '/reports' },
@@ -99,7 +111,9 @@ const DASHBOARD_MENU_CARDS = [
   },
   {
     title: 'People',
-    accent: '#14B8A6',
+    gradient: 'from-slate-400 to-slate-600',
+    accentBg: 'bg-slate-100',
+    accentText: 'text-slate-600',
     healthKey: 'people',
     icon: UserCog,
     items: [
@@ -110,7 +124,9 @@ const DASHBOARD_MENU_CARDS = [
   },
   {
     title: 'Admin',
-    accent: '#6B7280',
+    gradient: 'from-fuchsia-400 to-pink-500',
+    accentBg: 'bg-fuchsia-50',
+    accentText: 'text-fuchsia-600',
     healthKey: 'admin',
     icon: Shield,
     items: [
@@ -121,10 +137,11 @@ const DASHBOARD_MENU_CARDS = [
   },
   {
     title: 'AI Hub',
-    accent: '#0A2463', // Deep Navy
+    gradient: 'from-teal-400 to-emerald-500',
+    accentBg: 'bg-teal-50',
+    accentText: 'text-teal-600',
     healthKey: 'ai',
     icon: Bot,
-    specialClass: 'card-ai-hub',
     items: [
       { label: 'Prompts', to: '/ai-agents' },
       { label: 'Models', to: '/ai-agents/ai-followup' },
@@ -144,11 +161,7 @@ function getHealthLabel(pct) {
   return 'Critical';
 }
 
-function getHealthColor(pct, accent) {
-  if (pct >= 70) return accent;
-  if (pct >= 40) return '#F59E0B';
-  return '#EF4444';
-}
+
 
 /* ─────────────────────────────────────────
    Animated Counter
@@ -228,92 +241,108 @@ function SparkLine({ data = [], color = '#4361EE', height = 42 }) {
 
 
 
+function StatusRow({ status, score, accentText }) {
+  return (
+    <div className="mt-2 flex items-center justify-between text-[11px] uppercase tracking-[0.16em]">
+      <div className={`flex items-center gap-2 font-semibold ${accentText}`}>
+        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+        <span>{status}</span>
+      </div>
+      <div className="text-slate-400">{score}</div>
+    </div>
+  );
+}
+
+function MetricCard({ menuCard, health, cardIndex }) {
+  const Icon = menuCard.icon;
+  const pct = health?.percent ?? 0;
+  const status = health?.label ?? 'Fair';
+
+  return (
+    <div className="group relative overflow-hidden rounded-[28px] border border-white/70 bg-white/80 px-5 py-4 shadow-[0_10px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(15,23,42,0.12)]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/70 to-transparent" />
+
+      <div className="relative z-10 flex items-start justify-between gap-3">
+        <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${menuCard.gradient} text-white shadow-md`}>
+          <Icon size={18} />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-slate-400">
+            {menuCard.metricLabel || 'Overview'}
+          </div>
+          <div className="mt-1 text-[15px] font-semibold tracking-tight text-slate-900">
+            {menuCard.title}
+          </div>
+        </div>
+
+        <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-400 transition hover:bg-slate-200 hover:text-slate-700">
+          <MoreHorizontal size={16} />
+        </button>
+      </div>
+
+      <div className="relative z-10 mt-3 flex flex-wrap gap-2">
+        {menuCard.items.map((item, index) => (
+          <Link
+            key={`${menuCard.title}-${item.label}`}
+            to={item.to}
+            className={`rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors ${index === menuCard.items.length - 1 ? `${menuCard.accentBg} ${menuCard.accentText} hover:opacity-80` : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
+          >
+            {item.label}
+          </Link>
+        ))}
+      </div>
+
+      <div className="relative z-10 mt-3">
+        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+          {menuCard.subtitle}
+        </div>
+
+        <div className="mt-1 flex items-end justify-between gap-3">
+          <div className="text-3xl font-bold leading-none tracking-[-0.04em] text-slate-900">
+            <AnimatedCounter to={pct} duration={1000 + (cardIndex * 40)} />%
+          </div>
+
+          <div className="flex flex-col items-end gap-1">
+            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${menuCard.accentBg} ${menuCard.accentText}`}>
+              {menuCard.statText}
+            </span>
+            <span className="text-[10px] text-slate-400">{menuCard.statMeta}</span>
+          </div>
+        </div>
+
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-200">
+          <motion.div
+            className={`h-full rounded-full bg-gradient-to-r ${menuCard.gradient}`}
+            initial={{ width: 0 }}
+            animate={{ width: `${Math.max(pct, 2)}%` }}
+            transition={{ duration: 0.8, delay: 0.4 + (cardIndex * 0.06), ease: [0.25, 0.1, 0.25, 1] }}
+          />
+        </div>
+
+        <StatusRow status={status} score={`${Math.round(pct)} / 100`} accentText={menuCard.accentText} />
+      </div>
+    </div>
+  );
+}
+
 function DashboardMenuCards({ cards = [], healthData = {} }) {
   return (
     <motion.div
-      className="dash-menu-grid"
+      className="w-full grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay: 0.24 }}
     >
       {cards.map((menuCard, cardIndex) => {
         const health = healthData[menuCard.healthKey];
-        const pct = health?.percent ?? 0;
-        const label = health?.label ?? getHealthLabel(pct);
-        const barColor = getHealthColor(pct, menuCard.accent);
-        const IconComp = menuCard.icon;
-
         return (
-          <motion.article
+          <MetricCard
             key={menuCard.title}
-            className={`dash-menu-card ${menuCard.specialClass || ''}`}
-            style={{ '--menu-accent': menuCard.accent }}
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: 0.28 + (cardIndex * 0.04) }}
-          >
-            {/* Special gradient backgrounds */}
-            {menuCard.specialClass === 'card-intelligence' && (
-              <div className="card-gradient-intelligence" />
-            )}
-            {menuCard.specialClass === 'card-ai-hub' && (
-              <div className="card-gradient-ai-hub" />
-            )}
-
-            <div className="dash-menu-title-row">
-              <div className="dash-menu-title-left">
-                <span className="dash-menu-icon" style={{ color: menuCard.accent }}>
-                  <IconComp size={16} />
-                </span>
-                <div>
-                  <h3 className="dash-menu-title">{menuCard.title}</h3>
-                  <p className="dash-menu-subtitle">{menuCard.subtitle}</p>
-                </div>
-              </div>
-              <Link
-                to={menuCard.items[0]?.to || '#'}
-                className="dash-menu-add-btn"
-                title={`Add ${menuCard.title}`}
-              >
-                <Plus size={14} />
-              </Link>
-            </div>
-            <div className="dash-menu-chip-wrap">
-              {menuCard.items.map((item) => (
-                <Link key={`${menuCard.title}-${item.label}`} to={item.to} className="dash-menu-chip">
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-
-            <div className="dash-menu-health">
-              <span className="dash-menu-metric-label">{menuCard.metricLabel}</span>
-              <div className="dash-menu-health-main">
-                <div className="dash-menu-health-value">
-                  <AnimatedCounter to={pct} suffix="%" duration={1000 + (cardIndex * 40)} />
-                </div>
-                <div className="dash-menu-health-side">
-                  <span className="dash-menu-health-chip" style={{ color: menuCard.accent }}>
-                    {menuCard.statText}
-                  </span>
-                  <span className="dash-menu-health-meta">{menuCard.statMeta}</span>
-                </div>
-              </div>
-              <div className="dash-menu-health-header">
-                <span className="dash-menu-health-label">{label}</span>
-                <span className="dash-menu-health-pct">{pct}%</span>
-              </div>
-              <div className="dash-menu-health-track">
-                <motion.div
-                  className="dash-menu-health-fill"
-                  style={{ background: barColor }}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.max(pct, 2)}%` }}
-                  transition={{ duration: 0.8, delay: 0.4 + (cardIndex * 0.06), ease: [0.25, 0.1, 0.25, 1] }}
-                />
-              </div>
-            </div>
-          </motion.article>
+            menuCard={menuCard}
+            health={health}
+            cardIndex={cardIndex}
+          />
         );
       })}
     </motion.div>
