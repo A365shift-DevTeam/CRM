@@ -14,6 +14,7 @@ import { projectService } from '../services/api';
 import { contactService } from '../services/contactService';
 import { timesheetService } from '../services/timesheetService';
 import AlertSidebar from '../components/AlertSidebar';
+import NotificationInboxModal from '../components/NotificationInboxModal';
 import '../pages/Dashboard/Dashboard.css';
 
 const hexToRgba = (hex, alpha) => {
@@ -46,6 +47,7 @@ export default function MainLayout() {
   const [contactCount, setContactCount] = useState(0);
   const [timesheetCount, setTimesheetCount] = useState(0);
   const [isAlertSidebarOpen, setIsAlertSidebarOpen] = useState(false);
+  const [showPremiumInbox, setShowPremiumInbox] = useState(false);
 
   useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
 
@@ -601,7 +603,7 @@ export default function MainLayout() {
               {/* Added Home & Notifications to Top Header Bar */}
               <div className="dash-header-nav" style={{ marginRight: '10px' }}>
                 <button className="dash-nav-pill active" style={{ padding: '6px 16px', fontSize: '13px' }} onClick={() => navigate('/')}>Home</button>
-                <button className="dash-nav-pill" onClick={() => setIsAlertSidebarOpen(true)} style={{ padding: '6px 16px', fontSize: '13px' }}>
+                <button className="dash-nav-pill" onClick={() => setShowPremiumInbox(true)} style={{ padding: '6px 16px', fontSize: '13px' }}>
                   Notifications
                   {criticalAlertsCount > 0 && <span className="dash-nav-badge">{criticalAlertsCount}</span>}
                 </button>
@@ -647,6 +649,13 @@ export default function MainLayout() {
           getAlertCategory={getAlertCategoryGlobal}
         />
       )}
+
+      {/* ── Premium Notification Inbox ── */}
+      <NotificationInboxModal 
+        show={showPremiumInbox} 
+        onHide={() => setShowPremiumInbox(false)} 
+        alerts={alerts}
+      />
     </div>
   );
 }
