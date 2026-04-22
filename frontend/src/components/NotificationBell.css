@@ -259,3 +259,199 @@
     background-color: #6B7280;
     color: #FFFFFF;
 }
+
+/* ═══════════════════════════════════════════════
+   Responsive — Notification Inbox
+   ═══════════════════════════════════════════════ */
+
+/* ── Tablet / medium screens ── */
+@media (max-width: 992px) {
+    .premium-notification-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .premium-filter-section {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .premium-card-score-section {
+        padding: 0 20px;
+        min-width: 100px;
+    }
+
+    .premium-card-score {
+        font-size: 28px;
+    }
+
+    .premium-card-actions {
+        margin-left: 16px;
+        margin-right: 4px;
+    }
+}
+
+/* ── Small screens ── */
+@media (max-width: 768px) {
+    .premium-notification-modal .modal-content {
+        padding: 16px;
+        border-radius: 16px;
+    }
+
+    .premium-notification-title {
+        font-size: 20px;
+    }
+
+    .premium-notification-card {
+        flex-wrap: wrap;
+        padding: 16px;
+        gap: 12px;
+    }
+
+    .premium-card-icon-container {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        margin-right: 12px;
+        margin-left: 6px;
+    }
+
+    .premium-card-icon-container svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .premium-card-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .premium-card-title {
+        font-size: 15px;
+    }
+
+    .premium-card-desc {
+        font-size: 13px;
+        margin-bottom: 8px;
+        max-width: 100%;
+        word-break: break-word;
+    }
+
+    .premium-card-score-section {
+        flex-direction: row;
+        gap: 8px;
+        border-right: none;
+        border-top: 1px solid #F3F4F6;
+        padding: 12px 0 0 0;
+        min-width: unset;
+        width: 100%;
+        justify-content: flex-start;
+        order: 3;
+    }
+
+    .premium-card-score {
+        font-size: 22px;
+    }
+
+    .premium-card-score-label {
+        font-size: 10px;
+        align-self: center;
+    }
+
+    .premium-card-actions {
+        flex-direction: row !important;
+        gap: 8px !important;
+        margin-left: auto;
+        margin-right: 0;
+        order: 2;
+    }
+
+    .premium-action-icon-btn {
+        width: 36px;
+        height: 36px;
+    }
+}
+
+/* ── Extra-small / mobile ── */
+@media (max-width: 480px) {
+    .premium-notification-modal .modal-content {
+        padding: 12px;
+        border-radius: 12px;
+    }
+
+    .premium-notification-header {
+        padding: 0 4px;
+        margin-bottom: 16px;
+    }
+
+    .premium-notification-title {
+        font-size: 18px;
+    }
+
+    .premium-notification-subtitle {
+        font-size: 12px;
+    }
+
+    .premium-filter-pill {
+        padding: 5px 12px;
+        font-size: 12px;
+    }
+
+    .premium-notification-list {
+        gap: 10px;
+        padding: 0 4px 12px 4px;
+    }
+
+    .premium-notification-card {
+        padding: 14px;
+        border-radius: 12px;
+        gap: 10px;
+    }
+
+    .premium-card-icon-container {
+        width: 40px;
+        height: 40px;
+        margin-right: 10px;
+        margin-left: 4px;
+    }
+
+    .premium-card-icon-container svg {
+        width: 18px;
+        height: 18px;
+        margin-bottom: 2px;
+    }
+
+    .premium-card-dept {
+        font-size: 8px;
+    }
+
+    .premium-card-title {
+        font-size: 14px;
+    }
+
+    .premium-card-desc {
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    .premium-badge {
+        padding: 3px 8px;
+        font-size: 11px;
+    }
+
+    .premium-card-badges {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .premium-action-icon-btn {
+        width: 32px;
+        height: 32px;
+    }
+
+    .premium-action-icon-btn svg {
+        width: 15px;
+        height: 15px;
+    }
+}
