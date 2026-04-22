@@ -1,6 +1,5 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { Modal } from 'react-bootstrap';
-import { Wallet, Rocket, Server, Mail, Clock, Bell } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { X, Wallet, Rocket, Server, Mail, Clock, Bell } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa6';
 import { notificationService } from '../services/notificationService';
 import './NotificationBell.css';
@@ -9,7 +8,7 @@ const mapAlertToPremium = (alert) => {
     const rawCat = String(alert.category || '').toLowerCase();
     const txt = `${alert.title || ''} ${alert.message || ''}`.toLowerCase();
     const severity = String(alert.severity || 'info').toLowerCase();
-    
+
     let dept = 'General';
     let icon = <Bell size={24} color="#6B7280" strokeWidth={2} />;
     let accentColor = '#6B7280';
@@ -17,7 +16,7 @@ const mapAlertToPremium = (alert) => {
     let scoreLabel = 'Info';
     let score = '100%';
     let scoreColor = '#6B7280';
-    
+
     if (rawCat.includes('sale') || txt.includes('sale') || txt.includes('deal')) {
         dept = 'Sales';
         icon = <Rocket size={24} color="#10B981" strokeWidth={2} />;
@@ -50,113 +49,111 @@ const mapAlertToPremium = (alert) => {
 
     return {
         id: alert.id || alert._id || Math.random().toString(),
-        dept: dept,
+        dept,
         title: alert.title || 'System Alert',
         message: alert.message || '',
         isRead: alert.isRead || false,
-        score: score,
-        scoreLabel: scoreLabel,
-        scoreColor: scoreColor,
+        score,
+        scoreLabel,
+        scoreColor,
         badges: severity !== 'info' ? [capitalize(severity), dept, 'Alert'] : [dept, 'Info'],
-        accentColor: accentColor,
-        bgLight: bgLight,
-        icon: icon,
-        raw: alert
+        accentColor,
+        bgLight,
+        icon,
+        raw: alert,
     };
 };
 
 export default function NotificationInboxModal({ show, onHide, alerts = [] }) {
     const [filter, setFilter] = useState('All');
-    
-    // Convert incoming alerts to premium format
-    const premiumAlerts = useMemo(() => {
-        return alerts.map(mapAlertToPremium);
-    }, [alerts]);
-
     const [readStates, setReadStates] = useState({});
+
+    const premiumAlerts = useMemo(() => alerts.map(mapAlertToPremium), [alerts]);
 
     const markRead = (id) => {
         setReadStates(prev => ({ ...prev, [id]: true }));
-        try {
-            notificationService.markAsRead(id);
-        } catch (e) {
-            console.error('Failed to mark read', e);
-        }
+        try { notificationService.markAsRead(id); } catch (e) { console.error('Failed to mark read', e); }
     };
 
     const filteredNotifications = premiumAlerts.filter(n => {
-        // If it was marked read locally, skip it or format it differently (for now we keep it but it will be read)
         if (filter === 'All') return true;
         if (filter === 'Finance') return n.dept === 'Finance';
         if (filter === 'Sales') return n.dept === 'Lead' || n.dept === 'Sales';
-        if (filter === 'Legal') return n.dept === 'Legal' || n.dept === 'Ops'; 
+        if (filter === 'Legal') return n.dept === 'Legal' || n.dept === 'Ops';
         return true;
-    }).map(n => ({
-        ...n,
-        isRead: n.isRead || readStates[n.id]
-    }));
+    }).map(n => ({ ...n, isRead: n.isRead || readStates[n.id] }));
+
+    if (!show) return null;
 
     return (
-        <Modal show={show} onHide={onHide} size="xl" centered dialogClassName="premium-notification-modal">
-            <div className="premium-notification-header">
-                <div>
-                    <h2 className="premium-notification-title">Premium Notification Inbox</h2>
-                    <p className="premium-notification-subtitle mb-0">Manage and prioritize critical workspace updates.</p>
+        <div className="nim-overlay" onClick={onHide}>
+            <div className="nim-panel" onClick={e => e.stopPropagation()}>
+
+                {/* Header */}
+                <div className="nim-header">
+                    <div className="nim-header-left">
+                        <h2 className="nim-title">Premium Notification Inbox</h2>
+                        <p className="nim-subtitle">Manage and prioritize critical workspace updates.</p>
+                    </div>
+
+                    <div className="nim-header-center">
+                        <span className="nim-filter-label">FILTER BY</span>
+                        {['All', 'Finance', 'Legal', 'Sales'].map(f => (
+                            <button
+                                key={f}
+                                className={`nim-filter-pill ${filter === f ? 'active' : ''}`}
+                                onClick={() => setFilter(f)}
+                            >
+                                {f}
+                            </button>
+                        ))}
+                    </div>
+
+                    <button className="nim-close-btn" onClick={onHide} title="Close">
+                        <X size={22} />
+                    </button>
                 </div>
-                <div className="premium-filter-section">
-                    <span className="premium-filter-label">FILTER BY</span>
-                    {['All', 'Finance', 'Legal', 'Sales'].map(f => (
-                        <button 
-                            key={f} 
-                            className={`premium-filter-pill ${filter === f ? 'active' : ''}`}
-                            onClick={() => setFilter(f)}
-                        >
-                            {f}
-                        </button>
-                    ))}
+
+                {/* List */}
+                <div className="nim-list">
+                    {filteredNotifications.length === 0 ? (
+                        <div className="nim-empty">No notifications found for this filter.</div>
+                    ) : (
+                        filteredNotifications.map(n => (
+                            <div key={n.id} className="nim-card">
+                                <div className="nim-card-accent" style={{ backgroundColor: n.accentColor }} />
+
+                                <div className="nim-card-icon" style={{ backgroundColor: n.bgLight }}>
+                                    {n.icon}
+                                    <span className="nim-card-dept" style={{ color: n.accentColor }}>{n.dept}</span>
+                                </div>
+
+                                <div className="nim-card-content">
+                                    <div className="nim-card-title">
+                                        {n.title}
+                                        {!n.isRead && <span className="nim-unread-dot" />}
+                                    </div>
+                                    <div className="nim-card-desc">{n.message}</div>
+                                    <div className="nim-card-badges">
+                                        {n.badges.map(b => <span key={b} className="nim-badge">{b}</span>)}
+                                    </div>
+                                </div>
+
+                                <div className="nim-card-score">
+                                    <div className="nim-score-value" style={{ color: n.scoreColor }}>{n.score}</div>
+                                    <div className="nim-score-label">{n.scoreLabel}</div>
+                                </div>
+
+                                <div className="nim-card-actions">
+                                    <button className="nim-action-btn nim-whatsapp" title="WhatsApp"><FaWhatsapp size={18} /></button>
+                                    <button className="nim-action-btn nim-mail" title="Email"><Mail size={18} /></button>
+                                    <button className="nim-action-btn nim-snooze" title="Snooze" onClick={() => markRead(n.id)}><Clock size={18} /></button>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
-
-            <div className="premium-notification-list">
-                {filteredNotifications.length === 0 ? (
-                    <div style={{ padding: '40px', textAlign: 'center', color: '#9CA3AF' }}>No notifications found for this filter.</div>
-                ) : (
-                    filteredNotifications.map(n => (
-                        <div key={n.id} className="premium-notification-card">
-                            <div className="premium-card-accent" style={{ backgroundColor: n.accentColor }}></div>
-                            
-                            <div className="premium-card-icon-container" style={{ backgroundColor: n.bgLight }}>
-                                {n.icon}
-                                <span className="premium-card-dept" style={{ color: n.accentColor }}>{n.dept}</span>
-                            </div>
-
-                            <div className="premium-card-content">
-                                <div className="premium-card-title">
-                                    {n.title}
-                                    {!n.isRead && <span className="premium-card-unread-dot"></span>}
-                                </div>
-                                <div className="premium-card-desc">{n.message}</div>
-                                <div className="premium-card-badges">
-                                    {n.badges.map(b => (
-                                        <span key={b} className="premium-badge">{b}</span>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="premium-card-score-section">
-                                <div className="premium-card-score" style={{ color: n.scoreColor }}>{n.score}</div>
-                                <div className="premium-card-score-label">{n.scoreLabel}</div>
-                            </div>
-
-                            <div className="premium-card-actions" style={{ flexDirection: 'row', gap: '12px' }}>
-                                <button className="premium-action-icon-btn btn-whatsapp" title="WhatsApp"><FaWhatsapp size={18} /></button>
-                                <button className="premium-action-icon-btn btn-mail" title="Email"><Mail size={18} /></button>
-                                <button className="premium-action-icon-btn btn-snooze-icon" title="Snooze" onClick={() => markRead(n.id)}><Clock size={18} /></button>
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
-        </Modal>
+        </div>
     );
 }

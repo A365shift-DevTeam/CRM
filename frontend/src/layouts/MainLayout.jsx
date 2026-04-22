@@ -518,12 +518,10 @@ export default function MainLayout() {
       </div>
 
       {/* ── Main Content ── */}
-      <div style={{ flexGrow: 1, padding: '12px', display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%' }}>
+      <div style={{ flexGrow: 1, padding: '0', display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%' }}>
         <div style={{
           height: '100%', width: '100%', display: 'flex', flexDirection: 'column',
           background: '#EEF2F8',
-          border: '1px solid #E1E8F4',
-          borderRadius: '20px',
           overflow: 'hidden',
         }}>
 
@@ -537,7 +535,6 @@ export default function MainLayout() {
             gap: '14px',
             background: '#FFFFFF',
             borderBottom: '1px solid #E1E8F4',
-            borderRadius: '20px 20px 0 0',
           }}>
             {/* Hamburger */}
             <button
