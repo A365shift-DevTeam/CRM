@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button, Modal, Form } from 'react-bootstrap';
-import { Building, Globe, MapPin, Edit, Trash2, Users, Briefcase, ArrowUpRight } from 'lucide-react';
+import { Building, Globe, MapPin, Edit, Trash2, Users, Briefcase, ArrowUpRight, List, Target } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { companyService } from '../../services/companyService';
 import { contactService } from '../../services/contactService';
@@ -8,6 +8,7 @@ import { leadService } from '../../services/leadService';
 import { useToast } from '../../components/Toast/ToastContext';
 import PageToolbar from '../../components/PageToolbar/PageToolbar';
 import StatsGrid from '../../components/StatsGrid/StatsGrid';
+import { ChartView } from './ChartView';
 import './Company.css';
 
 const INDUSTRIES = ['Technology', 'Finance', 'Healthcare', 'Manufacturing', 'Retail', 'Education', 'Real Estate', 'Consulting', 'Other'];
@@ -42,6 +43,7 @@ const buildCompanyPayload = (wf) => ({
 
 export default function Company() {
   const toast = useToast();
+  const [viewMode, setViewMode] = useState('list');
   const [companies, setCompanies] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -346,6 +348,12 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
         panelFilterValues={panelFilterValues}
         onPanelFilterChange={(id, val) => setPanelFilterValues(prev => ({ ...prev, [id]: val }))}
         onClearPanelFilters={() => setPanelFilterValues({})}
+        viewModes={[
+          { id: 'list', label: 'List' },
+          { id: 'chart', label: 'Chart' },
+        ]}
+        activeView={viewMode}
+        onViewChange={setViewMode}
         actions={[{ label: 'Add Company', variant: 'primary', onClick: openWizard }]}
       />
 
@@ -353,7 +361,7 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
         <div className="d-flex justify-content-center py-5">
           <div className="spinner-border text-primary" />
         </div>
-      ) : (
+      ) : viewMode === 'list' ? (
         <div className="row g-3 mt-1">
           {filtered.map(c => (
             <div key={c.id} className="col-12 col-md-6 col-xl-4">
@@ -387,7 +395,9 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
             <div className="text-center text-muted py-5">No companies found. Add your first company.</div>
           )}
         </div>
-      )}
+      ) : viewMode === 'chart' ? (
+        <ChartView companies={filtered} />
+      ) : null}
 
       <Modal show={showModal} onHide={() => setShowModal(false)} centered size="lg">
         <Modal.Header closeButton className="border-0 pb-0">

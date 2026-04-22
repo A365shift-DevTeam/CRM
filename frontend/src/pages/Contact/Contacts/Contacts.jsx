@@ -3,7 +3,7 @@ import { Button, Dropdown, Form, Badge, Modal, Card, Row, Col } from 'react-boot
 import {
   Plus, Filter, MoreVertical,
   ArrowUpDown, Check, X, Layers, User, Flag, Briefcase, Building, Phone, Edit, Settings, ArrowUpRight,
-  GripVertical, Eye, EyeOff, Trash2
+  GripVertical, Eye, EyeOff, Trash2, List, Columns, Target
 } from 'lucide-react'
 import { contactService } from '../../../services/contactService'
 import { projectService } from '../../../services/api'

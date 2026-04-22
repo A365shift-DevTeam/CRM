@@ -3,10 +3,11 @@ import { legalService } from '../../services/legalService';
 import PageToolbar from '../../components/PageToolbar/PageToolbar';
 import StatsGrid from '../../components/StatsGrid/StatsGrid';
 import { useToast } from '../../components/Toast/ToastContext';
-import { Plus, FileText, Shield, AlertTriangle, Clock } from 'lucide-react';
+import { Plus, FileText, Shield, AlertTriangle, Clock, List, Columns, Target } from 'lucide-react';
 import { FaPen, FaTrash } from 'react-icons/fa6';
 import Swal from 'sweetalert2';
 import LegalModal from './LegalModal';
+import { ChartView } from './ChartView';
 import './Legal.css';
 
 const TYPE_CLASS = {
@@ -44,6 +45,7 @@ export default function Legal() {
   const [agreements, setAgreements] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState('list');
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -161,12 +163,19 @@ export default function Legal() {
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSortChange={(sb, so) => { setSortBy(sb); setSortOrder(so); }}
+        viewModes={[
+          { id: 'list', label: 'List' },
+          { id: 'kanban', label: 'Kanban' },
+          { id: 'chart', label: 'Chart' },
+        ]}
+        activeView={viewMode}
+        onViewChange={setViewMode}
         actions={[{ label: 'New Agreement', icon: <Plus size={16} />, variant: 'primary', onClick: openCreate }]}
       />
 
       {loading ? (
         <div className="text-center p-5"><div className="spinner-border text-primary" /></div>
-      ) : (
+      ) : viewMode === 'list' ? (
         <div style={{ background: '#FFF', border: '1px solid #E1E8F4', borderRadius: 12, overflow: 'hidden', boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}>
           <table className="table table-hover mb-0" style={{ fontSize: 13 }}>
             <thead style={{ background: '#F8FAFC', borderBottom: '2px solid #E1E8F4' }}>
@@ -211,7 +220,36 @@ export default function Legal() {
             </tbody>
           </table>
         </div>
-      )}
+      ) : viewMode === 'kanban' ? (
+        <div className="row flex-nowrap overflow-auto pb-3 mt-1" style={{ minHeight: 400 }}>
+          {['Draft', 'Under Review', 'Approved', 'Signed', 'Expired', 'Terminated'].map(status => (
+            <div key={status} className="col-11 col-sm-6 col-md-4 col-lg-3" style={{ minWidth: 260 }}>
+              <div style={{ background: '#F8FAFC', border: '1px solid #E1E8F4', borderRadius: 12, padding: 12, height: '100%' }}>
+                <div className="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{status}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, background: '#E1E8F4', color: '#64748B', padding: '1px 8px', borderRadius: 999 }}>
+                    {filtered.filter(a => a.status === status).length}
+                  </div>
+                </div>
+                <div className="d-flex flex-column gap-2">
+                  {filtered.filter(a => a.status === status).map(a => (
+                    <div key={a.id} onClick={() => openEdit(a)} style={{ background: '#FFF', border: '1px solid #E1E8F4', borderRadius: 10, padding: 12, cursor: 'pointer', boxShadow: '0 1px 2px rgba(15,23,42,0.03)' }}>
+                      <div className="fw-semibold text-dark mb-1" style={{ fontSize: 13 }}>{a.title}</div>
+                      <div className="text-muted mb-2" style={{ fontSize: 11 }}>{a.counterSignatory ?? 'No counter-party'}</div>
+                      <div className="d-flex align-items-center justify-content-between">
+                        <span className={`legal-type-badge ${TYPE_CLASS[a.type] ?? ''}`}>{a.type}</span>
+                        <div style={{ fontSize: 11 }}><ExpiryCell expiryDate={a.expiryDate} /></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : viewMode === 'chart' ? (
+        <ChartView agreements={filtered} />
+      ) : null}
 
       <LegalModal
         show={showModal}

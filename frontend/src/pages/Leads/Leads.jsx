@@ -9,6 +9,7 @@ import PageToolbar from '../../components/PageToolbar/PageToolbar';
 import Pagination from '../../components/Pagination/Pagination';
 import StatsGrid from '../../components/StatsGrid/StatsGrid';
 import AuditPanel from '../../components/AuditPanel/AuditPanel';
+import { ChartView } from './ChartView';
 import './Leads.css';
 
 const KANBAN_STAGES = ['New', 'Contacted', 'Qualified', 'Disqualified'];
@@ -249,8 +250,9 @@ export default function Leads() {
         onPanelFilterChange={(id, val) => setPanelFilterValues(prev => ({ ...prev, [id]: val }))}
         onClearPanelFilters={() => setPanelFilterValues({})}
         viewModes={[
-          { id: 'list', icon: <List size={15} />, label: 'List' },
-          { id: 'kanban', icon: <Columns size={15} />, label: 'Kanban' },
+          { id: 'list', label: 'List' },
+          { id: 'kanban', label: 'Kanban' },
+          { id: 'chart', label: 'Chart' },
         ]}
         activeView={viewMode}
         onViewChange={setViewMode}
@@ -303,7 +305,7 @@ export default function Leads() {
             </tbody>
           </table>
         </div>
-      ) : (
+      ) : viewMode === 'kanban' ? (
         <div className="row g-3 mt-1">
           {KANBAN_STAGES.map(stage => (
             <div key={stage} className="col-12 col-md-6 col-xl-3">
@@ -328,7 +330,9 @@ export default function Leads() {
             </div>
           ))}
         </div>
-      )}
+      ) : viewMode === 'chart' ? (
+        <ChartView leads={filtered} />
+      ) : null}
 
       <Pagination
         page={page}

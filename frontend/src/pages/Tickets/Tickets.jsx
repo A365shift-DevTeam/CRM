@@ -4,11 +4,12 @@ import PageToolbar from '../../components/PageToolbar/PageToolbar';
 import StatsGrid from '../../components/StatsGrid/StatsGrid';
 import { useToast } from '../../components/Toast/ToastContext';
 import { useAuth } from '../../context/AuthContext';
-import { Plus, Sparkles, AlertCircle, Clock, CheckCircle, Zap, MessageSquare } from 'lucide-react';
+import { Plus, Sparkles, AlertCircle, Clock, CheckCircle, Zap, MessageSquare, List, Columns, Target } from 'lucide-react';
 import { FaTrash } from 'react-icons/fa6';
 import Swal from 'sweetalert2';
 import TicketModal from './TicketModal';
 import AITicketModal from './AITicketModal';
+import { ChartView } from './ChartView';
 import './Tickets.css';
 
 const PRIORITY_COLOR = { Critical: '#F43F5E', High: '#F59E0B', Medium: '#4361EE', Low: '#94A3B8' };
@@ -45,6 +46,7 @@ export default function Tickets() {
   const [sortOrder, setSortOrder] = useState('desc');
   const [showModal, setShowModal] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
+  const [viewMode, setViewMode] = useState('list');
   const [editing, setEditing] = useState(null);
 
   const load = useCallback(async () => {
@@ -166,6 +168,13 @@ export default function Tickets() {
         panelFilterValues={panelFilterValues}
         onPanelFilterChange={(id, val) => setPanelFilterValues(prev => ({ ...prev, [id]: val }))}
         onClearPanelFilters={() => setPanelFilterValues({})}
+        viewModes={[
+          { id: 'list', label: 'List' },
+          { id: 'kanban', label: 'Kanban' },
+          { id: 'chart', label: 'Chart' },
+        ]}
+        activeView={viewMode}
+        onViewChange={setViewMode}
         actions={[
           { label: 'AI Generate', icon: <Sparkles size={16} />, variant: 'purple', onClick: () => setShowAiModal(true) },
           { label: 'Raise a Ticket', icon: <Plus size={16} />, variant: 'primary', onClick: openCreate },
@@ -180,7 +189,7 @@ export default function Tickets() {
           <div style={{ fontWeight: 600, fontSize: 15, color: '#64748B', marginBottom: 6 }}>No tickets yet</div>
           <div style={{ fontSize: 13 }}>Click "Raise a Ticket" to get help from our support team.</div>
         </div>
-      ) : (
+      ) : viewMode === 'list' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {filtered.map(t => {
             const st = STATUS_STYLE[t.status] ?? STATUS_STYLE['Open'];
@@ -258,7 +267,39 @@ export default function Tickets() {
             );
           })}
         </div>
-      )}
+      ) : viewMode === 'kanban' ? (
+        <div className="ticket-kanban mt-1">
+          {['Open', 'In Progress', 'Pending', 'Resolved', 'Closed'].map(status => (
+            <div key={status} className="kanban-col">
+              <div className="kanban-col-header">
+                <div className="kanban-col-title">{status}</div>
+                <div className="kanban-count">{filtered.filter(t => t.status === status).length}</div>
+              </div>
+              {filtered.filter(t => t.status === status).map(t => {
+                const replyCount = t.comments?.filter(c => !c.isInternal).length ?? 0;
+                return (
+                  <div key={t.id} className="kanban-card" onClick={() => openView(t)}>
+                    <div className="kanban-card-number">{t.ticketNumber}</div>
+                    <div className="kanban-card-title">{t.title}</div>
+                    <div className="kanban-card-footer">
+                      <div className="ticket-priority-badge tpb-low" style={{ background: PRIORITY_COLOR[t.priority] ? `${PRIORITY_COLOR[t.priority]}20` : '#F1F5F9', color: PRIORITY_COLOR[t.priority] || '#64748B' }}>
+                        {t.priority}
+                      </div>
+                      {replyCount > 0 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#94A3B8' }}>
+                          <MessageSquare size={11} /> {replyCount}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      ) : viewMode === 'chart' ? (
+        <ChartView tickets={filtered} />
+      ) : null}
 
       <TicketModal
         show={showModal}
