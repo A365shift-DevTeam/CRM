@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User, Mail, Contact, Settings, Plus, CheckCircle, Trash2, Briefcase, DollarSign, Timer, Flag, AlertTriangle, ArrowUpRight, Search, Monitor, Phone, FileText, MessageSquare, Edit, Clock, ChevronLeft, ChevronRight, GripVertical, Palette, Scale, Check, MoreHorizontal } from 'lucide-react'
+import { User, Mail, Contact, Settings, Plus, CheckCircle, Trash2, Briefcase, DollarSign, Timer, Flag, AlertTriangle, ArrowUpRight, Search, Monitor, Phone, FileText, MessageSquare, Edit, Clock, ChevronLeft, ChevronRight, GripVertical, Palette, Scale, Check, MoreHorizontal, Eye } from 'lucide-react'
 import { FaWhatsapp } from 'react-icons/fa6'
 import { Button, Modal, Form, Dropdown } from 'react-bootstrap'
 import PageToolbar from '../../components/PageToolbar/PageToolbar'
@@ -23,6 +23,7 @@ import { useTheme } from '../../context/ThemeContext'
 import Swal from 'sweetalert2'
 import LegalModal from '../Legal/LegalModal'
 import { legalService } from '../../services/legalService'
+import AuditHistoryModal from './AuditHistoryModal'
 
 const getDefaultStages = () => [
     { id: 0, label: 'Demo', color: 'cyan', ageing: 7 },
@@ -85,7 +86,7 @@ const getClientColor = (name) => {
     return CLIENT_COLORS[Math.abs(hash) % CLIENT_COLORS.length]
 }
 
-const SalesCard = ({ projectId, project, stages, deliveryStages, financeStages, legalStages, activeStage, onStageChange, onDelete, onEdit, onInvoice, onTimesheet, onLegal, delay, clientName, brandingName, title, history = [] }) => {
+const SalesCard = ({ projectId, project, stages, deliveryStages, financeStages, legalStages, activeStage, onStageChange, onDelete, onEdit, onInvoice, onTimesheet, onLegal, onViewHistory, delay, clientName, brandingName, title, history = [] }) => {
     const toast = useToast()
     const { themeColor } = useTheme()
     const [showNotification, setShowNotification] = useState(false)
@@ -195,10 +196,13 @@ const SalesCard = ({ projectId, project, stages, deliveryStages, financeStages, 
                             <div className="icon-outline icon-whatsapp" onClick={(e) => {
                                 e.stopPropagation();
                                 const phone = project.phone || '';
-                                if (phone) window.open(`https://wa.me/${phone.replace(/\D/g, '')}`, '_blank');
+                                if (phone) window.open(`https://wa.me/${phone.replace(/\\D/g, '')}`, '_blank');
                                 else toast.warning('No phone number for this client.');
                             }} title="WhatsApp">
                                 <FaWhatsapp size={16} />
+                            </div>
+                            <div className="icon-outline" onClick={(e) => { e.stopPropagation(); onViewHistory(); }} title="Audit History">
+                                <Eye size={16} />
                             </div>
                             <div className="icon-outline" onClick={(e) => { e.stopPropagation(); onTimesheet(); }} title="Timesheet">
                                 <FileText size={16} />
@@ -393,6 +397,15 @@ function Sales() {
     const [showLegalModal, setShowLegalModal] = useState(false)
     const [legalProject, setLegalProject] = useState(null)
 
+    // Audit History Modal
+    const [showAuditModal, setShowAuditModal] = useState(false)
+    const [auditProject, setAuditProject] = useState(null)
+
+    const handleOpenAuditHistory = (project) => {
+        setAuditProject(project)
+        setShowAuditModal(true)
+    }
+
     const handleOpenLegal = (project) => {
         setLegalProject(project)
         setShowLegalModal(true)
@@ -501,7 +514,8 @@ function Sales() {
             targetDate: logData?.targetDate,
             startDate: logData?.startDate,
             endDate: logData?.endDate,
-            actualDate: logData?.actualDate
+            actualDate: logData?.actualDate,
+            dept: logData?.dept || 'sales'
         }
 
         const updatedHistory = [newEntry, ...(p.history || [])];
@@ -1112,6 +1126,7 @@ function Sales() {
                         onInvoice={() => handleInvoice(project)}
                         onTimesheet={() => handleTimesheet(project)}
                         onLegal={() => handleOpenLegal(project)}
+                        onViewHistory={() => handleOpenAuditHistory(project)}
                     />
                 ))}
             </div>
@@ -1531,6 +1546,12 @@ function Sales() {
                         ? `${[legalProject.clientName, legalProject.title].filter(Boolean).join(' – ')} Agreement`
                         : '',
                 }}
+            />
+
+            <AuditHistoryModal
+                show={showAuditModal}
+                onHide={() => { setShowAuditModal(false); setAuditProject(null); }}
+                project={auditProject}
             />
 
             {/* Won → Invoice Dialog */}
