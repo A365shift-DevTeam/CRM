@@ -235,13 +235,13 @@
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.82));
   border: 1px solid rgba(255, 255, 255, 0.78);
   border-radius: 14px;
-  padding: 18px 20px 16px;
+  padding: 12px 14px 12px;
   overflow: hidden;
   transition: transform 0.28s cubic-bezier(.22,.68,0,1.05), box-shadow 0.28s ease, border-color 0.28s ease;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  min-height: 238px;
+  gap: 8px;
+  min-height: 100px;
   box-shadow: 0 10px 32px rgba(86, 102, 144, 0.08), 0 2px 6px rgba(15, 23, 42, 0.04);
   backdrop-filter: blur(20px) saturate(1.15);
 }
