@@ -377,9 +377,9 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
                     <button className="action-icon-btn text-danger" style={{ opacity: 1 }} title="Delete" onClick={() => handleDelete(c.id)}><Trash2 size={15} /></button>
                   </div>
                 </div>
-                <div className="mt-2 d-flex flex-wrap gap-2">
-                  {c.country && <span className="text-muted small"><MapPin size={12} className="me-1" />{c.country}</span>}
-                  {c.website && <a href={c.website} target="_blank" rel="noreferrer" className="text-primary small"><Globe size={12} className="me-1" />{c.website}</a>}
+                <div className="mt-2 d-flex flex-wrap gap-3">
+                  {c.country && <span className="text-muted small d-flex align-items-center"><MapPin size={12} className="me-1" />{c.country}</span>}
+                  {c.website && <a href={c.website} target="_blank" rel="noreferrer" className="text-primary small d-flex align-items-center text-decoration-none"><Globe size={12} className="me-1" />{c.website}</a>}
                 </div>
                 {c.tags && (
                   <div className="mt-2">

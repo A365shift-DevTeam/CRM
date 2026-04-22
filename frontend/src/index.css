@@ -194,19 +194,21 @@ html, body {
 /* Form controls */
 .form-control,
 .form-select {
-  background-color: var(--bg-input) !important;
-  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  background-color: #F8FAFC !important;
+  border: 1px solid transparent !important;
   color: var(--text-primary) !important;
-  border-radius: var(--radius-sm);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  border-radius: 12px !important;
+  padding: 12px 16px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s !important;
 }
 
 .form-control:focus,
 .form-select:focus {
-  background-color: #ffffff !important;
-  border-color: var(--accent-primary) !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
-  color: var(--text-primary) !important;
+  background-color: #FFFFFF !important;
+  border-color: rgba(67, 97, 238, 0.3) !important;
+  box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.08) !important;
 }
 
 .form-control::placeholder {
@@ -214,9 +216,12 @@ html, body {
 }
 
 .form-label {
-  color: var(--text-secondary);
-  font-weight: 500;
-  font-size: 0.85rem;
+  color: #94A3B8 !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  margin-bottom: 6px !important;
 }
 
 /* Dropdowns */
@@ -256,39 +261,76 @@ html, body {
 /* Modals */
 .modal-content {
   background: #FFFFFF !important;
-  border: 1px solid var(--border-light) !important;
-  border-radius: var(--radius-xl) !important;
-  box-shadow: 0 16px 48px rgba(15, 23, 42, 0.14) !important;
+  border: none !important;
+  border-radius: 24px !important;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.15) !important;
   color: var(--text-primary) !important;
   font-family: var(--font-family) !important;
 }
 
 .modal-header {
-  border-bottom: 1px solid var(--border-light) !important;
+  border-bottom: 1px solid transparent !important;
   color: var(--text-primary) !important;
-  padding: 20px 24px !important;
+  padding: 24px 24px 16px 24px !important;
   background: #FFFFFF !important;
-  border-top-left-radius: var(--radius-xl) !important;
-  border-top-right-radius: var(--radius-xl) !important;
+  border-top-left-radius: 24px !important;
+  border-top-right-radius: 24px !important;
+}
+
+.modal-header .btn-close {
+  background-color: #F1F5F9 !important;
+  border-radius: 50% !important;
+  padding: 12px !important;
+  margin: -8px -8px -8px auto !important;
+  opacity: 1 !important;
+  background-size: 10px !important;
+  transition: background-color 0.2s !important;
+}
+
+.modal-header .btn-close:hover {
+  background-color: #E2E8F0 !important;
 }
 
 .modal-title {
   color: var(--text-primary) !important;
   font-weight: 800 !important;
+  font-size: 18px !important;
   font-family: var(--font-display) !important;
   letter-spacing: -0.02em !important;
 }
 
 .modal-footer {
-  border-top: 1px solid var(--border-light) !important;
-  background: #F8FAFC !important;
-  padding: 16px 24px !important;
-  border-bottom-left-radius: var(--radius-xl) !important;
-  border-bottom-right-radius: var(--radius-xl) !important;
+  border-top: 1px solid #F1F5F9 !important;
+  background: #FFFFFF !important;
+  padding: 16px 24px 24px 24px !important;
+  border-bottom-left-radius: 24px !important;
+  border-bottom-right-radius: 24px !important;
+  display: flex !important;
+  gap: 12px !important;
+}
+
+.modal-footer .btn {
+  border-radius: 12px !important;
+  padding: 10px 20px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  text-transform: none !important;
+  letter-spacing: 0px !important;
+}
+
+.modal-footer .btn-secondary {
+  background: #F1F5F9 !important;
+  color: #0F172A !important;
+  border: none !important;
+}
+
+.modal-footer .btn-secondary:hover {
+  background: #E2E8F0 !important;
 }
 
 .modal-body {
   color: var(--text-secondary);
+  padding: 16px 24px !important;
 }
 
 /* Cards — Enterprise Design */
