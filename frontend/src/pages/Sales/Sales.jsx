@@ -171,7 +171,7 @@ const SalesCard = ({ projectId, project, stages, deliveryStages, financeStages, 
                         <div className="ios-segmented dept-segmented" onClick={e => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
                             {[
                                 { id: 'sales', label: 'Sales', dot: null },
-                                { id: 'delivery', label: 'Delivery', dot: '#AF52DE' },
+                                { id: 'delivery', label: 'Delivery', dot: null },
                                 { id: 'finance', label: 'Finance', dot: project.financeStage > 0 ? '#34C759' : null },
                                 { id: 'legal', label: 'Legal', dot: project.legalStage > 0 ? '#FF9500' : null },
                             ].map(({ id, label, dot }) => (
