@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User, Mail, Contact, Settings, Plus, CheckCircle, Trash2, Briefcase, DollarSign, Timer, Flag, AlertTriangle, ArrowUpRight, Search, Monitor, Phone, FileText, MessageSquare, Edit, Clock, ChevronLeft, ChevronRight, GripVertical, Palette, Scale } from 'lucide-react'
+import { User, Mail, Contact, Settings, Plus, CheckCircle, Trash2, Briefcase, DollarSign, Timer, Flag, AlertTriangle, ArrowUpRight, Search, Monitor, Phone, FileText, MessageSquare, Edit, Clock, ChevronLeft, ChevronRight, GripVertical, Palette, Scale, Check, MoreHorizontal } from 'lucide-react'
 import { FaWhatsapp } from 'react-icons/fa6'
 import { Button, Modal, Form, Dropdown } from 'react-bootstrap'
 import PageToolbar from '../../components/PageToolbar/PageToolbar'
@@ -142,182 +142,188 @@ const SalesCard = ({ projectId, project, stages, deliveryStages, financeStages, 
     }
 
     return (
-        <div className="sales-card">
-            {/* Contact / Company row */}
-            {(clientName || brandingName) && (
-                <div className="d-flex justify-content-center gap-2 mb-1 mt-1" style={{ fontSize: 11, color: '#64748B', fontWeight: 600 }}>
-                    {brandingName && brandingName !== 'A365Shift' && <span>🏢 {brandingName}</span>}
-                    {clientName && <span>👤 {clientName}</span>}
-                </div>
-            )}
+        <div className="sales-card" style={{ padding: 0 }}>
+            {/* Left accent */}
+            <div className="sales-card-left-accent" style={{ background: '#10B981' }} />
 
-            {/* Title Row */}
-            <div className="d-flex justify-content-between align-items-center mb-1">
-                <div className="sales-card-title m-0">{title || 'Untitled Project'}</div>
-                
-                {/* iOS Segmented Department Control */}
-                <div className="ios-segmented dept-segmented" onClick={e => e.stopPropagation()}>
-                    {[
-                        { id: 'sales',    label: 'Sales',    dot: null },
-                        { id: 'delivery', label: 'Delivery', dot: '#AF52DE' },
-                        { id: 'finance',  label: 'Finance',  dot: project.financeStage > 0 ? '#34C759' : null },
-                        { id: 'legal',    label: 'Legal',    dot: project.legalStage > 0 ? '#FF9500' : null },
-                    ].map(({ id, label, dot }) => (
-                        <button
-                            key={id}
-                            type="button"
-                            className={`ios-segment${selectedDept === id ? ' active' : ''}`}
-                            onClick={() => setSelectedDept(id)}
-                        >
-                            {dot && <span className="ios-segment-dot" style={{ background: dot }} />}
-                            {label}
-                        </button>
-                    ))}
-                </div>
-            </div>
+            <div className="d-flex w-100 position-relative p-4">
+                {/* Left Column: Details */}
+                <div className="d-flex flex-column pe-4" style={{ minWidth: '240px', maxWidth: '300px', flexShrink: 0, paddingLeft: '8px' }}>
+                    <div className="text-muted fw-bold" style={{ fontSize: '13px', color: '#475569' }}>Project ID: #{project.customId || String(projectId).slice(-6).toUpperCase()}</div>
 
-            {/* Header Row: ID + Meta + Icons */}
-            <div className="d-flex justify-content-between align-items-center mb-2">
-                <div className="d-flex align-items-center gap-3">
-                    <div>
-                        <div className="project-id">#{project.customId || String(projectId).slice(-6).toUpperCase()}</div>
-                        <div className="project-meta">
-                            {delay > 0
-                                ? <span style={{ color: '#F43F5E' }}>⚠ {delay}d delay</span>
-                                : <span style={{ color: '#10B981' }}>● On Track</span>
-                            }
+                    <div className="d-flex align-items-center gap-2 mt-2">
+                        <div style={{ width: '12px', height: '12px', borderRadius: '50%', border: delay > 0 ? '3px solid #F43F5E' : '3px solid #10B981' }} />
+                        <span style={{ fontSize: '13px', color: '#94A3B8', fontWeight: 500 }}>{delay > 0 ? `${delay}d delay` : 'On Track'}</span>
+                    </div>
+
+                    <h3 className="fw-bolder mb-0" style={{ color: '#0F172A', fontSize: '22px', letterSpacing: '-0.02em', marginTop: '16px' }}>{client.name}</h3>
+
+                    <div style={{ color: '#94A3B8', fontSize: '13px', lineHeight: '1.4', fontWeight: '500', marginTop: '4px' }}>
+                        {title || 'Untitled Project'}
+                    </div>
+                </div>
+
+                {/* Right Column: Pipeline & Actions */}
+                <div className="flex-grow-1 d-flex flex-column justify-content-end pb-2 position-relative" style={{ minWidth: 0 }}>
+
+                    {/* Top Center: Segmented Control */}
+                    <div className="position-absolute w-100 d-flex justify-content-center" style={{ top: '-10px', left: 0, paddingRight: '30px', zIndex: 5, pointerEvents: 'none' }}>
+                        <div className="ios-segmented dept-segmented" onClick={e => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
+                            {[
+                                { id: 'sales', label: 'Sales', dot: null },
+                                { id: 'delivery', label: 'Delivery', dot: '#AF52DE' },
+                                { id: 'finance', label: 'Finance', dot: project.financeStage > 0 ? '#34C759' : null },
+                                { id: 'legal', label: 'Legal', dot: project.legalStage > 0 ? '#FF9500' : null },
+                            ].map(({ id, label, dot }) => (
+                                <button
+                                    key={id}
+                                    type="button"
+                                    className={`ios-segment${selectedDept === id ? ' active' : ''}`}
+                                    onClick={() => setSelectedDept(id)}
+                                >
+                                    {dot && <span className="ios-segment-dot" style={{ background: dot }} />}
+                                    {label}
+                                </button>
+                            ))}
                         </div>
                     </div>
-                    <div className="project-progress">{progressPercentage}%</div>
-                </div>
 
-                <div className="card-icons-row">
-                    <div className="icon-outline icon-edit" onClick={(e) => { e.stopPropagation(); onEdit(); }} title="Edit">
-                        <Edit size={15} strokeWidth={1.5} />
-                    </div>
-                    <div className="icon-outline" onClick={(e) => { e.stopPropagation(); onTimesheet(); }} title="Timesheet">
-                        <Clock size={15} strokeWidth={1.5} />
-                    </div>
-                    {iconsExpanded && (
-                        <>
-                            <div className="icon-outline" onClick={(e) => { e.stopPropagation(); onInvoice(); }} title="Invoice">
-                                <FileText size={15} strokeWidth={1.5} />
-                            </div>
-                            <div className="icon-outline" onClick={(e) => { e.stopPropagation(); onLegal(); }} title="Add Legal Agreement" style={{ color: '#7c3aed' }}>
-                                <Scale size={15} strokeWidth={1.5} />
-                            </div>
+                    {/* Top Right: Icons */}
+                    <div className="position-absolute d-flex align-items-center" style={{ top: '-10px', right: '0', zIndex: 10 }}>
+
+                        <div className="d-flex align-items-center" style={{ gap: '6px' }}>
                             <div className="icon-outline icon-whatsapp" onClick={(e) => {
                                 e.stopPropagation();
                                 const phone = project.phone || '';
                                 if (phone) window.open(`https://wa.me/${phone.replace(/\D/g, '')}`, '_blank');
                                 else toast.warning('No phone number for this client.');
                             }} title="WhatsApp">
-                                <FaWhatsapp size={15} />
+                                <FaWhatsapp size={16} />
                             </div>
-                            <div className="icon-outline icon-delete" onClick={async (e) => {
-                                e.stopPropagation();
-                                // Fix #11: consistent delete confirmation using SweetAlert2
-                                const result = await Swal.fire({
-                                    title: 'Delete project?',
-                                    text: "This action cannot be undone.",
-                                    icon: 'warning',
-                                    showCancelButton: true,
-                                    confirmButtonColor: '#ef4444',
-                                    cancelButtonColor: '#64748b',
-                                    confirmButtonText: 'Yes, delete it!'
-                                });
-                                if (result.isConfirmed) onDelete();
-                            }} title="Delete">
-                                <Trash2 size={15} strokeWidth={1.5} />
+                            <div className="icon-outline" onClick={(e) => { e.stopPropagation(); onTimesheet(); }} title="Timesheet">
+                                <FileText size={16} />
                             </div>
-                        </>
-                    )}
-                    <div className="icon-outline" onClick={(e) => { e.stopPropagation(); setIconsExpanded(!iconsExpanded); }}
-                        title={iconsExpanded ? 'Show Less' : 'More Actions'}>
-                        {iconsExpanded ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+                            <div className="icon-outline icon-edit" onClick={(e) => { e.stopPropagation(); onEdit(); }} title="Edit">
+                                <Edit size={16} />
+                            </div>
+                        </div>
+
+                        {/* Expandable Icons Container */}
+                        <div
+                            className="d-flex align-items-center"
+                            style={{
+                                overflow: 'hidden',
+                                transition: 'max-width 0.3s ease, opacity 0.2s ease',
+                                maxWidth: iconsExpanded ? '150px' : '0px',
+                                opacity: iconsExpanded ? 1 : 0,
+                            }}
+                        >
+                            <div className="d-flex align-items-center" style={{ gap: '6px', paddingLeft: '6px' }}>
+                                <div className="icon-outline" onClick={(e) => { e.stopPropagation(); onInvoice(); }} title="Invoice">
+                                    <DollarSign size={16} />
+                                </div>
+                                <div className="icon-outline" onClick={(e) => { e.stopPropagation(); onLegal(); }} title="Legal Agreement">
+                                    <Scale size={16} />
+                                </div>
+                                <div className="icon-outline icon-delete text-danger" onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const result = await Swal.fire({
+                                        title: 'Delete project?',
+                                        text: "This action cannot be undone.",
+                                        icon: 'warning',
+                                        showCancelButton: true,
+                                        confirmButtonColor: '#ef4444',
+                                        cancelButtonColor: '#64748b',
+                                        confirmButtonText: 'Yes, delete it!'
+                                    });
+                                    if (result.isConfirmed) onDelete();
+                                }} title="Delete Project">
+                                    <Trash2 size={16} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div
+                            className="icon-outline"
+                            onClick={(e) => { e.stopPropagation(); setIconsExpanded(!iconsExpanded); }}
+                            title={iconsExpanded ? "Close" : "More Actions"}
+                            style={{
+                                marginLeft: '6px',
+                                transition: 'transform 0.3s ease, background-color 0.15s, color 0.15s',
+                                transform: iconsExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                                background: iconsExpanded ? '#F1F5F9' : 'transparent',
+                                color: iconsExpanded ? '#0F172A' : '#64748B'
+                            }}
+                        >
+                            <MoreHorizontal size={16} />
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            {/* Main Row: Branding — Pipeline — Client */}
-            <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '52px', gap: '4px' }}>
+                    {/* Pipeline */}
+                    <div className="d-flex align-items-center justify-content-center w-100" style={{ overflowX: 'auto', padding: '42px 4px 4px', scrollbarWidth: 'none' }}>
+                        <div className="pipeline-wrapper">
+                            {displayStages.map((stage, index) => {
+                                const isLast = index === displayStages.length - 1;
+                                const isActive = index === displayActiveStage;
+                                const isPast = index < displayActiveStage;
 
-                {/* Left: Branding */}
-                <div className="branding-section d-flex align-items-center gap-1" style={{ transform: 'translateY(11px)' }}>
-                    <span className="branding-name">
-                        {brandingName && brandingName !== 'A365Shift' ? brandingName : (
-                            <><span style={{ color: '#0F172A' }}>A365</span><span style={{ color: '#F43F5E' }}>Shift</span></>
-                        )}
-                    </span>
-                    <div style={{ width: 14, height: 2, background: '#E1E8F4', borderRadius: 1 }} />
-                </div>
-
-                {/* Center: Pipeline */}
-                <div className="d-flex align-items-center" style={{ overflowX: 'auto', padding: '26px 4px 4px', scrollbarWidth: 'none' }}>
-                    <div className="pipeline-wrapper">
-                        {displayStages.map((stage, index) => {
-                            const isLast = index === displayStages.length - 1;
-                            const isActive = index === displayActiveStage;
-                            const isPast = index < displayActiveStage;
-
-                            let isOverdue = false;
-                            if (stage.endDate) {
-                                const todayStr = new Date().toISOString().split('T')[0];
-                                if (todayStr > stage.endDate) {
-                                    if (!stage.actualDate || stage.actualDate > stage.endDate) {
-                                        isOverdue = true;
+                                let isOverdue = false;
+                                if (stage.endDate) {
+                                    const todayStr = new Date().toISOString().split('T')[0];
+                                    if (todayStr > stage.endDate) {
+                                        if (!stage.actualDate || stage.actualDate > stage.endDate) {
+                                            isOverdue = true;
+                                        }
                                     }
+                                } else if (isActive && history && history.length > 0) {
+                                    const sorted = [...history].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                                    const lastUpdate = new Date(sorted[0].timestamp);
+                                    const daysInStage = Math.ceil(Math.abs(new Date() - lastUpdate) / 86400000);
+                                    isOverdue = daysInStage > (stage.ageing || 0);
                                 }
-                            } else if (isActive && history && history.length > 0) {
-                                const sorted = [...history].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                                const lastUpdate = new Date(sorted[0].timestamp);
-                                const daysInStage = Math.ceil(Math.abs(new Date() - lastUpdate) / 86400000);
-                                isOverdue = daysInStage > (stage.ageing || 0);
-                            }
 
-                            const stageClass = isPast ? 'past' : isActive ? 'active' : 'future';
-                            const overdueClass = isOverdue ? ' stage-overdue' : '';
-                            const ageingClass = isPast ? 'past-badge' : isActive ? `active-badge${isOverdue ? ' overdue' : ''}` : 'future-badge';
+                                const stageClass = isPast ? 'past' : isActive ? 'active' : 'future';
+                                const overdueClass = isOverdue ? ' stage-overdue' : '';
 
-                            return (
-                                <div key={index} className="d-flex align-items-center">
-                                    <div className="position-relative">
-                                        {isActive && (
-                                            <div className="running-man-icon" draggable onDragStart={handleDragStart}>
-                                                <i className="fa-solid fa-person-running" style={{ color: themeColor || (selectedDept === 'sales' ? '#4361EE' : selectedDept === 'delivery' ? '#8B5CF6' : selectedDept === 'finance' ? '#10B981' : '#F43F5E'), fontSize: '20px' }} />
+                                return (
+                                    <div key={index} className="d-flex align-items-center">
+                                        <div className="position-relative">
+                                            {isActive && (
+                                                <div className="running-man-container" draggable onDragStart={handleDragStart}>
+                                                    <div className="current-stage-tooltip">Current Stage</div>
+                                                    <i className="fa-solid fa-person-running running-man-icon" style={{ color: '#10B981', fontSize: '20px' }} />
+                                                </div>
+                                            )}
+                                            <div
+                                                className={`stage-card d-flex align-items-center justify-content-center ${stageClass}${overdueClass}`}
+                                                onClick={() => handleStageClick(index)}
+                                                onDragOver={handleDragOver}
+                                                onDrop={(e) => handleDrop(e, index)}
+                                            >
+                                                {stage.label}
+                                            </div>
+                                        </div>
+
+                                        {!isLast && (
+                                            <div className="stage-connector">
+                                                <div className={`connector-line${isPast ? ' filled' : ''}`} />
+                                                {isPast && (
+                                                    <div style={{ width: 14, height: 14, borderRadius: '50%', background: '#2F9E75', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, zIndex: 2 }}>
+                                                        <Check size={8} strokeWidth={4} />
+                                                    </div>
+                                                )}
+                                                {isPast && (
+                                                    <div className="connector-line filled" />
+                                                )}
                                             </div>
                                         )}
-                                        <div
-                                            className={`stage-card d-flex align-items-center justify-content-center px-3 ${stageClass}${overdueClass}`}
-                                            onClick={() => handleStageClick(index)}
-                                            onDragOver={handleDragOver}
-                                            onDrop={(e) => handleDrop(e, index)}
-                                        >
-                                            {stage.label}
-                                        </div>
                                     </div>
-
-                                    {!isLast && (
-                                        <div className="stage-connector">
-                                            <div className={`connector-line${isPast ? ' filled' : ''}`} />
-                                            <div className={`ageing-badge ${ageingClass}`}>{stage.ageing || 0}</div>
-                                            <div className={`connector-line${isPast ? ' filled' : ''}`} />
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
-
-                {/* Right: Client */}
-                <div className="client-section d-flex align-items-center gap-1" style={{ transform: 'translateY(11px)' }}>
-                    <div style={{ width: 14, height: 2, background: '#E1E8F4', borderRadius: 1 }} />
-                    <span className="client-name" style={{ color: client.color }}>{client.name}</span>
-                </div>
             </div>
-
-
 
             {/* Smart Stage Modal — context-aware for Sales / Delivery / Finance / Legal */}
             <SmartStageModal
@@ -448,7 +454,7 @@ function Sales() {
 
         const currentStages = [...getProjectStages(p)];
         const savedStageIndex = logData?.savedStageIndex !== undefined ? logData.savedStageIndex : (logData?.dept === 'delivery' ? p.deliveryStage || 0 : logData?.dept === 'finance' ? p.financeStage || 0 : logData?.dept === 'legal' ? p.legalStage || 0 : p.activeStage);
-        
+
         // If it's sales, update the stages object, else just update the project pointer
         if (logData?.dept === 'sales' || !logData?.dept) {
             currentStages[savedStageIndex] = {
@@ -461,7 +467,7 @@ function Sales() {
 
         let oldStageLabel = 'Unknown';
         let newStageLabel = 'Unknown';
-        
+
         if (logData?.dept === 'delivery') {
             oldStageLabel = deliveryStages[p.deliveryStage || 0]?.label || 'Unknown';
             newStageLabel = deliveryStages[newStageIndex]?.label || 'Unknown';
@@ -475,7 +481,7 @@ function Sales() {
             oldStageLabel = currentStages[p.activeStage]?.label || 'Unknown';
             newStageLabel = currentStages[newStageIndex]?.label || 'Unknown';
         }
-        
+
         const transitionStr = `${oldStageLabel} to ${newStageLabel}`;
 
         const newEntry = {
@@ -1429,7 +1435,7 @@ function Sales() {
                                                 onClick={() => {
                                                     setEditProjectData(prev => {
                                                         const updated = [...prev.stages]
-                                                        ;[updated[idx - 1], updated[idx]] = [updated[idx], updated[idx - 1]]
+                                                            ;[updated[idx - 1], updated[idx]] = [updated[idx], updated[idx - 1]]
                                                         return { ...prev, stages: updated }
                                                     })
                                                 }}
@@ -1446,7 +1452,7 @@ function Sales() {
                                                 onClick={() => {
                                                     setEditProjectData(prev => {
                                                         const updated = [...prev.stages]
-                                                        ;[updated[idx], updated[idx + 1]] = [updated[idx + 1], updated[idx]]
+                                                            ;[updated[idx], updated[idx + 1]] = [updated[idx + 1], updated[idx]]
                                                         return { ...prev, stages: updated }
                                                     })
                                                 }}
