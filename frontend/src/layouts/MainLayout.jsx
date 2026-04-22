@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import {
@@ -8,10 +8,13 @@ import {
   FaBrain, FaShieldHalved, FaArrowUpFromBracket, FaChevronDown, FaChevronUp,
   FaGear, FaCircleInfo
 } from 'react-icons/fa6';
-import NotificationBell from '../components/NotificationBell';
-import GlobalSearch from '../components/GlobalSearch';
 import { exportPageToExcel } from '../utils/exportPageToExcel';
 import { notificationService } from '../services/notificationService';
+import { projectService } from '../services/api';
+import { contactService } from '../services/contactService';
+import { timesheetService } from '../services/timesheetService';
+import AlertSidebar from '../components/AlertSidebar';
+import '../pages/Dashboard/Dashboard.css';
 
 const hexToRgba = (hex, alpha) => {
   let r = 0, g = 0, b = 0;
@@ -37,6 +40,13 @@ export default function MainLayout() {
   const [activePageAlertIndex, setActivePageAlertIndex] = useState(0);
   const [expandedCategories, setExpandedCategories] = useState({});
 
+  const navigate = useNavigate();
+
+  const [projectCount, setProjectCount] = useState(0);
+  const [contactCount, setContactCount] = useState(0);
+  const [timesheetCount, setTimesheetCount] = useState(0);
+  const [isAlertSidebarOpen, setIsAlertSidebarOpen] = useState(false);
+
   useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
 
   useEffect(() => {
@@ -47,7 +57,20 @@ export default function MainLayout() {
         setAlerts(Array.isArray(data) ? data : []);
       } catch (e) { console.error('MainLayout alerts:', e); }
     };
+    const fetchCounts = async () => {
+      try {
+        const [proj, cont, time] = await Promise.all([
+          projectService.getAll().catch(() => []),
+          contactService.getContacts(1, 100).catch(() => []),
+          timesheetService.getEntries(1, 100).catch(() => [])
+        ]);
+        setProjectCount(proj.length || 0);
+        setContactCount(cont?.data?.length || cont.length || 0);
+        setTimesheetCount(time?.items?.length || time.length || 0);
+      } catch (e) { console.error('Error fetching global counts:', e); }
+    };
     fetchAlerts();
+    fetchCounts();
     const interval = setInterval(fetchAlerts, 60000);
     return () => clearInterval(interval);
   }, [currentUser]);
@@ -167,6 +190,30 @@ export default function MainLayout() {
 
   const userInitials = (currentUser?.displayName || currentUser?.email || '?')
     .split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+
+  const getAlertCategoryGlobal = (alert) => {
+    if (!alert) return { label: 'General', className: 'bg-slate-100 text-slate-700' };
+    const raw = String(alert.category || '').toLowerCase();
+    const txt = `${alert.title || ''} ${alert.message || ''}`.toLowerCase();
+    if (raw.includes('sale') || txt.includes('sale') || txt.includes('deal'))
+      return { label: 'Sales', className: 'bg-blue-50 text-blue-700' };
+    if (raw.includes('finance') || txt.includes('payment') || txt.includes('invoice'))
+      return { label: 'Finance', className: 'bg-emerald-50 text-emerald-700' };
+    if (raw.includes('task') || txt.includes('task'))
+      return { label: 'Execution', className: 'bg-amber-50 text-amber-700' };
+    if (raw.includes('contact') || txt.includes('lead'))
+      return { label: 'CRM', className: 'bg-violet-50 text-violet-700' };
+    return { label: 'General', className: 'bg-slate-100 text-slate-700' };
+  };
+
+  const criticalAlertsCount = alerts.filter((a) => a.severity === 'critical').length;
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
+  })();
+  const firstName = (currentUser?.displayName || '').split(' ')[0] || 'there';
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#EEF2F8' }}>
@@ -550,6 +597,15 @@ export default function MainLayout() {
 
             {/* Right side actions */}
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+              
+              {/* Added Home & Notifications to Top Header Bar */}
+              <div className="dash-header-nav" style={{ marginRight: '10px' }}>
+                <button className="dash-nav-pill active" style={{ padding: '6px 16px', fontSize: '13px' }} onClick={() => navigate('/')}>Home</button>
+                <button className="dash-nav-pill" onClick={() => setIsAlertSidebarOpen(true)} style={{ padding: '6px 16px', fontSize: '13px' }}>
+                  Notifications
+                  {criticalAlertsCount > 0 && <span className="dash-nav-badge">{criticalAlertsCount}</span>}
+                </button>
+              </div>
               <button
                 onClick={handleExportCurrentPage}
                 style={{
@@ -573,17 +629,24 @@ export default function MainLayout() {
                 <FaArrowUpFromBracket size={11} />
                 Export
               </button>
-              <GlobalSearch />
-              <NotificationBell />
             </div>
           </div>
 
           {/* ── Scrollable Content ── */}
           <div ref={contentRef} style={{ flexGrow: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-            <Outlet />
+            <Outlet context={{ setIsAlertSidebarOpen }} />
           </div>
         </div>
       </div>
+
+      {/* ── Alert Sidebar ── */}
+      {isAlertSidebarOpen && (
+        <AlertSidebar
+          alerts={alerts}
+          onClose={() => setIsAlertSidebarOpen(false)}
+          getAlertCategory={getAlertCategoryGlobal}
+        />
+      )}
     </div>
   );
 }
