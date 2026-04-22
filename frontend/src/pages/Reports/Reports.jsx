@@ -48,7 +48,7 @@ export default function Reports() {
     }, [preset]);
 
     return (
-        <div style={{ padding: '0 16px 24px' }}>
+        <div style={{ padding: '24px' }}>
             <PageToolbar
                 title="Reports"
                 extraControls={

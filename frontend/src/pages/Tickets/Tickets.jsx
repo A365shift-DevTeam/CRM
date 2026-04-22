@@ -141,7 +141,7 @@ export default function Tickets() {
   ] : [];
 
   return (
-    <div style={{ padding: '0 16px 24px' }}>
+    <div style={{ padding: '24px' }}>
       {stats && <StatsGrid stats={statCards} />}
 
       <PageToolbar

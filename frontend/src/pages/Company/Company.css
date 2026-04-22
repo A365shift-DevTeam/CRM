@@ -374,10 +374,7 @@
 .wizard-btn-save:hover { background: var(--button-brand-hover, #416F8A); }
 .wizard-btn-save:active { transform: scale(0.98); }
 
-/* ══════════════════════════════ 
-   COMPANY PAGE STYLES 
-   ══════════════════════════════ */
-.company-container { padding: 0 16px 24px; }
+.company-container { padding: 24px; }
 .company-card {
   background: #fff;
   border: 1px solid #E8EDF5;
