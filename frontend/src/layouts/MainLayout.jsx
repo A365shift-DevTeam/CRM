@@ -39,7 +39,14 @@ export default function MainLayout() {
   const contentRef = useRef(null);
   const [alerts, setAlerts] = useState([]);
   const [activePageAlertIndex, setActivePageAlertIndex] = useState(0);
-  const [expandedCategories, setExpandedCategories] = useState({});
+  const [expandedCategories, setExpandedCategories] = useState({
+    CRM: false,
+    Execution: false,
+    Operations: false,
+    Reports: false,
+    People: false,
+    AI: false,
+  });
 
   const navigate = useNavigate();
 
@@ -82,7 +89,7 @@ export default function MainLayout() {
   };
 
   const toggleCategory = (title) => {
-    setExpandedCategories((prev) => ({ ...prev, [title]: !prev[title] }));
+    setExpandedCategories((prev) => ({ ...prev, [title]: prev[title] !== false ? false : true }));
   };
 
   const navCategories = [
@@ -92,14 +99,15 @@ export default function MainLayout() {
         { path: '/company',  icon: <FaUserGroup size={14} />,   label: 'Company',   permission: 'contacts.view' },
         { path: '/contact',  icon: <FaUserGroup size={14} />,   label: 'Contacts',  permission: 'contacts.view' },
         { path: '/leads',    icon: <FaUserGroup size={14} />,   label: 'Leads',     permission: 'sales.view' },
-         { path: '/sales',    icon: <FaChartColumn size={14} />, label: 'Sales',     permission: 'sales.view' },
-        { path: '/tickets',  icon: <FaListCheck size={14} />,   label: 'Tickets',   permission: 'dashboard.view' },
+        
+       
        
       ],
     },
     {
       title: 'Execution',
       items: [
+         { path: '/sales',    icon: <FaChartColumn size={14} />, label: 'Sales',     permission: 'sales.view' },
         { path: '/projects',  icon: <FaChartColumn size={14} />, label: 'Projects',  permission: 'timesheet.view' },
         { path: '/timesheet', icon: <FaClock size={14} />,       label: 'Timesheet', permission: 'timesheet.view' },
         { path: '/todolist',  icon: <FaListCheck size={14} />,   label: 'To-Do',     permission: 'todolist.view' },
@@ -113,6 +121,7 @@ export default function MainLayout() {
         { path: '/legal',     icon: <FaFileInvoice size={14} />,   label: 'Legal',        permission: 'invoice.view' },
         { path: '/documents', icon: <FaFileInvoice size={14} />,   label: 'Documents',    permission: 'dashboard.view' },
         { path: '/calendar',  icon: <FaHouse size={14} />,         label: 'Calendar',  permission: 'dashboard.view' },
+        { path: '/tickets',  icon: <FaListCheck size={14} />,   label: 'Tickets',   permission: 'dashboard.view' },
       ],
     },
     {
@@ -330,7 +339,7 @@ export default function MainLayout() {
 
           {/* Menus Header & Toggle All Button */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '8px 0 4px', padding: '0 4px' }}>
-            <span style={{ fontSize: '10px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Menus</span>
+            <span style={{ fontSize: '10px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}></span>
             <button
                onClick={handleToggleAll}
                style={{
