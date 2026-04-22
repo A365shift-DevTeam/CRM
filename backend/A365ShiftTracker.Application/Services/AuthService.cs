@@ -6,6 +6,7 @@ using A365ShiftTracker.Application.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using OtpNet;
 
@@ -17,13 +18,16 @@ public class AuthService : IAuthService
     private readonly IConfiguration _config;
     private readonly IEmailService _emailService;
     private readonly IMemoryCache _cache;
+    private readonly ILogger<AuthService> _logger;
 
-    public AuthService(IUnitOfWork uow, IConfiguration config, IEmailService emailService, IMemoryCache cache)
+    public AuthService(IUnitOfWork uow, IConfiguration config, IEmailService emailService,
+        IMemoryCache cache, ILogger<AuthService> logger)
     {
         _uow = uow;
         _config = config;
         _emailService = emailService;
         _cache = cache;
+        _logger = logger;
     }
 
     // ── Register ────────────────────────────────────────────
@@ -34,37 +38,48 @@ public class AuthService : IAuthService
         if (exists)
             throw new InvalidOperationException("Email already registered.");
 
-        var user = new Domain.Entities.User
+        await using var tx = await _uow.BeginTransactionAsync();
+        try
         {
-            Email = request.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-            DisplayName = request.DisplayName
-        };
-
-        await _uow.Users.AddAsync(user);
-        await _uow.SaveChangesAsync();
-
-        var defaultRole = await _uow.Roles.Query().FirstOrDefaultAsync(r => r.Name == "User");
-        if (defaultRole != null)
-        {
-            await _uow.UserRoles.AddAsync(new Domain.Entities.UserRole
+            var user = new Domain.Entities.User
             {
-                UserId = user.Id,
-                RoleId = defaultRole.Id
-            });
-            await _uow.SaveChangesAsync();
-        }
+                Email = request.Email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                DisplayName = request.DisplayName
+            };
 
-        var (roleName, permissions) = await GetUserRoleAndPermissionsAsync(user.Id);
-        return new AuthResponse
+            await _uow.Users.AddAsync(user);
+            await _uow.SaveChangesAsync(); // generates user.Id
+
+            var defaultRole = await _uow.Roles.Query().FirstOrDefaultAsync(r => r.Name == "User");
+            if (defaultRole != null)
+            {
+                await _uow.UserRoles.AddAsync(new Domain.Entities.UserRole
+                {
+                    UserId = user.Id,
+                    RoleId = defaultRole.Id
+                });
+                await _uow.SaveChangesAsync();
+            }
+
+            await tx.CommitAsync();
+
+            var (roleName, permissions) = await GetUserRoleAndPermissionsAsync(user.Id);
+            return new AuthResponse
+            {
+                Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
+                Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions, user.DisplayName),
+                Role = roleName, Permissions = permissions,
+                IsTotpEnabled = user.IsTotpEnabled,
+                TwoFactorRequired = user.TwoFactorRequired,
+                TwoFactorMethod = user.TwoFactorMethod
+            };
+        }
+        catch
         {
-            Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
-            Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions, user.DisplayName),
-            Role = roleName, Permissions = permissions,
-            IsTotpEnabled = user.IsTotpEnabled,
-            TwoFactorRequired = user.TwoFactorRequired,
-            TwoFactorMethod = user.TwoFactorMethod
-        };
+            await tx.RollbackAsync();
+            throw;
+        }
     }
 
     // ── Login ───────────────────────────────────────────────
@@ -340,17 +355,23 @@ public class AuthService : IAuthService
 
     // ── Password Reset ───────────────────────────────────────
 
-    public async Task<string> RequestPasswordResetAsync(string email)
+    public async Task RequestPasswordResetAsync(string email)
     {
-        var user = await _uow.Users.Query().FirstOrDefaultAsync(u => u.Email == email)
-            ?? throw new KeyNotFoundException("No account found with that email.");
+        // Use a generic response to avoid account enumeration
+        var user = await _uow.Users.Query().FirstOrDefaultAsync(u => u.Email == email);
+        if (user == null) return;
 
         var token = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+        var encodedToken = Uri.EscapeDataString(token);
+
         user.ResetToken = token;
         user.ResetTokenExpiry = DateTime.UtcNow.AddMinutes(30);
         await _uow.Users.UpdateAsync(user);
         await _uow.SaveChangesAsync();
-        return token;
+
+        var baseUrl = _config["App:FrontendBaseUrl"]?.TrimEnd('/') ?? "http://localhost:5173";
+        var resetLink = $"{baseUrl}/reset-password?token={encodedToken}";
+        await _emailService.SendPasswordResetEmailAsync(user.Email, user.DisplayName ?? user.Email, resetLink);
     }
 
     public async Task ResetPasswordAsync(string token, string newPassword)
@@ -467,7 +488,10 @@ public class AuthService : IAuthService
                 _cache.Set($"2fa_attempts:{jti}", jtiCount + 1, TimeSpan.FromMinutes(6));
             }
         }
-        catch { /* ignore parse errors */ }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to parse partial token for 2FA attempt tracking for userId={UserId}", userId);
+        }
 
         var userKey = $"2fa_attempts:user:{userId}";
         var userCount = _cache.TryGetValue(userKey, out int userStored) ? userStored : 0;

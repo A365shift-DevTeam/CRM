@@ -3,13 +3,27 @@ using A365ShiftTracker.API.Middleware;
 using A365ShiftTracker.Infrastructure;
 using A365ShiftTracker.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.IO.Compression;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ─── Startup secret validation ─────────────────────────────
+var jwtKey = builder.Configuration["Jwt:Key"];
+var encKey = builder.Configuration["Encryption:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32)
+    throw new InvalidOperationException(
+        "Jwt:Key must be set to a random secret of at least 32 characters. " +
+        "Use appsettings.Development.json or environment variables.");
+if (string.IsNullOrWhiteSpace(encKey) || encKey.Length < 32)
+    throw new InvalidOperationException(
+        "Encryption:Key must be set to a random secret of at least 32 characters. " +
+        "Use appsettings.Development.json or environment variables.");
 
 // ─── Response Compression ─────────────────────────────────
 builder.Services.AddResponseCompression(opts =>
@@ -89,6 +103,19 @@ builder.Services.AddOutputCache(opts =>
         .Tag("stats"));
 });
 
+// ─── Rate Limiting ────────────────────────────────────────
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddSlidingWindowLimiter("AuthPolicy", opt =>
+    {
+        opt.PermitLimit = 10;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.SegmentsPerWindow = 6;
+        opt.QueueLimit = 0;
+    });
+});
+
 // ─── Controllers ───────────────────────────────────────────
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -152,6 +179,7 @@ var app = builder.Build();
 // ─── Middleware Pipeline ───────────────────────────────────
 app.UseResponseCompression(); // must be first
 app.UseMiddleware<ExceptionMiddleware>();
+app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())
 {

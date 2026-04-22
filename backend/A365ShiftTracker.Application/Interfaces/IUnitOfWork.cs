@@ -1,4 +1,5 @@
 using A365ShiftTracker.Domain.Entities;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace A365ShiftTracker.Application.Interfaces;
 
@@ -40,4 +41,5 @@ public interface IUnitOfWork : IDisposable
     IRepository<TicketComment> TicketComments { get; }
     IRepository<Invoice> Invoices { get; }
     Task<int> SaveChangesAsync();
+    Task<IDbContextTransaction> BeginTransactionAsync();
 }

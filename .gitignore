@@ -12,3 +12,7 @@ obj/
 *.userosscache
 *.sln.docstates
 *.log
+
+# Local developer secrets — never commit
+appsettings.Development.json
+appsettings.*.local.json

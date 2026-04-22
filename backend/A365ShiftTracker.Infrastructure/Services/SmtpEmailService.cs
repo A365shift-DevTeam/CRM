@@ -44,4 +44,40 @@ public class SmtpEmailService : IEmailService
         await client.SendAsync(message);
         await client.DisconnectAsync(true);
     }
+
+    public async Task SendPasswordResetEmailAsync(string toEmail, string displayName, string resetLink)
+    {
+        var smtpHost = _config["Smtp:Host"] ?? "smtp.gmail.com";
+        var smtpPort = int.Parse(_config["Smtp:Port"] ?? "587");
+        var username  = _config["Smtp:Username"] ?? string.Empty;
+        var password  = _config["Smtp:Password"] ?? string.Empty;
+        var fromName  = _config["Smtp:FromName"] ?? "A365 CRM";
+        var fromEmail = _config["Smtp:FromEmail"] ?? username;
+
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress(fromName, fromEmail));
+        message.To.Add(new MailboxAddress(displayName, toEmail));
+        message.Subject = "Reset your A365 CRM password";
+
+        var safeDisplayName = System.Net.WebUtility.HtmlEncode(displayName);
+        var safeResetLink   = System.Net.WebUtility.HtmlEncode(resetLink);
+
+        message.Body = new TextPart("html")
+        {
+            Text = $"""
+                <div style="font-family:DM Sans,sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#f8fafc;border-radius:16px;">
+                  <h2 style="color:#1e293b;margin-bottom:8px;">Reset your password</h2>
+                  <p style="color:#64748b;margin-bottom:24px;">Hi {safeDisplayName}, click the button below to reset your password. This link expires in <strong>30 minutes</strong>.</p>
+                  <a href="{safeResetLink}" style="display:inline-block;padding:12px 24px;background:#4361EE;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;margin-bottom:24px;">Reset Password</a>
+                  <p style="color:#94a3b8;font-size:12px;">If you did not request a password reset, you can safely ignore this email.</p>
+                </div>
+                """
+        };
+
+        using var client = new SmtpClient();
+        await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
+        await client.AuthenticateAsync(username, password);
+        await client.SendAsync(message);
+        await client.DisconnectAsync(true);
+    }
 }

@@ -8,6 +8,7 @@ import Login from './pages/Auth/Login';
 import ForgotPassword from './pages/Auth/ForgotPassword';
 import ResetPassword from './pages/Auth/ResetPassword';
 import { ThemeProvider } from './context/ThemeContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import './index.css';
 
 const Dashboard      = lazy(() => import('./pages/Dashboard/Dashboard'));
@@ -42,6 +43,7 @@ function PlaceholderPage({ title }) {
 
 function App() {
   return (
+    <ErrorBoundary>
     <Router>
       <AuthProvider>
         <ThemeProvider>
@@ -94,6 +96,7 @@ function App() {
         </ThemeProvider>
       </AuthProvider>
     </Router>
+    </ErrorBoundary>
   );
 }
 

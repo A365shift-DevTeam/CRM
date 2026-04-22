@@ -1,6 +1,7 @@
 using A365ShiftTracker.Application.Interfaces;
 using A365ShiftTracker.Domain.Entities;
 using A365ShiftTracker.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace A365ShiftTracker.Infrastructure.Repositories;
 
@@ -84,6 +85,9 @@ public class UnitOfWork : IUnitOfWork
 
     public async Task<int> SaveChangesAsync()
         => await _context.SaveChangesAsync();
+
+    public async Task<IDbContextTransaction> BeginTransactionAsync()
+        => await _context.Database.BeginTransactionAsync();
 
     public void Dispose() => _context.Dispose();
 }

@@ -72,7 +72,10 @@ public class AppDbContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         // ─── Encryption converters ─────────────────────────
-        var encKey = _configuration?["Encryption:Key"] ?? string.Empty;
+        // Use a placeholder key during EF design-time migration scaffolding (real validation happens in Program.cs)
+        var encKey = _configuration?["Encryption:Key"];
+        if (string.IsNullOrWhiteSpace(encKey))
+            encKey = new string('x', 32);
         var strConv = new EncryptedStringConverter(encKey);
         var decConv = new EncryptedDecimalConverter(encKey);
         var decNullConv = new EncryptedNullableDecimalConverter(encKey);
@@ -467,9 +470,9 @@ public class AppDbContext : DbContext
             e.Property(i => i.ClientName).HasConversion(strConv);
             e.Property(i => i.ClientGstin).HasConversion(strConv);
             e.Property(i => i.Currency).HasConversion(strConv);
-            e.Property(i => i.SubTotal).HasConversion(decConv);
-            e.Property(i => i.TaxAmount).HasConversion(decConv);
-            e.Property(i => i.TotalAmount).HasConversion(decConv);
+            e.Property(i => i.SubTotal).HasConversion(decConv).HasPrecision(18, 2);
+            e.Property(i => i.TaxAmount).HasConversion(decConv).HasPrecision(18, 2);
+            e.Property(i => i.TotalAmount).HasConversion(decConv).HasPrecision(18, 2);
         });
 
         // ─── Global soft-delete query filter ──────────────

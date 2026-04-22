@@ -17,6 +17,11 @@ public class UploadController : ControllerBase
     };
     private const long MaxFileSize = 10 * 1024 * 1024; // 10MB
 
+    private static readonly HashSet<string> AllowedFolders = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "general", "documents", "invoices", "contacts", "projects", "avatars", "receipts", "legal"
+    };
+
     public UploadController(IWebHostEnvironment env) => _env = env;
 
     [HttpPost]
@@ -33,8 +38,19 @@ public class UploadController : ControllerBase
         if (!AllowedExtensions.Contains(ext))
             return BadRequest(new { error = $"File type '{ext}' is not allowed." });
 
-        var subFolder = string.IsNullOrWhiteSpace(folder) ? "general" : folder;
-        var uploadsDir = Path.Combine(_env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot"), "uploads", subFolder);
+        // Whitelist folder names — prevents path traversal via crafted folder parameter
+        var subFolder = (!string.IsNullOrWhiteSpace(folder) && AllowedFolders.Contains(folder))
+            ? folder
+            : "general";
+
+        var webRoot = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
+        var uploadsRoot = Path.GetFullPath(Path.Combine(webRoot, "uploads"));
+        var uploadsDir  = Path.GetFullPath(Path.Combine(uploadsRoot, subFolder));
+
+        // Defense-in-depth: verify resolved path stays within uploads root
+        if (!uploadsDir.StartsWith(uploadsRoot, StringComparison.OrdinalIgnoreCase))
+            return BadRequest(new { error = "Invalid folder." });
+
         Directory.CreateDirectory(uploadsDir);
 
         var uniqueName = $"{Guid.NewGuid():N}{ext}";

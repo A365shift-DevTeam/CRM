@@ -974,36 +974,93 @@ export default function Dashboard() {
   useEffect(() => {
     if (!currentUser) return;
 
+    const controller = new AbortController();
+    const { signal } = controller;
+
     const fetchProjects = async () => {
-      try { setLoadingProjects(true); const d = await projectService.getAll(1, 100); setProjects(Array.isArray(d) ? d : (d?.items ?? [])); }
-      catch (e) { console.error('Dashboard projects:', e); } finally { setLoadingProjects(false); }
+      try {
+        setLoadingProjects(true);
+        const d = await projectService.getAll(1, 100);
+        if (signal.aborted) return;
+        setProjects(Array.isArray(d) ? d : (d?.items ?? []));
+      } catch (e) {
+        if (signal.aborted) return;
+        console.error('Dashboard projects:', e);
+      } finally {
+        if (!signal.aborted) setLoadingProjects(false);
+      }
     };
     const fetchContacts = async () => {
-      try { setLoadingContacts(true); const d = await contactService.getContacts(1, 100); setContacts((d?.items ?? d) || []); }
-      catch (e) { console.error('Dashboard contacts:', e); } finally { setLoadingContacts(false); }
+      try {
+        setLoadingContacts(true);
+        const d = await contactService.getContacts(1, 100);
+        if (signal.aborted) return;
+        setContacts((d?.items ?? d) || []);
+      } catch (e) {
+        if (signal.aborted) return;
+        console.error('Dashboard contacts:', e);
+      } finally {
+        if (!signal.aborted) setLoadingContacts(false);
+      }
     };
     const fetchTimesheet = async () => {
-      try { setLoadingTimesheet(true); const d = await timesheetService.getEntries(1, 100); setTimesheetEntries((d?.items ?? d) || []); }
-      catch (e) { console.error('Dashboard timesheet:', e); } finally { setLoadingTimesheet(false); }
+      try {
+        setLoadingTimesheet(true);
+        const d = await timesheetService.getEntries(1, 100);
+        if (signal.aborted) return;
+        setTimesheetEntries((d?.items ?? d) || []);
+      } catch (e) {
+        if (signal.aborted) return;
+        console.error('Dashboard timesheet:', e);
+      } finally {
+        if (!signal.aborted) setLoadingTimesheet(false);
+      }
     };
     const fetchFinance = async () => {
       try {
         setLoadingFinance(true);
-        const [exp, inc] = await Promise.all([expenseService.getExpenses(1, 1000), incomeService.getIncomes(1, 1000)]);
-        setExpenses((exp?.items ?? exp) || []); setIncomes((inc?.items ?? inc) || []);
-      } catch (e) { console.error('Dashboard finance:', e); } finally { setLoadingFinance(false); }
+        const [exp, inc] = await Promise.all([
+          expenseService.getExpenses(1, 1000),
+          incomeService.getIncomes(1, 1000)
+        ]);
+        if (signal.aborted) return;
+        setExpenses((exp?.items ?? exp) || []);
+        setIncomes((inc?.items ?? inc) || []);
+      } catch (e) {
+        if (signal.aborted) return;
+        console.error('Dashboard finance:', e);
+      } finally {
+        if (!signal.aborted) setLoadingFinance(false);
+      }
     };
     const fetchTasks = async () => {
-      try { setLoadingTasks(true); const d = await taskService.getAll(); setTasks(Array.isArray(d) ? d : (d?.items ?? d?.tasks ?? [])); }
-      catch (e) { console.error('Dashboard tasks:', e); } finally { setLoadingTasks(false); }
+      try {
+        setLoadingTasks(true);
+        const d = await taskService.getAll();
+        if (signal.aborted) return;
+        setTasks(Array.isArray(d) ? d : (d?.items ?? d?.tasks ?? []));
+      } catch (e) {
+        if (signal.aborted) return;
+        console.error('Dashboard tasks:', e);
+      } finally {
+        if (!signal.aborted) setLoadingTasks(false);
+      }
     };
     const fetchAlerts = async () => {
-      try { setAlerts((await notificationService.getAlerts()) || []); }
-      catch (e) { console.error('Dashboard alerts:', e); }
+      try {
+        const a = await notificationService.getAlerts();
+        if (signal.aborted) return;
+        setAlerts(a || []);
+      } catch (e) {
+        if (signal.aborted) return;
+        console.error('Dashboard alerts:', e);
+      }
     };
 
     fetchProjects(); fetchContacts(); fetchTimesheet();
     fetchFinance(); fetchTasks(); fetchAlerts();
+
+    return () => controller.abort();
   }, [currentUser]);
 
   /* ── Monthly Chart Data ── */

@@ -4,11 +4,13 @@ using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace A365ShiftTracker.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[EnableRateLimiting("AuthPolicy")]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
@@ -72,75 +74,61 @@ public class AuthController : ControllerBase
 
     [HttpGet("totp/setup")]
     [Authorize]
+    [DisableRateLimiting]
     public async Task<ActionResult<ApiResponse<TotpSetupResponse>>> TotpSetup()
     {
-        var sub = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value
-            ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-            ?? throw new UnauthorizedAccessException("Not authenticated.");
-        var uid = int.Parse(sub);
-        var result = await _authService.GetTotpSetupAsync(uid);
+        var result = await _authService.GetTotpSetupAsync(GetCurrentUserId());
         return Ok(ApiResponse<TotpSetupResponse>.Ok(result));
     }
 
     [HttpPost("totp/verify-setup")]
     [Authorize]
+    [DisableRateLimiting]
     public async Task<ActionResult<ApiResponse<bool>>> TotpVerifySetup(VerifyTotpSetupRequest request)
     {
-        var sub = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value
-            ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-            ?? throw new UnauthorizedAccessException("Not authenticated.");
-        var userId = int.Parse(sub);
-        await _authService.VerifyAndEnableTotpAsync(userId, request);
+        await _authService.VerifyAndEnableTotpAsync(GetCurrentUserId(), request);
         return Ok(ApiResponse<bool>.Ok(true, "Authenticator app enabled."));
     }
 
     [HttpPost("totp/disable")]
     [Authorize]
+    [DisableRateLimiting]
     public async Task<ActionResult<ApiResponse<bool>>> TotpDisable()
     {
-        var sub = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value
-            ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-            ?? throw new UnauthorizedAccessException("Not authenticated.");
-        var userId = int.Parse(sub);
-        await _authService.DisableTotpAsync(userId);
+        await _authService.DisableTotpAsync(GetCurrentUserId());
         return Ok(ApiResponse<bool>.Ok(true, "Authenticator app disabled."));
     }
 
     [HttpPost("email-otp/send-enable")]
     [Authorize]
+    [DisableRateLimiting]
     public async Task<ActionResult<ApiResponse<bool>>> EmailOtpSendEnable()
     {
-        var sub = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-            ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-            ?? throw new UnauthorizedAccessException("Not authenticated.");
-        await _authService.SendEmailOtpEnableAsync(int.Parse(sub));
+        await _authService.SendEmailOtpEnableAsync(GetCurrentUserId());
         return Ok(ApiResponse<bool>.Ok(true, "Verification code sent to your email."));
     }
 
     [HttpPost("email-otp/verify-enable")]
     [Authorize]
+    [DisableRateLimiting]
     public async Task<ActionResult<ApiResponse<bool>>> EmailOtpVerifyEnable(VerifyEmailOtpEnableRequest request)
     {
-        var sub = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-            ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-            ?? throw new UnauthorizedAccessException("Not authenticated.");
-        await _authService.VerifyAndEnableEmailOtpAsync(int.Parse(sub), request.Code);
+        await _authService.VerifyAndEnableEmailOtpAsync(GetCurrentUserId(), request.Code);
         return Ok(ApiResponse<bool>.Ok(true, "Email OTP enabled successfully."));
     }
 
     [HttpPost("email-otp/disable")]
     [Authorize]
+    [DisableRateLimiting]
     public async Task<ActionResult<ApiResponse<bool>>> EmailOtpDisable()
     {
-        var sub = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-            ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-            ?? throw new UnauthorizedAccessException("Not authenticated.");
-        await _authService.DisableEmailOtpAsync(int.Parse(sub));
+        await _authService.DisableEmailOtpAsync(GetCurrentUserId());
         return Ok(ApiResponse<bool>.Ok(true, "Email OTP disabled."));
     }
 
     [HttpPost("logout")]
     [AllowAnonymous]
+    [DisableRateLimiting]
     public IActionResult Logout()
     {
         Response.Cookies.Delete("auth_token", new CookieOptions { Path = "/", SameSite = SameSiteMode.None, Secure = true });
@@ -149,10 +137,11 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("forgot-password")]
-    public async Task<ActionResult<ApiResponse<string>>> ForgotPassword(ForgotPasswordRequest request)
+    public async Task<ActionResult<ApiResponse<bool>>> ForgotPassword(ForgotPasswordRequest request)
     {
-        var token = await _authService.RequestPasswordResetAsync(request.Email);
-        return Ok(ApiResponse<string>.Ok(token, "Password reset token generated."));
+        await _authService.RequestPasswordResetAsync(request.Email);
+        // Always return success to prevent account enumeration
+        return Ok(ApiResponse<bool>.Ok(true, "If an account with that email exists, a reset link has been sent."));
     }
 
     [HttpPost("reset-password")]
@@ -173,5 +162,14 @@ public class AuthController : ControllerBase
             Expires = DateTimeOffset.UtcNow.AddHours(8),
             Path = "/"
         });
+    }
+
+    private int GetCurrentUserId()
+    {
+        var sub = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+               ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(sub, out var uid))
+            throw new UnauthorizedAccessException("Not authenticated.");
+        return uid;
     }
 }
