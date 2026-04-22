@@ -166,10 +166,10 @@ const StageSettingsModal = ({ show, handleClose, currentStages, onSave, productL
   return createPortal(
     <>
       {/* Backdrop */}
-      <div className="ssm-backdrop" onClick={handleClose} />
+      <div className="ssm-settings-backdrop" onClick={handleClose} />
 
       {/* Modal */}
-      <div className="ssm-modal" role="dialog" aria-modal="true">
+      <div className="ssm-settings-modal" role="dialog" aria-modal="true">
 
         {/* ── Header ── */}
         <div className="ssm-header">
@@ -208,7 +208,7 @@ const StageSettingsModal = ({ show, handleClose, currentStages, onSave, productL
         </div>
 
         {/* ── Body ── */}
-        <div className="ssm-body">
+        <div className="ssm-settings-body">
 
           {/* Tab labels — only show for Sales tab */}
           {activeTab === 'sales' && (
@@ -352,10 +352,10 @@ const StageSettingsModal = ({ show, handleClose, currentStages, onSave, productL
         </div>
 
         {/* ── Footer ── */}
-        <div className="ssm-footer">
+        <div className="ssm-settings-footer">
           <button className="ssm-btn-cancel" onClick={handleClose}>Cancel</button>
           <button
-            className="ssm-btn-save"
+            className="ssm-settings-btn-save"
             onClick={handleSaveAll}
           >
             Save Changes

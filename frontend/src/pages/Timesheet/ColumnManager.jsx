@@ -325,25 +325,18 @@ export const ColumnManager = ({ show, onHide, columns, onColumnsChange }) => {
               </span>
               <Info size={12} className="text-muted ms-1" />
             </Form.Label>
-            <Dropdown>
-              <Dropdown.Toggle
-                className="timesheet-dropdown-toggle w-100"
-                id="column-type-dropdown"
-              >
-                {COLUMN_TYPES.find(t => t.value === formData.type)?.label || 'Select type'}
-              </Dropdown.Toggle>
-              <Dropdown.Menu className="timesheet-dropdown-menu">
-                {COLUMN_TYPES.map(type => (
-                  <Dropdown.Item
-                    key={type.value}
-                    active={formData.type === type.value}
-                    onClick={() => setFormData({ ...formData, type: type.value })}
-                  >
-                    {type.label}
-                  </Dropdown.Item>
-                ))}
-              </Dropdown.Menu>
-            </Dropdown>
+            <Form.Select
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+              className="timesheet-form-control"
+            >
+              <option value="" disabled>Select type</option>
+              {COLUMN_TYPES.map(type => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </Form.Select>
           </Form.Group>
 
           {/* Choice Options — only shown when type is 'choice' */}

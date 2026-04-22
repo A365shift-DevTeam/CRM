@@ -3,7 +3,7 @@
    ═══════════════════════════════════════════════ */
 
 /* ── Backdrop ── */
-.ssm-backdrop {
+.ssm-settings-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(8, 15, 31, 0.52);
@@ -19,7 +19,7 @@
 }
 
 /* ── Modal Container ── */
-.ssm-modal {
+.ssm-settings-modal {
   position: fixed;
   top: 50%;
   left: 50%;
@@ -206,16 +206,18 @@
 }
 
 /* ── Body ── */
-.ssm-body {
+.ssm-settings-body {
   flex: 1;
+  display: block;
   overflow-y: auto;
+  min-height: 0;
   padding: 24px;
   scrollbar-width: thin;
   scrollbar-color: #CBD5E1 transparent;
 }
 
-.ssm-body::-webkit-scrollbar { width: 4px; }
-.ssm-body::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 2px; }
+.ssm-settings-body::-webkit-scrollbar { width: 4px; }
+.ssm-settings-body::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 2px; }
 
 /* ── Section Labels ── */
 .ssm-section-label {
@@ -512,7 +514,7 @@
 }
 
 /* ── Footer ── */
-.ssm-footer {
+.ssm-settings-footer {
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -543,7 +545,7 @@
   color: #334155;
 }
 
-.ssm-btn-save {
+.ssm-settings-btn-save {
   height: 38px;
   padding: 0 24px;
   border: none;
@@ -559,21 +561,21 @@
   letter-spacing: 0.01em;
 }
 
-.ssm-btn-save:hover {
+.ssm-settings-btn-save:hover {
   background: var(--button-brand-hover, #416F8A);
   opacity: 0.92;
   transform: translateY(-1px);
   box-shadow: var(--button-brand-shadow-hover, 0 5px 18px rgba(82,134,165,0.38));
 }
 
-.ssm-btn-save:active {
+.ssm-settings-btn-save:active {
   transform: translateY(0);
   opacity: 1;
 }
 
 /* ── Responsive ── */
 @media (max-width: 640px) {
-  .ssm-modal {
+  .ssm-settings-modal {
     width: calc(100vw - 16px);
     max-height: calc(100vh - 24px);
     border-radius: 14px;
@@ -597,25 +599,33 @@
   }
 
   .ssm-stage-row {
-    grid-template-columns: 60px 1fr 88px;
-    grid-template-rows: auto auto;
-    row-gap: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px;
   }
 
-  .ssm-stage-row > .ssm-age-wrap {
-    grid-column: 3;
-    grid-row: 1;
+  .ssm-sort-wrap {
+    flex: 0 0 auto;
   }
 
-  .ssm-stage-row > .ssm-select {
-    grid-column: 1 / 3;
-    grid-row: 2;
+  .ssm-name-wrap {
+    flex: 1 1 0%;
+    min-width: 140px;
   }
 
-  .ssm-stage-row > .ssm-delete-btn {
-    grid-column: 3;
-    grid-row: 2;
-    justify-self: end;
+  .ssm-age-wrap {
+    flex: 0 0 88px;
+  }
+
+  .ssm-select {
+    flex: 1 1 0%;
+    min-width: 120px;
+  }
+
+  .ssm-delete-btn {
+    flex: 0 0 auto;
+    margin-left: auto;
   }
 
   .ssm-labels-row {

@@ -268,6 +268,8 @@ const SalesCard = ({ projectId, project, stages, deliveryStages, financeStages, 
                                 const isPast = index < displayActiveStage;
 
                                 let isOverdue = false;
+                                let remainingDaysText = `${stage.ageing || 0}d left`;
+
                                 if (stage.endDate) {
                                     const todayStr = new Date().toISOString().split('T')[0];
                                     if (todayStr > stage.endDate) {
@@ -275,11 +277,16 @@ const SalesCard = ({ projectId, project, stages, deliveryStages, financeStages, 
                                             isOverdue = true;
                                         }
                                     }
-                                } else if (isActive && history && history.length > 0) {
-                                    const sorted = [...history].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                                    const lastUpdate = new Date(sorted[0].timestamp);
-                                    const daysInStage = Math.ceil(Math.abs(new Date() - lastUpdate) / 86400000);
+                                } else if (isActive) {
+                                    let daysInStage = 0;
+                                    if (history && history.length > 0) {
+                                        const sorted = [...history].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                                        const lastUpdate = new Date(sorted[0].timestamp);
+                                        daysInStage = Math.ceil(Math.abs(new Date() - lastUpdate) / 86400000);
+                                    }
                                     isOverdue = daysInStage > (stage.ageing || 0);
+                                    const remaining = (stage.ageing || 0) - daysInStage;
+                                    remainingDaysText = remaining >= 0 ? `${remaining}d left` : `${Math.abs(remaining)}d overdue`;
                                 }
 
                                 const stageClass = isPast ? 'past' : isActive ? 'active' : 'future';
@@ -290,7 +297,7 @@ const SalesCard = ({ projectId, project, stages, deliveryStages, financeStages, 
                                         <div className="position-relative">
                                             {isActive && (
                                                 <div className="running-man-container" draggable onDragStart={handleDragStart}>
-                                                    <div className="current-stage-tooltip">Current Stage</div>
+                                                    <div className="current-stage-tooltip">{remainingDaysText}</div>
                                                     <i className="fa-solid fa-person-running running-man-icon" style={{ color: '#10B981', fontSize: '20px' }} />
                                                 </div>
                                             )}
