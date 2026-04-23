@@ -9,6 +9,7 @@ import PageToolbar from '../../components/PageToolbar/PageToolbar';
 import Pagination from '../../components/Pagination/Pagination';
 import StatsGrid from '../../components/StatsGrid/StatsGrid';
 import AuditPanel from '../../components/AuditPanel/AuditPanel';
+import StandardListView from '../../components/StandardListView/StandardListView';
 import { ChartView } from './ChartView';
 import './Leads.css';
 
@@ -214,6 +215,64 @@ export default function Leads() {
     { label: 'Companies', value: new Set(leads.map(l => l.company).filter(Boolean)).size, icon: <Building size={22} />, color: 'purple' },
   ];
 
+  const listColumns = [
+    { id: 'contactName', name: 'Contact' },
+    { id: 'company', name: 'Company' },
+    { id: 'score', name: 'Score' },
+    { id: 'source', name: 'Source' },
+    { id: 'stage', name: 'Stage' },
+    { id: 'expectedValue', name: 'Expected Value' }
+  ];
+
+  const renderListCell = (lead, column) => {
+    switch (column.id) {
+      case 'contactName':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontWeight: 600, color: '#0F172A' }}>{lead.contactName || '-'}</span>
+            <span style={{ fontSize: 12, color: '#64748B', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+              <Building size={12} /> {lead.company || 'No Company'}
+            </span>
+          </div>
+        );
+      case 'company':
+        return <span className="fw-medium text-dark">{lead.company || '-'}</span>;
+      case 'score':
+        return <span className={scoreBadgeClass(lead.score)}>{lead.score}</span>;
+      case 'source':
+        return <span className="text-secondary">{lead.source}</span>;
+      case 'stage':
+        return (
+          <div onClick={(e) => e.stopPropagation()}>
+            <Form.Select size="sm" value={lead.stage || 'New'} style={{ width: 130 }}
+              onChange={e => handleStageChange(lead, e.target.value)}>
+              {KANBAN_STAGES.map(s => <option key={s}>{s}</option>)}
+            </Form.Select>
+          </div>
+        );
+      case 'expectedValue':
+        return <span className="fw-medium text-secondary">{lead.expectedValue ? `${lead.expectedValue}` : '-'}</span>;
+      default:
+        return <span className="text-secondary">{lead[column.id] || '-'}</span>;
+    }
+  };
+
+  const renderListActions = (lead) => (
+    <div className="d-flex gap-3 justify-content-center">
+      <div className="slv-action-icon text-info" onClick={() => openEdit(lead)} style={{ cursor: 'pointer' }} title="Edit">
+        <Edit size={18} />
+      </div>
+      {lead.stage !== 'Qualified' && lead.stage !== 'Disqualified' && (
+        <div className="slv-action-icon text-success" onClick={() => handleQualify(lead)} style={{ cursor: 'pointer' }} title="Qualify → Sales">
+          <ArrowUpRight size={18} />
+        </div>
+      )}
+      <div className="slv-action-icon text-danger" onClick={() => handleDelete(lead.id)} style={{ cursor: 'pointer' }} title="Delete">
+        <Trash2 size={18} />
+      </div>
+    </div>
+  );
+
   return (
     <div className="leads-container">
       <StatsGrid stats={stats} />
@@ -265,45 +324,21 @@ export default function Leads() {
         </div>
       ) : viewMode === 'list' ? (
         <div className="mt-2">
-          <table className="table table-hover align-middle">
-            <thead className="table-light">
-              <tr>
-                <th>Contact</th><th>Company</th><th>Score</th>
-                <th>Source</th><th>Stage</th><th>Expected Value</th><th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(l => (
-                <tr key={l.id}>
-                  <td className="fw-semibold">{l.contactName}</td>
-                  <td className="text-muted">{l.company || '—'}</td>
-                  <td><span className={scoreBadgeClass(l.score)}>{l.score}</span></td>
-                  <td>{l.source}</td>
-                  <td>
-                    <Form.Select size="sm" value={l.stage || 'New'} style={{ width: 130 }}
-                      onChange={e => handleStageChange(l, e.target.value)}>
-                      {KANBAN_STAGES.map(s => <option key={s}>{s}</option>)}
-                    </Form.Select>
-                  </td>
-                  <td>{l.expectedValue ? `${l.expectedValue}` : '—'}</td>
-                  <td>
-                    <div className="d-flex gap-1 align-items-center">
-                      <button className="action-icon-btn text-info" title="Edit" onClick={() => openEdit(l)}><Edit size={15} /></button>
-                      {l.stage !== 'Qualified' && l.stage !== 'Disqualified' && (
-                        <button className="action-icon-btn text-success" title="Qualify → Sales" onClick={() => handleQualify(l)}>
-                          <ArrowUpRight size={15} />
-                        </button>
-                      )}
-                      <button className="action-icon-btn text-danger" title="Delete" onClick={() => handleDelete(l.id)}><Trash2 size={15} /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr><td colSpan={7} className="text-center text-muted py-4">No leads found.</td></tr>
-              )}
-            </tbody>
-          </table>
+          <StandardListView
+            items={filtered}
+            columns={listColumns}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            onSort={(colId) => {
+              if (sortBy === colId) setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+              else { setSortBy(colId); setSortOrder('asc'); }
+            }}
+            renderCell={renderListCell}
+            renderActions={renderListActions}
+            storageKey="leads_list"
+            emptyMessage="No leads found."
+            itemLabel="leads"
+          />
         </div>
       ) : viewMode === 'kanban' ? (
         <div className="row g-3 mt-1">

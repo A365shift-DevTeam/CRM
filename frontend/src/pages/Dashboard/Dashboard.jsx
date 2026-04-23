@@ -310,7 +310,12 @@ function MetricCard({ menuCard, health, cardIndex }) {
 
       <div className="relative z-10 mt-3">
         <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-          {menuCard.subtitle}
+          {menuCard.subtitle.split('|').map((part, i, arr) => (
+            <span key={i}>
+              {part}
+              {i < arr.length - 1 && <span style={{ fontSize: '14px', fontWeight: 700, margin: '0 2px', color: '#94a3b8' }}>|</span>}
+            </span>
+          ))}
         </div>
 
         <div className="mt-1 flex items-end justify-between gap-3">
@@ -720,7 +725,7 @@ export default function Dashboard() {
 
     const cardDetails = {
       acquisition: {
-        subtitle: `${companies.length} companies · ${contacts.length} contacts · ${leads.length} leads`,
+        subtitle: `${companies.length} companies | ${contacts.length} contacts | ${leads.length} leads`,
         metricLabel: 'CRM coverage',
         statText: `${companies.length + contacts.length + leads.length} live`,
         statMeta: 'records tracked',
@@ -731,7 +736,7 @@ export default function Dashboard() {
         ],
       },
       sales: {
-        subtitle: `${totalDeals} deals · ${wonDeals} won · ${openDeals} active`,
+        subtitle: `${totalDeals} deals | ${wonDeals} won | ${openDeals} active`,
         metricLabel: 'Pipeline health',
         statText: `${wonDeals}/${Math.max(totalDeals, 1)}`,
         statMeta: 'won deals',
@@ -742,7 +747,7 @@ export default function Dashboard() {
         ],
       },
       delivery: {
-        subtitle: `${documents.length} docs · ${tasks.length} tasks · ${timesheetEntries.length} timesheets`,
+        subtitle: `${documents.length} docs | ${tasks.length} tasks | ${timesheetEntries.length} timesheets`,
         metricLabel: 'Execution health',
         statText: `${completedTasks}/${Math.max(tasks.length, 1)}`,
         statMeta: 'tasks complete',
@@ -753,7 +758,7 @@ export default function Dashboard() {
         ],
       },
       finops: {
-        subtitle: `${incomes.length} income items · ${expenses.length} expense items`,
+        subtitle: `${incomes.length} income items | ${expenses.length} expense items`,
         metricLabel: 'Financial health',
         statText: formatGlobalCurrency(netBalance, 'INR', { maximumFractionDigits: 0 }),
         statMeta: 'net balance',
@@ -764,7 +769,7 @@ export default function Dashboard() {
         ],
       },
       legal: {
-        subtitle: `${legalAgreements.length} agreements · ${expiringSoon} expiring soon`,
+        subtitle: `${legalAgreements.length} agreements | ${expiringSoon} expiring soon`,
         metricLabel: 'Compliance health',
         statText: `${expiringSoon}`,
         statMeta: 'due in 30 days',
@@ -775,7 +780,7 @@ export default function Dashboard() {
         ],
       },
       intelligence: {
-        subtitle: `${dataSources} data sources online · ${alerts.length} alerts in feed`,
+        subtitle: `${dataSources} data sources online | ${alerts.length} alerts in feed`,
         metricLabel: 'Data coverage',
         statText: `${dataSources}/10`,
         statMeta: 'sources reporting',
@@ -786,7 +791,7 @@ export default function Dashboard() {
         ],
       },
       people: {
-        subtitle: `${timesheetEntries.length} timesheets · ${openTasks} open tasks`,
+        subtitle: `${timesheetEntries.length} timesheets | ${openTasks} open tasks`,
         metricLabel: 'Team throughput',
         statText: `${timesheetEntries.length}`,
         statMeta: 'time entries',
@@ -797,7 +802,7 @@ export default function Dashboard() {
         ],
       },
       admin: {
-        subtitle: `${alerts.length} alerts · ${criticalAlertCount} critical · ${documents.length} docs`,
+        subtitle: `${alerts.length} alerts | ${criticalAlertCount} critical | ${documents.length} docs`,
         metricLabel: 'System health',
         statText: `${alerts.length}`,
         statMeta: 'system notices',
@@ -808,7 +813,7 @@ export default function Dashboard() {
         ],
       },
       ai: {
-        subtitle: `${alerts.length} AI alerts · ${criticalAlertCount} critical signals`,
+        subtitle: `${alerts.length} AI alerts | ${criticalAlertCount} critical signals`,
         metricLabel: 'Model coverage',
         statText: `${criticalAlertCount}`,
         statMeta: 'critical alerts',
@@ -893,7 +898,7 @@ export default function Dashboard() {
               <span className="dash-title-wave">👋</span>
             </h1>
             <p className="dash-subtitle">
-              {projects.length} projects · {contacts.length} contacts · {timesheetEntries.length} timesheet entries tracked
+              {projects.length} projects | {contacts.length} contacts | {timesheetEntries.length} timesheet entries tracked
             </p>
           </div>
         </div>
