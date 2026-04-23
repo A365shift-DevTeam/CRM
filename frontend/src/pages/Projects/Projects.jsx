@@ -148,10 +148,13 @@ function GanttView({ projects, themeColor, onEdit, onProjectUpdate }) {
   const hasAnyDate = allDates.length > 0;
 
   let minDate, maxDate;
-  if (quarterFilter !== 'All' && QUARTERS[quarterFilter]) {
+  if (quarterFilter === 'Today') {
+    minDate = new Date(today); minDate.setDate(minDate.getDate() - 3);
+    maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + 27);
+  } else if (quarterFilter !== 'All' && QUARTERS[quarterFilter]) {
     const q = QUARTERS[quarterFilter];
-    minDate = new Date(q.start); minDate.setDate(minDate.getDate() - 3);
-    maxDate = new Date(q.end);   maxDate.setDate(maxDate.getDate() + 5);
+    minDate = new Date(q.start);
+    maxDate = new Date(q.end);
   } else if (timeScale === 'day') {
     // Day view — show ~30 days centered on today
     minDate = new Date(today); minDate.setDate(minDate.getDate() - 3);
@@ -167,8 +170,14 @@ function GanttView({ projects, themeColor, onEdit, onProjectUpdate }) {
     maxDate = new Date(maxRaw); maxDate.setDate(maxDate.getDate() + 15);
   }
   const span = maxDate - minDate;
+  const spanDays = Math.round(span / (1000 * 60 * 60 * 24));
+  let minInnerWidth = 1200;
+  if (timeScale === 'day') minInnerWidth = Math.max(1200, 320 + spanDays * 35);
+  else if (timeScale === 'month') minInnerWidth = Math.max(1200, 320 + (spanDays / 30.44) * 90);
+  else minInnerWidth = Math.max(1200, 320 + (spanDays / 30.44) * 60);
 
-  const pct = d => Math.max(0, Math.min(100, ((new Date(d) - minDate) / span) * 100));
+  const unclampedPct = d => (((new Date(d) - minDate) / span) * 100);
+  const pct = d => Math.max(0, Math.min(100, unclampedPct(d)));
   const widthPct = (start, end) => {
     const s = new Date(start), e = end ? new Date(end) : new Date(+new Date(start) + 30 * 86400000);
     return Math.max(1.5, ((Math.min(e, maxDate) - Math.max(s, minDate)) / span) * 100);
@@ -187,7 +196,7 @@ function GanttView({ projects, themeColor, onEdit, onProjectUpdate }) {
         label: dc.getDate().toString(),
         sublabel: dc.getDate() === 1 || dc.toDateString() === new Date(minDate).toDateString()
           ? dc.toLocaleString('default', { month: 'short' }) : '',
-        pos: pct(dc),
+        pos: unclampedPct(dc),
         isToday, isWeekend,
       });
       dc.setDate(dc.getDate() + 1);
@@ -200,7 +209,7 @@ function GanttView({ projects, themeColor, onEdit, onProjectUpdate }) {
         label: mc.toLocaleString('default', { month: 'short' }),
         sublabel: timeScale === 'year' ? '' : '',
         year: mc.getFullYear(),
-        pos: pct(mc),
+        pos: unclampedPct(mc),
         isToday: false, isWeekend: false,
       });
       mc.setMonth(mc.getMonth() + 1);
@@ -256,13 +265,13 @@ function GanttView({ projects, themeColor, onEdit, onProjectUpdate }) {
         </div>
         <div className="gantt-qfilter-row">
           <Filter size={12} className="gantt-qfilter-icon" />
-          {['All', 'Q1', 'Q2', 'Q3', 'Q4'].map(q => (
+          {['Today', 'All', 'Q1', 'Q2', 'Q3', 'Q4'].map(q => (
             <button
               key={q}
               className={`gantt-qfilter-btn${quarterFilter === q ? ' active' : ''}`}
               style={quarterFilter === q ? { color: themeColor, borderColor: themeColor, background: `${themeColor}12` } : {}}
               onClick={() => setQuarterFilter(q)}
-              title={q === 'All' ? 'Show full timeline' : `${q} ${currentYear} (${QUARTERS[q].start.toLocaleString('default', { month:'short' })}–${QUARTERS[q].end.toLocaleString('default', { month:'short' })})`}
+              title={q === 'Today' ? 'Focus on today' : q === 'All' ? 'Show full timeline' : `${q} ${currentYear} (${QUARTERS[q].start.toLocaleString('default', { month:'short' })}–${QUARTERS[q].end.toLocaleString('default', { month:'short' })})`}
             >{q}</button>
           ))}
         </div>
@@ -283,8 +292,10 @@ function GanttView({ projects, themeColor, onEdit, onProjectUpdate }) {
         </div>
       </div>
 
-      {/* ── Header row ── */}
-      <div className={`gantt-header${timeScale === 'day' ? ' gantt-header-day' : ''}`}>
+      <div className="gantt-scroll-area">
+        <div className="gantt-inner" style={{ minWidth: minInnerWidth }}>
+          {/* ── Header row ── */}
+          <div className={`gantt-header${timeScale === 'day' ? ' gantt-header-day' : ''}`}>
         <div className="gantt-label-col gantt-header-label">Project / Stage</div>
         <div className="gantt-track-col gantt-month-header">
           {timeColumns.map((col, i) => (
@@ -447,6 +458,8 @@ function GanttView({ projects, themeColor, onEdit, onProjectUpdate }) {
         })}
 
         {projects.length === 0 && <div className="gantt-empty">No projects to display.</div>}
+      </div>
+        </div>
       </div>
     </div>
   );
@@ -827,7 +840,13 @@ export default function Projects() {
         /* ════════════════════════════════
            GANTT CHART
         ════════════════════════════════ */
-        .gantt-wrap { background: #fff; border: 1px solid #E1E8F4; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 12px rgba(15,23,42,.06); font-family: var(--font-family,'DM Sans',sans-serif); }
+        .gantt-wrap { background: #fff; border: 1px solid #E1E8F4; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 12px rgba(15,23,42,.06); font-family: var(--font-family,'DM Sans',sans-serif); display: flex; flex-direction: column; }
+        .gantt-scroll-area { overflow-x: auto; overflow-y: hidden; width: 100%; border-radius: 0 0 16px 16px; }
+        .gantt-scroll-area::-webkit-scrollbar { height: 8px; }
+        .gantt-scroll-area::-webkit-scrollbar-track { background: #F8FAFC; border-radius: 0 0 16px 16px; }
+        .gantt-scroll-area::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; border: 2px solid #F8FAFC; }
+        .gantt-scroll-area::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+        .gantt-inner { min-width: 1200px; display: flex; flex-direction: column; }
 
         /* Top bar */
         .gantt-top-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #F8FAFC; border-bottom: 1px solid #E8EEF8; flex-wrap: wrap; gap: 10px; }
@@ -853,9 +872,9 @@ export default function Projects() {
         .gantt-scale-btn.active { background: #fff; font-weight: 700; box-shadow: 0 1px 4px rgba(15,23,42,.08); border-radius: 7px; }
 
         /* Header row */
-        .gantt-header { display: grid; grid-template-columns: 280px 1fr; background: #F8FAFC; border-bottom: 1px solid #E8EEF8; height: 38px; }
+        .gantt-header { display: grid; grid-template-columns: 320px 1fr; background: #F8FAFC; border-bottom: 1px solid #E8EEF8; height: 38px; }
         .gantt-header.gantt-header-day { height: 44px; }
-        .gantt-header-label { display: flex; align-items: center; padding: 0 16px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #94A3B8; border-right: 1px solid #E8EEF8; }
+        .gantt-header-label { display: flex; align-items: center; padding: 0 16px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #94A3B8; background: #F8FAFC; z-index: 30; }
         .gantt-month-header { position: relative; overflow: hidden; }
         .gantt-month-cell { position: absolute; top: 0; height: 100%; display: flex; flex-direction: column; align-items: flex-start; transform: translateX(-1px); pointer-events: none; }
         .gantt-month-cell.is-today-col .gantt-month-name.day-num { color: #F43F5E; font-weight: 800; }
@@ -870,10 +889,11 @@ export default function Projects() {
 
         /* Body */
         .gantt-body { display: flex; flex-direction: column; }
-        .gantt-label-col { border-right: 1px solid #E8EEF8; }
+        .gantt-label-col { border-right: 1px solid #E8EEF8; position: sticky; left: 0; z-index: 20; }
+        .gantt-label-col::after { content: ''; position: absolute; top: 0; right: -6px; bottom: 0; width: 6px; background: linear-gradient(90deg, rgba(15,23,42,0.04) 0%, transparent 100%); pointer-events: none; }
 
         /* Project row */
-        .gantt-row { display: grid; grid-template-columns: 280px 1fr; border-bottom: 1px solid #F1F5F9; }
+        .gantt-row { display: grid; grid-template-columns: 320px 1fr; border-bottom: 1px solid #F1F5F9; }
         .gantt-row:last-child { border-bottom: none; }
         .gantt-proj-row { min-height: 54px; }
         .gantt-proj-label { display: flex; align-items: center; gap: 8px; padding: 0 10px 0 12px; background: #FAFBFC; }
@@ -891,7 +911,8 @@ export default function Projects() {
         /* Stage row */
         .gantt-stage-row { min-height: 40px; background: #FDFDFF; }
         .gantt-stage-row.is-active { background: #FAFAFF; }
-        .gantt-stage-label-col { display: flex; align-items: center; gap: 6px; padding: 0 8px 0 6px; background: inherit; }
+        .gantt-stage-label-col { display: flex; align-items: center; gap: 6px; padding: 0 8px 0 6px; background: #FDFDFF; }
+        .gantt-stage-row.is-active .gantt-stage-label-col { background: #FAFAFF; }
         .gantt-stage-row:hover .gantt-stage-label-col { background: #F4F7FF; }
         .gantt-s-indent { width: 36px; flex-shrink: 0; }
         .gantt-s-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; border: 1.5px solid #CBD5E1; background: transparent; transition: all .2s; }
@@ -921,7 +942,7 @@ export default function Projects() {
 
         /* Inline stage editor */
         .gantt-stage-editor {
-          display: grid; grid-template-columns: 280px 1fr;
+          display: grid; grid-template-columns: 320px 1fr;
           background: #F0F4FF; border-bottom: 1px solid #D5DFFB;
           border-top: 1px solid #D5DFFB;
           padding: 12px 16px; gap: 12px;
