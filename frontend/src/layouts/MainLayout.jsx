@@ -359,7 +359,7 @@ export default function MainLayout() {
             const isExpanded = expandedCategories[category.title] !== false;
 
             return (
-              <div key={category.title} style={{ marginBottom: '2px' }}>
+              <div key={category.title} style={{ marginBottom: '6px', paddingBottom: '6px', borderBottom: '1px solid #E2E8F0' }}>
                 <button
                   onClick={() => toggleCategory(category.title)}
                   style={{
@@ -441,7 +441,7 @@ export default function MainLayout() {
           })}
 
           {/* Admin */}
-          <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #EEF2F8' }}>
+          <div style={{ marginTop: '6px', paddingTop: '2px' }}>
             <Link
               to="/admin"
               style={{
