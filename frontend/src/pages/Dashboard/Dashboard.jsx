@@ -271,8 +271,9 @@ function MetricCard({ menuCard, health, cardIndex }) {
   const pct = health?.percent ?? 0;
 
   return (
-    <div className="group relative overflow-hidden rounded-[28px] border border-white/70 bg-white/80 px-5 py-4 shadow-[0_10px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(15,23,42,0.12)]">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/70 to-transparent" />
+    <div className="group relative overflow-hidden rounded-[28px] border border-slate-100 bg-white px-5 py-4 shadow-[0_10px_40px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(15,23,42,0.12)]">
+      {/* The dynamic color gradient overlay fading to white/transparent */}
+      <div className={`pointer-events-none absolute inset-0 ${menuCard.accentText} opacity-[0.08]`} style={{ background: 'linear-gradient(135deg, currentColor 0%, transparent 60%)' }} />
 
       <div className="relative z-10 flex items-start justify-between gap-3">
         <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${menuCard.gradient} text-white shadow-md`}>
