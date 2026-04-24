@@ -250,22 +250,16 @@ function SparkLine({ data = [], color = '#4361EE', height = 42 }) {
 
 
 
-function StatusRow({ status, critCount, warnCount, accentText }) {
-  let badgeClass = "bg-slate-100 text-slate-500";
-  if (critCount > 0) {
-    badgeClass = "bg-rose-100 text-rose-600 font-semibold";
-  } else if (warnCount > 0) {
-    badgeClass = "bg-amber-100 text-amber-600 font-semibold";
-  }
-
+function StatusRow({ subtitle }) {
   return (
-    <div className="mt-2 flex items-center justify-between text-[11px] uppercase tracking-[0.16em]">
-      <div className={`flex items-center gap-2 font-semibold ${accentText}`}>
-        <span className="h-1.5 w-1.5 rounded-full bg-current" />
-        <span>{status}</span>
-      </div>
-      <div className={`rounded-full px-2.5 py-0.5 ${badgeClass}`}>
-        {critCount} CRITICAL, {warnCount} WARNING
+    <div className="mt-2 flex items-center justify-start text-[10px] uppercase tracking-[0.16em]">
+      <div className="font-semibold text-slate-400">
+        {subtitle.split('|').map((part, i, arr) => (
+          <span key={i}>
+            {part}
+            {i < arr.length - 1 && <span style={{ fontSize: '14px', fontWeight: 700, margin: '0 2px', color: '#94a3b8' }}>|</span>}
+          </span>
+        ))}
       </div>
     </div>
   );
@@ -275,9 +269,6 @@ function MetricCard({ menuCard, health, cardIndex }) {
   const navigate = useNavigate();
   const Icon = menuCard.icon;
   const pct = health?.percent ?? 0;
-  const status = health?.label ?? 'Fair';
-  const critCount = health?.critCount ?? 0;
-  const warnCount = health?.warnCount ?? 0;
 
   return (
     <div className="group relative overflow-hidden rounded-[28px] border border-white/70 bg-white/80 px-5 py-4 shadow-[0_10px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(15,23,42,0.12)]">
@@ -308,11 +299,11 @@ function MetricCard({ menuCard, health, cardIndex }) {
       </div>
 
       <div className="relative z-10 mt-3 flex flex-wrap gap-2">
-        {menuCard.items.map((item, index) => (
+        {menuCard.items.map((item) => (
           <Link
             key={`${menuCard.title}-${item.label}`}
             to={item.to}
-            className={`rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors ${index === menuCard.items.length - 1 ? `${menuCard.accentBg} ${menuCard.accentText} hover:opacity-80` : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
+            className={`rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors ${menuCard.accentBg} ${menuCard.accentText} hover:opacity-80`}
           >
             {item.label}
           </Link>
@@ -320,15 +311,6 @@ function MetricCard({ menuCard, health, cardIndex }) {
       </div>
 
       <div className="relative z-10 mt-3">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-          {menuCard.subtitle.split('|').map((part, i, arr) => (
-            <span key={i}>
-              {part}
-              {i < arr.length - 1 && <span style={{ fontSize: '14px', fontWeight: 700, margin: '0 2px', color: '#94a3b8' }}>|</span>}
-            </span>
-          ))}
-        </div>
-
         <div className="mt-1 flex items-end justify-between gap-3">
           <div className="text-3xl font-bold leading-none tracking-[-0.04em] text-slate-900">
             <AnimatedCounter to={pct} duration={1000 + (cardIndex * 40)} />%
@@ -351,7 +333,7 @@ function MetricCard({ menuCard, health, cardIndex }) {
           />
         </div>
 
-        <StatusRow status={status} critCount={critCount} warnCount={warnCount} accentText={menuCard.accentText} />
+        <StatusRow subtitle={menuCard.subtitle} />
       </div>
     </div>
   );
