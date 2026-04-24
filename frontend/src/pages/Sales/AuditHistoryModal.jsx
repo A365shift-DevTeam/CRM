@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import { Modal } from 'react-bootstrap'
 import {
-    Clock, DollarSign, Activity, Calendar, Target, Timer,
+    Clock, DollarSign, Activity, Calendar, Target, Timer, Users,
     Plus, Minus, CalendarDays, CheckCircle2, Settings2, Filter
 } from 'lucide-react'
 import { FaPenToSquare } from 'react-icons/fa6'
@@ -391,10 +391,10 @@ export default function AuditHistoryModal({ show, onHide, project, deliveryStage
 
                     {/* ── 2. Summary Stat Cards ── */}
                     <StatsGrid stats={[
-                        { label: 'Current Stage', value: `${currentStageLabel} (${stageProgress})`, icon: <Target size={22} />, color: 'blue' },
-                        { label: 'Deal Value', value: `${primaryCurrency} ${formatDealValue(totalDealValue)}`, icon: <DollarSign size={22} />, color: 'green' },
-                        { label: 'Duration', value: `${projectDays} Days`, icon: <Timer size={22} />, color: 'orange' },
-                        { label: 'Audit Events', value: totalEvents, icon: <Activity size={22} />, color: 'purple' },
+                        { label: 'Deal Value', value: '5 MN', icon: <DollarSign size={22} />, color: 'green' },
+                        { label: 'Resource', value: '4 | 170 hours', icon: <Users size={22} />, color: 'blue' },
+                        { label: 'Project Status', value: '80%', icon: <Activity size={22} />, color: 'purple' },
+                        { label: 'Go Live in', value: '30 Days', icon: <Calendar size={22} />, color: 'orange' },
                     ]} />
 
                     {/* ── 3. Branding Section ── */}
