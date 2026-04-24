@@ -911,8 +911,8 @@ export default function Dashboard() {
     <div className="dash-root">
       <div className="dash-content" style={{ paddingTop: '12px' }}>
 
-        {/* ── Header ── */}
-        <div className="dash-header" style={{ marginBottom: '24px' }}>
+        {/* ── Header Row ── */}
+        <div className="dash-header lg:items-center" style={{ marginBottom: '24px' }}>
           <div>
             <h1 className="dash-title">
               {greeting}, {firstName}
@@ -922,31 +922,31 @@ export default function Dashboard() {
               {projects.length} projects | {contacts.length} contacts | {timesheetEntries.length} timesheet entries tracked
             </p>
           </div>
-        </div>
 
-        {/* ── AI Alert Banner ── */}
-        {activeAlert && (
-          <motion.div
-            key={activeAlertIndex}
-            className="dash-alert-banner"
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35 }}
-          >
-            <div className="dash-alert-icon">
-              <Lightbulb size={14} />
-            </div>
-            <div className="dash-alert-content">
-              <span className="dash-alert-label">AI Insight</span>
-              <span className="dash-alert-message">
-                {activeAlert.title || activeAlert.message || 'Pipeline and operations are stable.'}
-              </span>
-            </div>
-            <button className="dash-alert-viewall" onClick={() => setIsAlertSidebarOpen(true)}>
-              View All <ChevronRight size={12} />
-            </button>
-          </motion.div>
-        )}
+          {/* ── AI Alert Banner ── */}
+          {activeAlert && (
+            <motion.div
+              key={activeAlertIndex}
+              className="dash-alert-banner w-full lg:w-auto lg:max-w-[850px] flex-1"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35 }}
+            >
+              <div className="dash-alert-icon shrink-0">
+                <Lightbulb size={14} />
+              </div>
+              <div className="dash-alert-content min-w-0">
+                <span className="dash-alert-label shrink-0">AI Insight</span>
+                <span className="dash-alert-message truncate">
+                  {activeAlert.title || activeAlert.message || 'Pipeline and operations are stable.'}
+                </span>
+              </div>
+              <button className="dash-alert-viewall shrink-0" onClick={() => setIsAlertSidebarOpen(true)}>
+                View All <ChevronRight size={12} />
+              </button>
+            </motion.div>
+          )}
+        </div>
 
         {/* ── Menu Cards ── */}
         <DashboardMenuCards cards={menuCards} healthData={moduleHealth} />
