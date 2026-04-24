@@ -22,8 +22,15 @@ const EMPTY_FORM = {
   name: '', industry: '', size: '', website: '',
   address: '', country: '', gstin: '', tags: '',
   pan: '', cin: '', msmeStatus: 'NON MSME',
-  tdsSection: '', tdsRate: '', internationalTaxId: ''
+  tdsSection: '', tdsRate: null, internationalTaxId: ''
 };
+
+const sanitizeCompanyPayload = (data) => ({
+  ...data,
+  tdsRate: data.tdsRate !== '' && data.tdsRate !== null && data.tdsRate !== undefined
+    ? parseFloat(data.tdsRate) || null
+    : null,
+});
 
 const buildCompanyPayload = (wf) => ({
   name:               wf.company_name || '',
@@ -37,7 +44,7 @@ const buildCompanyPayload = (wf) => ({
   cin:                wf.company_cin || '',
   msmeStatus:         wf.company_msmeStatus || 'NON MSME',
   tdsSection:         wf.company_tdsSection || '',
-  tdsRate:            wf.company_tdsRate || '',
+  tdsRate:            wf.company_tdsRate ? parseFloat(wf.company_tdsRate) || null : null,
   internationalTaxId: wf.company_internationalTaxId || '',
   tags:               wf.company_tags || '',
 });
@@ -80,7 +87,11 @@ export default function Company() {
     }
   };
 
-const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setShowModal(true); };
+const openEdit = (c) => {
+  setEditing(c);
+  setForm({ ...EMPTY_FORM, ...c, tdsRate: c.tdsRate ?? null });
+  setShowModal(true);
+};
 
   const openWizard  = () => { setWizardForm({}); setWizardStep(1); setShowWizard(true); };
   const closeWizard = () => { setShowWizard(false); setWizardStep(1); setWizardForm({}); };
@@ -211,11 +222,12 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Company name is required'); return; }
     try {
+      const payload = sanitizeCompanyPayload(form);
       if (editing) {
-        await companyService.updateCompany(editing.id, form);
+        await companyService.updateCompany(editing.id, payload);
         toast.success('Company updated');
       } else {
-        await companyService.createCompany(form);
+        await companyService.createCompany(payload);
         toast.success('Company created');
       }
       setShowModal(false);

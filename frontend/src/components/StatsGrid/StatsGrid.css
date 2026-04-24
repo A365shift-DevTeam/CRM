@@ -34,7 +34,19 @@
   box-shadow: var(--shadow-lift, 0 8px 24px rgba(0,0,0,0.10));
 }
 
+.sg-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, var(--card-color, #007AFF) 0%, transparent 60%);
+  opacity: 0.08;
+  pointer-events: none;
+  z-index: 0;
+}
+
 .sg-card-inner {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 14px;
