@@ -42,7 +42,7 @@ export default function AlertSidebar({ alerts = [], onClose, getAlertCategory })
               const level = isCritical ? 'critical' : isWarning ? 'warning' : 'info';
               const category = getAlertCategory ? getAlertCategory(alert) : { label: 'General', className: 'bg-slate-100 text-slate-700' };
               return (
-                <div key={alert.id || `${alert.title}-${i}`} className={`dash-alert-card ${level}`}>
+                <div key={alert.id || `${alert.title}-${i}`} className={`dash-sidebar-alert-card ${level}`}>
                   <div className="dash-alert-card-head">
                     <span className={`dash-alert-badge ${level}`}>
                       {isCritical ? 'Critical' : isWarning ? 'Warning' : 'Info'}

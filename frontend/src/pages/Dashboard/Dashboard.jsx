@@ -289,7 +289,7 @@ function MetricCard({ menuCard, health, cardIndex }) {
           </div>
         </div>
 
-        <button 
+        <button
           onClick={() => {
             if (menuCard.to) navigate(menuCard.to);
           }}
@@ -553,23 +553,23 @@ export default function Dashboard() {
 
   /* ── Monthly Chart Data ── */
   const monthlyData = useMemo(() => {
-    const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const now = new Date();
     const months = Array.from({ length: 6 }, (_, i) => {
       const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
-      return { label: names[d.getMonth()], key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}`, income: 0, expense: 0 };
+      return { label: names[d.getMonth()], key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, income: 0, expense: 0 };
     });
     incomes.forEach((inc) => {
       if (!inc.date) return;
       const d = new Date(inc.date);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}`;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       const m = months.find((x) => x.key === key);
       if (m) m.income += Number(inc.amount) || 0;
     });
     expenses.forEach((exp) => {
       if (!exp.date) return;
       const d = new Date(exp.date);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}`;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       const m = months.find((x) => x.key === key);
       if (m) m.expense += Number(exp.amount) || 0;
     });
@@ -600,7 +600,7 @@ export default function Dashboard() {
   const pendingTasks = useMemo(() =>
     tasks.filter((t) => (t.values?.status || t.status || '') !== 'Completed')
       .sort((a, b) => (b.id || 0) - (a.id || 0)).slice(0, 5),
-  [tasks]);
+    [tasks]);
 
   /* ── Module Health Insights ── */
   const moduleHealth = useMemo(() => {
@@ -923,28 +923,30 @@ export default function Dashboard() {
             </p>
           </div>
 
-          {/* ── AI Alert Banner ── */}
+          {/* ── AI Alert Banner (Card Style) ── */}
           {activeAlert && (
-            <motion.div
-              key={activeAlertIndex}
-              className="dash-alert-banner w-full lg:w-auto lg:max-w-[850px] flex-1"
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35 }}
-            >
-              <div className="dash-alert-icon shrink-0">
-                <Lightbulb size={14} />
+            <div className="dash-alert-card w-full lg:w-auto lg:max-w-[450px] flex-1">
+              <div className="dash-alert-card-header">
+                <span className="dash-alert-label">AI INSIGHT</span>
+                <button className="dash-alert-viewall" onClick={() => setIsAlertSidebarOpen(true)}>
+                  View All <ChevronRight size={12} />
+                </button>
               </div>
-              <div className="dash-alert-content min-w-0">
-                <span className="dash-alert-label shrink-0">AI Insight</span>
-                <span className="dash-alert-message truncate">
-                  {activeAlert.title || activeAlert.message || 'Pipeline and operations are stable.'}
+              <motion.div
+                key={activeAlertIndex}
+                className="dash-alert-card-body"
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35 }}
+              >
+                <span className="dash-alert-title truncate">
+                  {activeAlert.title || 'System Notice'}
                 </span>
-              </div>
-              <button className="dash-alert-viewall shrink-0" onClick={() => setIsAlertSidebarOpen(true)}>
-                View All <ChevronRight size={12} />
-              </button>
-            </motion.div>
+                <span className="dash-alert-message truncate">
+                  {activeAlert.message || 'Pipeline and operations are stable.'}
+                </span>
+              </motion.div>
+            </div>
           )}
         </div>
 
