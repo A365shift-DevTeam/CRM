@@ -17,14 +17,24 @@ export default function StatsGrid({ stats = [] }) {
     return presets.includes(color) ? color : null
   }
 
+  const getCardHex = (color) => {
+    const map = {
+      blue: '#007AFF', green: '#34C759', orange: '#FF9500', 
+      purple: '#AF52DE', red: '#FF3B30', teal: '#5AC8FA', 
+      amber: '#FFCC00', indigo: '#5856D6'
+    }
+    return map[color] || color || '#007AFF'
+  }
+
   return (
     <div className="sg-grid">
       {stats.map((stat, i) => {
         const colorClass = getColorClass(stat.color)
         const customBg = !colorClass && stat.color ? stat.color : undefined
+        const cardHex = getCardHex(stat.color)
 
         return (
-          <div key={i} className="sg-card">
+          <div key={i} className="sg-card" style={{ '--card-color': cardHex, '--sg-accent': cardHex }}>
             <div className="sg-card-inner">
               <div
                 className={`sg-icon-wrapper ${colorClass || ''}`}
