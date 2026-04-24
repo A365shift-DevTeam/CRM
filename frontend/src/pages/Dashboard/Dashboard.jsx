@@ -20,7 +20,7 @@ import {
   Diamond, TrendingUp, Truck,
   Receipt, Scale, BarChart3,
   UserCog, Shield, Bot, Plus,
-  MoreHorizontal,
+  Link2,
 } from 'lucide-react';
 import './Dashboard.css';
 
@@ -28,9 +28,9 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'Acquisition',
     to: '/contact',
-    gradient: 'from-sky-500 to-blue-600',
-    accentBg: 'bg-sky-50',
-    accentText: 'text-sky-600',
+    gradient: 'from-blue-500 to-indigo-600',
+    accentBg: 'bg-blue-50',
+    accentText: 'text-blue-600',
     healthKey: 'acquisition',
     icon: Diamond,
     items: [
@@ -42,9 +42,9 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'Sales',
     to: '/sales',
-    gradient: 'from-amber-400 to-orange-500',
-    accentBg: 'bg-orange-50',
-    accentText: 'text-orange-600',
+    gradient: 'from-emerald-500 to-green-600',
+    accentBg: 'bg-emerald-50',
+    accentText: 'text-emerald-600',
     healthKey: 'sales',
     icon: TrendingUp,
     items: [
@@ -58,7 +58,7 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'Delivery',
     to: '/projects',
-    gradient: 'from-emerald-400 to-green-500',
+    gradient: 'from-emerald-500 to-green-600',
     accentBg: 'bg-emerald-50',
     accentText: 'text-emerald-600',
     healthKey: 'delivery',
@@ -73,9 +73,9 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'FinOps',
     to: '/finance',
-    gradient: 'from-rose-400 to-red-500',
-    accentBg: 'bg-rose-50',
-    accentText: 'text-rose-600',
+    gradient: 'from-orange-400 to-amber-500',
+    accentBg: 'bg-orange-50',
+    accentText: 'text-orange-600',
     healthKey: 'finops',
     icon: Receipt,
     items: [
@@ -89,9 +89,9 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'Legal',
     to: '/legal',
-    gradient: 'from-violet-400 to-indigo-500',
-    accentBg: 'bg-violet-50',
-    accentText: 'text-violet-600',
+    gradient: 'from-orange-400 to-amber-500',
+    accentBg: 'bg-orange-50',
+    accentText: 'text-orange-600',
     healthKey: 'legal',
     icon: Scale,
     items: [
@@ -104,9 +104,9 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'Intelligence',
     to: '/reports',
-    gradient: 'from-cyan-400 to-sky-500',
-    accentBg: 'bg-cyan-50',
-    accentText: 'text-cyan-600',
+    gradient: 'from-sky-400 to-blue-500',
+    accentBg: 'bg-sky-50',
+    accentText: 'text-sky-600',
     healthKey: 'intelligence',
     icon: BarChart3,
     items: [
@@ -118,9 +118,9 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'People',
     to: '/hr',
-    gradient: 'from-slate-400 to-slate-600',
-    accentBg: 'bg-slate-100',
-    accentText: 'text-slate-600',
+    gradient: 'from-blue-500 to-indigo-600',
+    accentBg: 'bg-blue-50',
+    accentText: 'text-blue-600',
     healthKey: 'people',
     icon: UserCog,
     items: [
@@ -132,9 +132,9 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'Admin',
     to: '/admin',
-    gradient: 'from-fuchsia-400 to-pink-500',
-    accentBg: 'bg-fuchsia-50',
-    accentText: 'text-fuchsia-600',
+    gradient: 'from-blue-500 to-indigo-600',
+    accentBg: 'bg-blue-50',
+    accentText: 'text-blue-600',
     healthKey: 'admin',
     icon: Shield,
     items: [
@@ -146,9 +146,9 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'AI Hub',
     to: '/ai-agents',
-    gradient: 'from-teal-400 to-emerald-500',
-    accentBg: 'bg-teal-50',
-    accentText: 'text-teal-600',
+    gradient: 'from-sky-400 to-blue-500',
+    accentBg: 'bg-sky-50',
+    accentText: 'text-sky-600',
     healthKey: 'ai',
     icon: Bot,
     items: [
@@ -294,7 +294,7 @@ function MetricCard({ menuCard, health, cardIndex }) {
           }}
           className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-400 transition hover:bg-slate-200 hover:text-slate-700"
         >
-          <MoreHorizontal size={16} />
+          <Link2 size={16} />
         </button>
       </div>
 
