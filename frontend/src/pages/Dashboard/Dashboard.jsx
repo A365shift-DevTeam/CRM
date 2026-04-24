@@ -22,17 +22,18 @@ import {
   UserCog, Shield, Bot, Plus,
   Link2,
 } from 'lucide-react';
+import { FaAddressCard, FaBusinessTime } from 'react-icons/fa';
 import './Dashboard.css';
 
 const DASHBOARD_MENU_CARDS = [
   {
     title: 'Acquisition',
     to: '/contact',
-    gradient: 'from-blue-500 to-indigo-600',
+    gradient: 'from-[#46e5be] to-[#3b82f6]',
     accentBg: 'bg-blue-50',
     accentText: 'text-blue-600',
     healthKey: 'acquisition',
-    icon: Diamond,
+    icon: FaAddressCard,
     items: [
       { label: 'Company', to: '/company' },
       { label: 'Contacts', to: '/contact' },
@@ -42,7 +43,7 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'Sales',
     to: '/sales',
-    gradient: 'from-emerald-500 to-green-600',
+    gradient: 'from-[#63d18c] to-[#10b981]',
     accentBg: 'bg-emerald-50',
     accentText: 'text-emerald-600',
     healthKey: 'sales',
@@ -58,11 +59,11 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'Delivery',
     to: '/projects',
-    gradient: 'from-emerald-500 to-green-600',
+    gradient: 'from-[#63d18c] to-[#10b981]',
     accentBg: 'bg-emerald-50',
     accentText: 'text-emerald-600',
     healthKey: 'delivery',
-    icon: Truck,
+    icon: FaBusinessTime,
     items: [
       { label: 'Projects', to: '/projects' },
       { label: 'Tasks', to: '/todolist' },
@@ -73,7 +74,7 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'FinOps',
     to: '/finance',
-    gradient: 'from-orange-400 to-amber-500',
+    gradient: 'from-[#e16b8d] to-[#e1527a]',
     accentBg: 'bg-orange-50',
     accentText: 'text-orange-600',
     healthKey: 'finops',
@@ -89,7 +90,7 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'Legal',
     to: '/legal',
-    gradient: 'from-orange-400 to-amber-500',
+    gradient: 'from-[#e16b8d] to-[#e1527a]',
     accentBg: 'bg-orange-50',
     accentText: 'text-orange-600',
     healthKey: 'legal',
@@ -104,7 +105,7 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'Intelligence',
     to: '/reports',
-    gradient: 'from-sky-400 to-blue-500',
+    gradient: 'from-[#71cd84] to-[#38bdf8]',
     accentBg: 'bg-sky-50',
     accentText: 'text-sky-600',
     healthKey: 'intelligence',
@@ -118,7 +119,7 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'People',
     to: '/hr',
-    gradient: 'from-blue-500 to-indigo-600',
+    gradient: 'from-[#46e5be] to-[#3b82f6]',
     accentBg: 'bg-blue-50',
     accentText: 'text-blue-600',
     healthKey: 'people',
@@ -132,7 +133,7 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'Admin',
     to: '/admin',
-    gradient: 'from-blue-500 to-indigo-600',
+    gradient: 'from-[#46e5be] to-[#3b82f6]',
     accentBg: 'bg-blue-50',
     accentText: 'text-blue-600',
     healthKey: 'admin',
@@ -146,7 +147,7 @@ const DASHBOARD_MENU_CARDS = [
   {
     title: 'AI Hub',
     to: '/ai-agents',
-    gradient: 'from-sky-400 to-blue-500',
+    gradient: 'from-[#71cd84] to-[#38bdf8]',
     accentBg: 'bg-sky-50',
     accentText: 'text-sky-600',
     healthKey: 'ai',
@@ -748,7 +749,7 @@ export default function Dashboard() {
     const cardDetails = {
       acquisition: {
         subtitle: `${companies.length} companies | ${contacts.length} contacts | ${leads.length} leads`,
-        metricLabel: 'CRM coverage',
+        metricLabel: 'Business contacts',
         statText: `${companies.length + contacts.length + leads.length} live`,
         statMeta: 'records tracked',
         items: [

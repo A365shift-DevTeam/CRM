@@ -265,7 +265,8 @@
   backdrop-filter: blur(20px) saturate(1.15);
   transition: transform 0.28s cubic-bezier(.22, .68, 0, 1.05), box-shadow 0.28s ease;
   overflow: hidden;
-  --menu-accent: #10B981; /* Emerald Green */
+  --menu-accent: #10B981;
+  /* Emerald Green */
 }
 
 .dash-alert-card:hover {

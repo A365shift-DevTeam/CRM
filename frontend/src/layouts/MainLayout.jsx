@@ -95,38 +95,38 @@ export default function MainLayout() {
     {
       title: 'CRM',
       items: [
-        { path: '/company',  icon: <FaUserGroup size={14} />,   label: 'Company',   permission: 'contacts.view' },
-        { path: '/contact',  icon: <FaUserGroup size={14} />,   label: 'Contacts',  permission: 'contacts.view' },
-        { path: '/leads',    icon: <FaUserGroup size={14} />,   label: 'Leads',     permission: 'sales.view' },
-        
-       
-       
+        { path: '/company', icon: <FaUserGroup size={14} />, label: 'Company', permission: 'contacts.view' },
+        { path: '/contact', icon: <FaUserGroup size={14} />, label: 'Contacts', permission: 'contacts.view' },
+        { path: '/leads', icon: <FaUserGroup size={14} />, label: 'Leads', permission: 'sales.view' },
+
+
+
       ],
     },
     {
       title: 'Execution',
       items: [
-         { path: '/sales',    icon: <FaChartColumn size={14} />, label: 'Sales',     permission: 'sales.view' },
-        { path: '/projects',  icon: <FaChartColumn size={14} />, label: 'Projects',  permission: 'timesheet.view' },
-        { path: '/timesheet', icon: <FaClock size={14} />,       label: 'Timesheet', permission: 'timesheet.view' },
-        { path: '/todolist',  icon: <FaListCheck size={14} />,   label: 'To-Do',     permission: 'todolist.view' },
+        { path: '/sales', icon: <FaChartColumn size={14} />, label: 'Sales', permission: 'sales.view' },
+        { path: '/projects', icon: <FaChartColumn size={14} />, label: 'Projects', permission: 'timesheet.view' },
+        { path: '/timesheet', icon: <FaClock size={14} />, label: 'Timesheet', permission: 'timesheet.view' },
+        { path: '/todolist', icon: <FaListCheck size={14} />, label: 'To-Do', permission: 'todolist.view' },
       ],
     },
     {
       title: 'Operations',
       items: [
-        { path: '/finance',   icon: <FaMoneyBillWave size={14} />, label: 'Finance',      permission: 'finance.view' },
-        { path: '/invoice',   icon: <FaFileInvoice size={14} />,   label: 'Deal Finance', permission: 'invoice.view' },
-        { path: '/legal',     icon: <FaFileInvoice size={14} />,   label: 'Legal',        permission: 'invoice.view' },
-        { path: '/documents', icon: <FaFileInvoice size={14} />,   label: 'Documents',    permission: 'dashboard.view' },
-        { path: '/calendar',  icon: <FaHouse size={14} />,         label: 'Calendar',  permission: 'dashboard.view' },
-        { path: '/tickets',  icon: <FaListCheck size={14} />,   label: 'Tickets',   permission: 'dashboard.view' },
+        { path: '/finance', icon: <FaMoneyBillWave size={14} />, label: 'Finance', permission: 'finance.view' },
+        { path: '/invoice', icon: <FaFileInvoice size={14} />, label: 'Deal Finance', permission: 'invoice.view' },
+        { path: '/legal', icon: <FaFileInvoice size={14} />, label: 'Legal', permission: 'invoice.view' },
+        { path: '/documents', icon: <FaFileInvoice size={14} />, label: 'Documents', permission: 'dashboard.view' },
+        { path: '/calendar', icon: <FaHouse size={14} />, label: 'Calendar', permission: 'dashboard.view' },
+        { path: '/tickets', icon: <FaListCheck size={14} />, label: 'Tickets', permission: 'dashboard.view' },
       ],
     },
     {
       title: 'Reports',
       items: [
-        { path: '/reports',   icon: <FaChartColumn size={14} />,   label: 'Reports',   permission: 'dashboard.view' },
+        { path: '/reports', icon: <FaChartColumn size={14} />, label: 'Reports', permission: 'dashboard.view' },
       ],
     },
     {
@@ -336,14 +336,14 @@ export default function MainLayout() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '8px 0 4px', padding: '0 4px' }}>
             <span style={{ fontSize: '10px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}></span>
             <button
-               onClick={handleToggleAll}
-               style={{
-                 background: 'none', border: 'none', color: themeColor,
-                 fontSize: '10px', fontWeight: 700, cursor: 'pointer',
-                 fontFamily: 'DM Sans, sans-serif'
-               }}
+              onClick={handleToggleAll}
+              style={{
+                background: 'none', border: 'none', color: themeColor,
+                fontSize: '10px', fontWeight: 700, cursor: 'pointer',
+                fontFamily: 'DM Sans, sans-serif'
+              }}
             >
-               {allExpanded ? 'View Less' : 'View All'}
+              {allExpanded ? 'View Less' : 'View All'}
             </button>
           </div>
 
@@ -600,7 +600,7 @@ export default function MainLayout() {
 
             {/* Right side actions */}
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-              
+
               {/* Added Home & Notifications to Top Header Bar */}
               <div className="dash-header-nav" style={{ marginRight: '10px' }}>
                 <button className="dash-nav-pill active" style={{ padding: '6px 16px', fontSize: '13px' }} onClick={() => navigate('/')}>Home</button>
@@ -614,7 +614,7 @@ export default function MainLayout() {
 
           {/* ── Scrollable Content ── */}
           <div ref={contentRef} style={{ flexGrow: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-            <Outlet context={{ setIsAlertSidebarOpen, setShowPremiumInbox }} />
+            <Outlet context={{ setIsAlertSidebarOpen }} />
           </div>
         </div>
       </div>
@@ -629,9 +629,9 @@ export default function MainLayout() {
       )}
 
       {/* ── Premium Notification Inbox ── */}
-      <NotificationInboxModal 
-        show={showPremiumInbox} 
-        onHide={() => setShowPremiumInbox(false)} 
+      <NotificationInboxModal
+        show={showPremiumInbox}
+        onHide={() => setShowPremiumInbox(false)}
         alerts={alerts}
       />
     </div>
