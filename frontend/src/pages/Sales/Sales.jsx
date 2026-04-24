@@ -1552,6 +1552,9 @@ function Sales() {
                 show={showAuditModal}
                 onHide={() => { setShowAuditModal(false); setAuditProject(null); }}
                 project={auditProject}
+                deliveryStages={deliveryStages}
+                financeStages={financeStages}
+                legalStages={legalStages}
             />
 
             {/* Won → Invoice Dialog */}
