@@ -8,7 +8,6 @@ import {
   FaBrain, FaShieldHalved, FaArrowUpFromBracket, FaChevronDown, FaChevronUp,
   FaGear, FaCircleInfo
 } from 'react-icons/fa6';
-import { exportPageToExcel } from '../utils/exportPageToExcel';
 import { notificationService } from '../services/notificationService';
 import { projectService } from '../services/api';
 import { contactService } from '../services/contactService';
@@ -195,10 +194,6 @@ export default function MainLayout() {
   const activePageAlert = pageAlerts.length > 0 ? pageAlerts[activePageAlertIndex % pageAlerts.length] : null;
   const activePageAlertMessage = activePageAlert?.title || activePageAlert?.message;
 
-  const handleExportCurrentPage = () => {
-    exportPageToExcel({ pageName: currentPageLabel, rootElement: contentRef.current || document.body });
-  };
-
   const userInitials = (currentUser?.displayName || currentUser?.email || '?')
     .split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 
@@ -367,8 +362,8 @@ export default function MainLayout() {
                     width: '100%', background: 'none', border: 'none',
                     padding: '8px 12px 5px',
                     color: '#94A3B8',
-                    fontWeight: 800,
-                    fontSize: '9.5px',
+                    fontWeight: 400,
+                    fontSize: '13px',
                     textTransform: 'uppercase',
                     letterSpacing: '0.08em',
                     cursor: 'pointer',
@@ -614,29 +609,6 @@ export default function MainLayout() {
                   {criticalAlertsCount > 0 && <span className="dash-nav-badge">{criticalAlertsCount}</span>}
                 </button>
               </div>
-              <button
-                onClick={handleExportCurrentPage}
-                style={{
-                  background: 'rgba(67, 97, 238, 0.07)',
-                  border: '1px solid rgba(67, 97, 238, 0.16)',
-                  color: themeColor,
-                  borderRadius: '9px',
-                  padding: '7px 14px',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                  cursor: 'pointer',
-                  fontFamily: 'DM Sans, sans-serif',
-                  transition: 'all 0.15s',
-                  whiteSpace: 'nowrap',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = hexToRgba(themeColor, 0.12); }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(67, 97, 238, 0.07)'; }}
-                title="Export current page"
-              >
-                <FaArrowUpFromBracket size={11} />
-                Export
-              </button>
             </div>
           </div>
 

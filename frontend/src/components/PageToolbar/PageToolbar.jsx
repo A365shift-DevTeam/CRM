@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Dropdown, Form } from 'react-bootstrap'
 import { Filter, ArrowUpDown, Layers, SlidersHorizontal, Settings, Plus, Search } from 'lucide-react'
+import { FaFileExcel } from 'react-icons/fa6'
 import { useTheme } from '../../context/ThemeContext'
+import { exportPageToExcel } from '../../utils/exportPageToExcel'
 import ColumnFilterPanel from '../ColumnFilterPanel/ColumnFilterPanel'
 import './PageToolbar.css'
 
@@ -226,6 +228,14 @@ export default function PageToolbar({
                 )}
               </button>
             )}
+
+            <button
+              className="pt-icon-btn"
+              title="Export to Excel"
+              onClick={() => exportPageToExcel({ pageName: title || 'Export' })}
+            >
+              <FaFileExcel size={16} />
+            </button>
 
             {/* Legacy column manager button — shown only if no columns[] */}
             {!showPanelBtn && onManageColumns && (
