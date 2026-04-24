@@ -2,9 +2,10 @@ using A365ShiftTracker.Domain.Common;
 
 namespace A365ShiftTracker.Domain.Entities;
 
-public class Ticket : AuditableEntity, IOwnedByUser
+public class Ticket : AuditableEntity, IOwnedByUser, IOrgScoped
 {
     public int UserId { get; set; }
+    public int OrgId { get; set; }
     public string TicketNumber { get; set; } = string.Empty;    // "TKT-2026-0001"
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }

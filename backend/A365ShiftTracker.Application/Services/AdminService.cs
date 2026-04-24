@@ -332,6 +332,9 @@ public class AdminService : IAdminService
             .ToList(),
         TwoFactorRequired = user.TwoFactorRequired,
         TwoFactorMethod = user.TwoFactorMethod,
-        IsTotpEnabled = user.IsTotpEnabled
+        IsTotpEnabled = user.IsTotpEnabled,
+        OrgId = user.OrgId,
+        Plan = user.Plan ?? "Free",
+        PlanExpiresAt = user.PlanExpiresAt
     };
 }

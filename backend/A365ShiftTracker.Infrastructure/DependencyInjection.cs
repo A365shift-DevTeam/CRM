@@ -69,6 +69,7 @@ public static class DependencyInjection
         services.AddScoped<ILegalAgreementService, LegalAgreementService>();
         services.AddScoped<IInvoiceService, InvoiceService>();
         services.AddScoped<ITicketService, TicketService>();
+        services.AddScoped<IStorageLimitService, StorageLimitService>();
         services.AddScoped<IEmailService, SmtpEmailService>();
         services.AddHttpClient("Claude");
         services.AddScoped<TicketAiService>();

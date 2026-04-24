@@ -13,10 +13,12 @@ namespace A365ShiftTracker.API.Controllers;
 public class InvoicesController : BaseApiController
 {
     private readonly IInvoiceService _service;
+    private readonly IStorageLimitService _limits;
 
-    public InvoicesController(IInvoiceService service)
+    public InvoicesController(IInvoiceService service, IStorageLimitService limits)
     {
         _service = service;
+        _limits = limits;
     }
 
     [HttpGet]
@@ -41,6 +43,9 @@ public class InvoicesController : BaseApiController
     public async Task<IActionResult> Create([FromBody] CreateInvoiceRequest req)
     {
         var userId = GetCurrentUserId();
+        var (allowed, current, limit) = await _limits.CheckLimitAsync(userId, "Invoices");
+        if (!allowed)
+            return StatusCode(402, ApiResponse<object>.Fail($"Invoice limit reached ({current}/{limit}). Please upgrade your plan."));
         var result = await _service.CreateAsync(req, userId);
         return CreatedAtAction(nameof(GetById), new { id = result.Id },
             ApiResponse<InvoiceDto>.Ok(result, "Invoice created"));

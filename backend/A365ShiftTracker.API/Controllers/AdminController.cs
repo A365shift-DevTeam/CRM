@@ -79,6 +79,21 @@ public class AdminController : ControllerBase
         return Ok(ApiResponse<object>.Ok(null!, "Password reset successfully."));
     }
 
+    [HttpPut("users/{userId}/plan")]
+    public async Task<ActionResult<ApiResponse<bool>>> UpdateUserPlan(int userId, [FromBody] UpdateUserPlanRequest request)
+    {
+        var user = await _uow.Users.GetByIdAsync(userId)
+            ?? throw new KeyNotFoundException($"User {userId} not found.");
+
+        user.Plan = request.Plan;
+        user.PlanExpiresAt = request.PlanExpiresAt;
+        if (request.Plan != "Free") user.PlanPurchasedAt = DateTime.UtcNow;
+
+        await _uow.Users.UpdateAsync(user);
+        await _uow.SaveChangesAsync();
+        return Ok(ApiResponse<bool>.Ok(true, "User plan updated."));
+    }
+
     // ─── Roles ─────────────────────────────────────────────────
 
     [HttpGet("roles")]

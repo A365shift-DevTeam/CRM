@@ -22,4 +22,13 @@ public abstract class BaseApiController : ControllerBase
 
         return userId;
     }
+
+    protected int? GetCurrentOrgId()
+    {
+        var claim = User.FindFirst("org_id");
+        return claim != null && int.TryParse(claim.Value, out var orgId) ? orgId : null;
+    }
+
+    protected string GetCurrentPlan()
+        => User.FindFirst("plan")?.Value ?? "Free";
 }

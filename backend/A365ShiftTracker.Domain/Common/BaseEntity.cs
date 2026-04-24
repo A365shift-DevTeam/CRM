@@ -26,3 +26,11 @@ public interface IOwnedByUser
 {
     int UserId { get; set; }
 }
+
+/// <summary>
+/// Interface for entities scoped to an organization (multi-tenant data isolation).
+/// </summary>
+public interface IOrgScoped
+{
+    int OrgId { get; set; }
+}

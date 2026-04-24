@@ -51,6 +51,15 @@ async function request(endpoint, options = {}) {
         throw new Error(`Request failed (${res.status})`);
     }
 
+    // Handle 402 — storage limit exceeded, fire global event for UpgradeModal
+    if (res.status === 402) {
+        window.dispatchEvent(new CustomEvent('storage-limit-exceeded', { detail: json }));
+        const err = new Error(json.message || 'Storage limit reached. Please upgrade your plan.');
+        err.isStorageLimit = true;
+        err.limitData = json.data;
+        throw err;
+    }
+
     if (!res.ok || json.success === false) {
         let msg = json.message;
         if (!msg && json.errors) {

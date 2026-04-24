@@ -28,6 +28,11 @@ public class User : BaseEntity
     public int? OrgId { get; set; }
     public Organization? Organization { get; set; }
 
+    // Plan / billing
+    public string Plan { get; set; } = "Free";
+    public DateTime? PlanPurchasedAt { get; set; }
+    public DateTime? PlanExpiresAt { get; set; }
+
     // Navigation
     public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 }

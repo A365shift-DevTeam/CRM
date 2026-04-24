@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FaShieldHalved, FaShield, FaUsers, FaUserGear, FaKey, FaToggleOn, FaToggleOff, FaPen, FaPlus, FaTrash, FaLock, FaUserPlus, FaMobileScreen, FaTicket, FaReply } from 'react-icons/fa6';
-import { Send, Lock } from 'lucide-react';
+import { Send, Lock, Zap, Crown, CreditCard, Check, X } from 'lucide-react';
 import { adminService } from '../../services/adminService';
+import { planService } from '../../services/planService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast/ToastContext';
 import './Admin.css';
@@ -29,6 +30,10 @@ export default function Admin() {
     // Modal state
     const [modalType, setModalType] = useState(null);
     const [modalData, setModalData] = useState(null);
+
+    // Plan management state
+    const [planEdit, setPlanEdit] = useState(null); // { userId, plan, planExpiresAt }
+    const [planSaving, setPlanSaving] = useState(false);
 
     const loadTickets = useCallback(async (page = 1) => {
         setTicketsLoading(true);
@@ -264,6 +269,9 @@ export default function Admin() {
                     </button>
                     <button className={`admin-tab ${activeTab === 'tickets' ? 'active' : ''}`} onClick={() => setActiveTab('tickets')}>
                         <FaTicket size={14} /> Support Tickets {ticketTotal > 0 && <span className="tab-count">{ticketTotal}</span>}
+                    </button>
+                    <button className={`admin-tab ${activeTab === 'plans' ? 'active' : ''}`} onClick={() => setActiveTab('plans')}>
+                        <Zap size={14} /> Plans
                     </button>
                 </div>
 
@@ -535,6 +543,123 @@ export default function Admin() {
                         )}
                         </>
                     )}
+                </div>
+            )}
+
+            {/* ─── Plans Tab ─────────────────────────────────────── */}
+            {activeTab === 'plans' && (
+                <div className="admin-card">
+                    <table className="admin-table">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Email</th>
+                                <th>Current Plan</th>
+                                <th>Expires</th>
+                                <th style={{ textAlign: 'center' }}>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {users.length === 0 ? (
+                                <tr><td colSpan={5} className="text-center py-4 text-muted">No users found.</td></tr>
+                            ) : users.map(user => (
+                                <React.Fragment key={user.id}>
+                                    <tr>
+                                        <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{user.displayName || user.email}</td>
+                                        <td style={{ fontSize: 12.5, color: '#64748b' }}>{user.email}</td>
+                                        <td>
+                                            <span style={{
+                                                display: 'inline-flex', alignItems: 'center', gap: 5,
+                                                padding: '3px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700,
+                                                background: user.plan === 'Pro' ? 'rgba(245,158,11,0.12)' : user.plan === 'Basic' ? 'rgba(67,97,238,0.1)' : 'var(--bg-primary)',
+                                                color: user.plan === 'Pro' ? '#f59e0b' : user.plan === 'Basic' ? '#4361EE' : 'var(--text-muted)',
+                                                border: user.plan === 'Pro' ? '1px solid rgba(245,158,11,0.3)' : user.plan === 'Basic' ? '1px solid rgba(67,97,238,0.25)' : '1px solid var(--border-color)',
+                                            }}>
+                                                {user.plan === 'Pro' ? <Crown size={11} /> : user.plan === 'Basic' ? <Zap size={11} /> : <CreditCard size={11} />}
+                                                {user.plan || 'Free'}
+                                            </span>
+                                        </td>
+                                        <td style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
+                                            {user.planExpiresAt ? new Date(user.planExpiresAt).toLocaleDateString('en-IN') : '—'}
+                                        </td>
+                                        <td style={{ textAlign: 'center' }}>
+                                            <button
+                                                onClick={() => setPlanEdit({ userId: user.id, plan: user.plan || 'Free', planExpiresAt: user.planExpiresAt || '' })}
+                                                style={{
+                                                    background: 'var(--bg-primary)', border: '1px solid var(--border-color)',
+                                                    borderRadius: 7, padding: '5px 12px', fontSize: 12, fontWeight: 600,
+                                                    cursor: 'pointer', color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: 4,
+                                                }}
+                                            >
+                                                <FaPen size={10} /> Edit Plan
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {planEdit?.userId === user.id && (
+                                        <tr>
+                                            <td colSpan={5} style={{ padding: '12px 16px', background: 'rgba(67,97,238,0.04)', borderTop: '1px solid var(--border-color)' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                                                    <select
+                                                        value={planEdit.plan}
+                                                        onChange={e => setPlanEdit(p => ({ ...p, plan: e.target.value }))}
+                                                        style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border-color)', fontSize: 13, fontWeight: 600, background: '#fff' }}
+                                                    >
+                                                        <option value="Free">Free</option>
+                                                        <option value="Basic">Basic</option>
+                                                        <option value="Pro">Pro</option>
+                                                    </select>
+                                                    <input
+                                                        type="date"
+                                                        value={planEdit.planExpiresAt ? planEdit.planExpiresAt.slice(0, 10) : ''}
+                                                        onChange={e => setPlanEdit(p => ({ ...p, planExpiresAt: e.target.value }))}
+                                                        style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border-color)', fontSize: 13, background: '#fff' }}
+                                                        placeholder="Expiry date (optional)"
+                                                    />
+                                                    <button
+                                                        disabled={planSaving}
+                                                        onClick={async () => {
+                                                            setPlanSaving(true);
+                                                            try {
+                                                                await planService.updateUserPlan(planEdit.userId, {
+                                                                    plan: planEdit.plan,
+                                                                    planExpiresAt: planEdit.planExpiresAt || null,
+                                                                });
+                                                                toast.success('Plan updated.');
+                                                                setPlanEdit(null);
+                                                                const updated = await adminService.getUsers();
+                                                                setUsers(updated);
+                                                            } catch (e) {
+                                                                toast.error('Failed to update plan.');
+                                                            } finally {
+                                                                setPlanSaving(false);
+                                                            }
+                                                        }}
+                                                        style={{
+                                                            background: 'linear-gradient(135deg, #4361EE, #8B5CF6)', color: '#fff',
+                                                            border: 'none', borderRadius: 8, padding: '7px 16px',
+                                                            fontSize: 13, fontWeight: 700, cursor: planSaving ? 'not-allowed' : 'pointer',
+                                                            display: 'inline-flex', alignItems: 'center', gap: 4, opacity: planSaving ? 0.7 : 1,
+                                                        }}
+                                                    >
+                                                        <Check size={13} /> {planSaving ? 'Saving…' : 'Save'}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setPlanEdit(null)}
+                                                        style={{
+                                                            background: 'transparent', border: '1px solid var(--border-color)',
+                                                            borderRadius: 8, padding: '7px 12px', fontSize: 13, cursor: 'pointer', color: 'var(--text-muted)',
+                                                        }}
+                                                    >
+                                                        <X size={13} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </React.Fragment>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             )}
 

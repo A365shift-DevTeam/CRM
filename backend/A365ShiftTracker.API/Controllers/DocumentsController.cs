@@ -12,8 +12,13 @@ namespace A365ShiftTracker.API.Controllers;
 public class DocumentsController : BaseApiController
 {
     private readonly IDocumentService _service;
+    private readonly IStorageLimitService _limits;
 
-    public DocumentsController(IDocumentService service) => _service = service;
+    public DocumentsController(IDocumentService service, IStorageLimitService limits)
+    {
+        _service = service;
+        _limits = limits;
+    }
 
     [HttpGet]
     public async Task<ActionResult<ApiResponse<IEnumerable<DocumentDto>>>> GetAll()
@@ -35,6 +40,9 @@ public class DocumentsController : BaseApiController
     public async Task<ActionResult<ApiResponse<DocumentDto>>> Create(CreateDocumentRequest request)
     {
         var userId = GetCurrentUserId();
+        var (allowed, current, limit) = await _limits.CheckLimitAsync(userId, "Documents");
+        if (!allowed)
+            return StatusCode(402, ApiResponse<object>.Fail($"Document limit reached ({current}/{limit}). Please upgrade your plan."));
         var result = await _service.CreateAsync(request, userId);
         return Ok(ApiResponse<DocumentDto>.Ok(result, "Document uploaded."));
     }

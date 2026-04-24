@@ -2,9 +2,10 @@ using A365ShiftTracker.Domain.Common;
 
 namespace A365ShiftTracker.Domain.Entities;
 
-public class LegalAgreement : AuditableEntity, IOwnedByUser
+public class LegalAgreement : AuditableEntity, IOwnedByUser, IOrgScoped
 {
     public int UserId { get; set; }
+    public int OrgId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
     public string Status { get; set; } = "Draft";

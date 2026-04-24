@@ -13,8 +13,13 @@ namespace A365ShiftTracker.API.Controllers;
 public class LeadsController : BaseApiController
 {
     private readonly ILeadService _service;
+    private readonly IStorageLimitService _limits;
 
-    public LeadsController(ILeadService service) => _service = service;
+    public LeadsController(ILeadService service, IStorageLimitService limits)
+    {
+        _service = service;
+        _limits = limits;
+    }
 
     [HttpGet]
     public async Task<ActionResult<ApiResponse<PagedResult<LeadDto>>>> GetAll(
@@ -30,6 +35,9 @@ public class LeadsController : BaseApiController
     public async Task<ActionResult<ApiResponse<LeadDto>>> Create(CreateLeadRequest request)
     {
         var userId = GetCurrentUserId();
+        var (allowed, current, limit) = await _limits.CheckLimitAsync(userId, "Leads");
+        if (!allowed)
+            return StatusCode(402, ApiResponse<object>.Fail($"Lead limit reached ({current}/{limit}). Please upgrade your plan."));
         var result = await _service.CreateAsync(request, userId);
         return Ok(ApiResponse<LeadDto>.Ok(result, "Lead created."));
     }

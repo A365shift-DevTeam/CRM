@@ -13,8 +13,13 @@ namespace A365ShiftTracker.API.Controllers;
 public class ContactsController : BaseApiController
 {
     private readonly IContactService _service;
+    private readonly IStorageLimitService _limits;
 
-    public ContactsController(IContactService service) => _service = service;
+    public ContactsController(IContactService service, IStorageLimitService limits)
+    {
+        _service = service;
+        _limits = limits;
+    }
 
     [HttpGet]
     public async Task<ActionResult<ApiResponse<PagedResult<ContactDto>>>> GetAll(
@@ -38,6 +43,9 @@ public class ContactsController : BaseApiController
     public async Task<ActionResult<ApiResponse<ContactDto>>> Create(CreateContactRequest request)
     {
         var userId = GetCurrentUserId();
+        var (allowed, current, limit) = await _limits.CheckLimitAsync(userId, "Contacts");
+        if (!allowed)
+            return StatusCode(402, ApiResponse<object>.Fail($"Contact limit reached ({current}/{limit}). Please upgrade your plan."));
         var result = await _service.CreateAsync(request, userId);
         return Ok(ApiResponse<ContactDto>.Ok(result, "Contact created."));
     }

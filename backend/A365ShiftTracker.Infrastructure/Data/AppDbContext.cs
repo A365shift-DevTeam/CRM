@@ -90,6 +90,7 @@ public class AppDbContext : DbContext
             e.HasMany(u => u.UserRoles).WithOne(ur => ur.User)
                 .HasForeignKey(ur => ur.UserId).OnDelete(DeleteBehavior.Cascade);
             e.Property(u => u.TotpSecret).HasConversion(strConv); // encrypt TOTP secret at rest
+            e.Property(u => u.Plan).HasMaxLength(20).HasDefaultValue("Free");
         });
 
         // ─── Roles ─────────────────────────────────────────
@@ -211,6 +212,7 @@ public class AppDbContext : DbContext
             e.HasIndex(c => c.Status);
             e.HasIndex(c => c.Company);
             e.HasIndex(c => c.UserId);
+            e.HasIndex(c => c.OrgId);
             e.HasIndex(c => new { c.UserId, c.CreatedAt }); // ReportService contact growth queries
             e.Property(c => c.Name).HasConversion(strConv);
             e.Property(c => c.Phone).HasConversion(strConv);
@@ -233,6 +235,7 @@ public class AppDbContext : DbContext
             e.Property(p => p.History).HasColumnType("jsonb");
             e.Property(p => p.Stages).HasColumnType("jsonb");
             e.HasIndex(p => p.UserId);
+            e.HasIndex(p => p.OrgId);
             e.Property(p => p.ClientName).HasConversion(strConv);
             e.Property(p => p.Phone).HasConversion(strConv);
         });
@@ -396,6 +399,7 @@ public class AppDbContext : DbContext
         {
             e.ToTable("documents");
             e.HasIndex(d => d.UserId);
+            e.HasIndex(d => d.OrgId);
             e.HasIndex(d => new { d.EntityType, d.EntityId });
             e.Property(d => d.FileUrl).HasConversion(strConv);
         });
@@ -405,6 +409,7 @@ public class AppDbContext : DbContext
         {
             e.ToTable("companies");
             e.HasIndex(c => c.UserId);
+            e.HasIndex(c => c.OrgId);
             e.HasIndex(c => c.Name);
             e.Property(c => c.Name).HasConversion(strConv);
             e.Property(c => c.Gstin).HasConversion(strConv);
@@ -415,6 +420,7 @@ public class AppDbContext : DbContext
         {
             e.ToTable("leads");
             e.HasIndex(l => l.UserId);
+            e.HasIndex(l => l.OrgId);
             e.HasIndex(l => l.Stage);
             e.Property(l => l.ContactName).HasConversion(strConv);
         });

@@ -33,6 +33,9 @@ export function AuthProvider({ children }) {
             twoFactorRequired: data.twoFactorRequired || false,
             twoFactorMethod: data.twoFactorMethod || 'email',
             totpSetupRequired: data.totpSetupRequired || false,
+            orgId: data.orgId || null,
+            plan: data.plan || 'Free',
+            planExpiresAt: data.planExpiresAt || null,
         };
     }
 

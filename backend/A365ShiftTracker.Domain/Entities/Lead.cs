@@ -2,9 +2,10 @@ using A365ShiftTracker.Domain.Common;
 
 namespace A365ShiftTracker.Domain.Entities;
 
-public class Lead : AuditableEntity, IOwnedByUser
+public class Lead : AuditableEntity, IOwnedByUser, IOrgScoped
 {
     public int UserId { get; set; }
+    public int OrgId { get; set; }
     public int? ContactId { get; set; }
     public string ContactName { get; set; } = string.Empty;
     public string? Company { get; set; }

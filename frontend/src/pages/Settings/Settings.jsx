@@ -1,13 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { apiClient } from '../../services/apiClient';
 import { useAuth } from '../../context/AuthContext';
 import { FaPalette, FaCheck, FaEnvelope, FaMobileScreen, FaTriangleExclamation } from 'react-icons/fa6';
+import { planService } from '../../services/planService';
+import UsageBar from '../../components/UsageBar/UsageBar';
+import UpgradeModal from '../../components/UpgradeModal/UpgradeModal';
+import { Zap, Crown, CreditCard } from 'lucide-react';
 
 const TABS = [
   { id: 'appearance', label: 'Appearance' },
   { id: 'security',   label: 'Security' },
+  { id: 'billing',    label: 'Plan & Billing' },
 ];
 
 export default function Settings() {
@@ -33,6 +38,21 @@ export default function Settings() {
     const [emailOtpEnabled, setEmailOtpEnabled] = useState(
         (currentUser?.twoFactorRequired && currentUser?.twoFactorMethod === 'email' && !currentUser?.isTotpEnabled) || false
     );
+
+    // Billing state
+    const [planUsage, setPlanUsage]         = useState(null);
+    const [planLoading, setPlanLoading]     = useState(false);
+    const [upgradeOpen, setUpgradeOpen]     = useState(false);
+
+    useEffect(() => {
+        if (activeTab === 'billing' && !planUsage) {
+            setPlanLoading(true);
+            planService.getUsage()
+                .then(data => setPlanUsage(data))
+                .catch(() => {})
+                .finally(() => setPlanLoading(false));
+        }
+    }, [activeTab]);
 
     const handleSave = () => {
         if (/^#[0-9A-F]{6}$/i.test(inputColor) || /^#[0-9A-F]{3}$/i.test(inputColor)) {
@@ -368,6 +388,99 @@ export default function Settings() {
                         </div>
 
                     </div>
+                </div>
+            )}
+
+            {activeTab === 'billing' && (
+                <div style={{ padding: '24px 0' }}>
+                    <UpgradeModal isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} limitModule="" />
+
+                    {planLoading ? (
+                        <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Loading plan info…</div>
+                    ) : planUsage ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 560 }}>
+                            {/* Current plan card */}
+                            <div style={{
+                                background: 'var(--bg-card, #fff)',
+                                border: '1px solid var(--border-color, #e1e8f4)',
+                                borderRadius: 16,
+                                padding: '20px 24px',
+                                boxShadow: 'var(--shadow-sm)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                flexWrap: 'wrap', gap: 16,
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <div style={{
+                                        width: 44, height: 44, borderRadius: 12,
+                                        background: planUsage.plan === 'Pro'
+                                            ? 'linear-gradient(135deg, #f59e0b, #ef4444)'
+                                            : planUsage.plan === 'Basic'
+                                            ? 'linear-gradient(135deg, #4361EE, #8B5CF6)'
+                                            : 'var(--bg-primary)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        boxShadow: planUsage.plan !== 'Free' ? '0 4px 12px rgba(67,97,238,0.25)' : 'none',
+                                    }}>
+                                        {planUsage.plan === 'Pro'
+                                            ? <Crown size={20} color="#fff" />
+                                            : planUsage.plan === 'Basic'
+                                            ? <Zap size={20} color="#fff" />
+                                            : <CreditCard size={20} color="var(--text-muted)" />
+                                        }
+                                    </div>
+                                    <div>
+                                        <div style={{ fontFamily: 'var(--font-display, Outfit)', fontWeight: 700, fontSize: 16, color: 'var(--text-primary)' }}>
+                                            {planUsage.plan} Plan
+                                        </div>
+                                        {planUsage.planExpiresAt ? (
+                                            <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
+                                                Expires {new Date(planUsage.planExpiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                            </div>
+                                        ) : (
+                                            <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
+                                                {planUsage.plan === 'Free' ? 'No expiry' : 'Active'}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                {planUsage.plan !== 'Pro' && (
+                                    <button
+                                        onClick={() => setUpgradeOpen(true)}
+                                        style={{
+                                            background: 'linear-gradient(135deg, #4361EE, #8B5CF6)',
+                                            color: '#fff', border: 'none', borderRadius: 10,
+                                            padding: '9px 20px', fontSize: 13.5, fontWeight: 700,
+                                            cursor: 'pointer', fontFamily: 'var(--font-display, Outfit)',
+                                            boxShadow: '0 3px 12px rgba(67,97,238,0.3)',
+                                            transition: 'transform 0.15s, box-shadow 0.15s',
+                                        }}
+                                        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 5px 18px rgba(67,97,238,0.4)'; }}
+                                        onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 3px 12px rgba(67,97,238,0.3)'; }}
+                                    >
+                                        Upgrade Plan
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Usage bars */}
+                            <div style={{
+                                background: 'var(--bg-card, #fff)',
+                                border: '1px solid var(--border-color, #e1e8f4)',
+                                borderRadius: 16, padding: '20px 24px',
+                                boxShadow: 'var(--shadow-sm)',
+                            }}>
+                                <div style={{ fontFamily: 'var(--font-display, Outfit)', fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', marginBottom: 16 }}>
+                                    Usage by Module
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                                    {Object.entries(planUsage.modules || {}).map(([mod, data]) => (
+                                        <UsageBar key={mod} module={mod} current={data.current} limit={data.limit} isUnlimited={data.isUnlimited} />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div style={{ color: 'var(--text-muted)', fontSize: 14 }}>Could not load plan info.</div>
+                    )}
                 </div>
             )}
         </div>

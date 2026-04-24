@@ -48,6 +48,9 @@ public class UserDto
     public bool TwoFactorRequired { get; set; }
     public string TwoFactorMethod { get; set; } = "email";
     public bool IsTotpEnabled { get; set; }
+    public int? OrgId { get; set; }
+    public string Plan { get; set; } = "Free";
+    public DateTime? PlanExpiresAt { get; set; }
 }
 
 public class UpdateUserRolesRequest

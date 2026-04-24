@@ -13,8 +13,13 @@ namespace A365ShiftTracker.API.Controllers;
 public class ProjectsController : BaseApiController
 {
     private readonly IProjectService _service;
+    private readonly IStorageLimitService _limits;
 
-    public ProjectsController(IProjectService service) => _service = service;
+    public ProjectsController(IProjectService service, IStorageLimitService limits)
+    {
+        _service = service;
+        _limits = limits;
+    }
 
     [HttpGet]
     public async Task<ActionResult<ApiResponse<PagedResult<ProjectDto>>>> GetAll(
@@ -39,6 +44,9 @@ public class ProjectsController : BaseApiController
     public async Task<ActionResult<ApiResponse<ProjectDto>>> Create(CreateProjectRequest request)
     {
         var userId = GetCurrentUserId();
+        var (allowed, current, limit) = await _limits.CheckLimitAsync(userId, "Projects");
+        if (!allowed)
+            return StatusCode(402, ApiResponse<object>.Fail($"Project limit reached ({current}/{limit}). Please upgrade your plan."));
         var result = await _service.CreateAsync(request, userId);
         return CreatedAtAction(nameof(GetById), new { id = result.Id },
             ApiResponse<ProjectDto>.Ok(result, "Project created."));

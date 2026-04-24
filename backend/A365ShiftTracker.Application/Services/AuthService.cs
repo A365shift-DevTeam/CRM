@@ -68,11 +68,14 @@ public class AuthService : IAuthService
             return new AuthResponse
             {
                 Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
-                Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions, user.DisplayName),
+                Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions, user.DisplayName, user.OrgId, user.Plan),
                 Role = roleName, Permissions = permissions,
                 IsTotpEnabled = user.IsTotpEnabled,
                 TwoFactorRequired = user.TwoFactorRequired,
-                TwoFactorMethod = user.TwoFactorMethod
+                TwoFactorMethod = user.TwoFactorMethod,
+                OrgId = user.OrgId,
+                Plan = user.Plan ?? "Free",
+                PlanExpiresAt = user.PlanExpiresAt
             };
         }
         catch
@@ -110,12 +113,15 @@ public class AuthService : IAuthService
                 return new LoginResponse
                 {
                     Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
-                    Token = GenerateJwtToken(user.Id, user.Email, rn, perms, user.DisplayName),
+                    Token = GenerateJwtToken(user.Id, user.Email, rn, perms, user.DisplayName, user.OrgId, user.Plan),
                     Role = rn, Permissions = perms,
                     IsTotpEnabled = false,
                     TwoFactorRequired = user.TwoFactorRequired,
                     TwoFactorMethod = user.TwoFactorMethod,
-                    TotpSetupRequired = true
+                    TotpSetupRequired = true,
+                    OrgId = user.OrgId,
+                    Plan = user.Plan ?? "Free",
+                    PlanExpiresAt = user.PlanExpiresAt
                 };
             }
 
@@ -134,12 +140,15 @@ public class AuthService : IAuthService
         return new LoginResponse
         {
             Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
-            Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions, user.DisplayName),
+            Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions, user.DisplayName, user.OrgId, user.Plan),
             Role = roleName, Permissions = permissions,
             Requires2FA = false,
             IsTotpEnabled = user.IsTotpEnabled,
             TwoFactorRequired = user.TwoFactorRequired,
-            TwoFactorMethod = user.TwoFactorMethod
+            TwoFactorMethod = user.TwoFactorMethod,
+            OrgId = user.OrgId,
+            Plan = user.Plan ?? "Free",
+            PlanExpiresAt = user.PlanExpiresAt
         };
     }
 
@@ -188,11 +197,14 @@ public class AuthService : IAuthService
         return new LoginResponse
         {
             Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
-            Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions, user.DisplayName),
+            Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions, user.DisplayName, user.OrgId, user.Plan),
             Role = roleName, Permissions = permissions,
             IsTotpEnabled = user.IsTotpEnabled,
             TwoFactorRequired = user.TwoFactorRequired,
-            TwoFactorMethod = user.TwoFactorMethod
+            TwoFactorMethod = user.TwoFactorMethod,
+            OrgId = user.OrgId,
+            Plan = user.Plan ?? "Free",
+            PlanExpiresAt = user.PlanExpiresAt
         };
     }
 
@@ -223,11 +235,14 @@ public class AuthService : IAuthService
         return new LoginResponse
         {
             Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
-            Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions, user.DisplayName),
+            Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions, user.DisplayName, user.OrgId, user.Plan),
             Role = roleName, Permissions = permissions,
             IsTotpEnabled = user.IsTotpEnabled,
             TwoFactorRequired = user.TwoFactorRequired,
-            TwoFactorMethod = user.TwoFactorMethod
+            TwoFactorMethod = user.TwoFactorMethod,
+            OrgId = user.OrgId,
+            Plan = user.Plan ?? "Free",
+            PlanExpiresAt = user.PlanExpiresAt
         };
     }
 
@@ -390,9 +405,9 @@ public class AuthService : IAuthService
     // ── Token Helpers ────────────────────────────────────────
 
     public string GenerateJwtToken(int userId, string email)
-        => GenerateJwtToken(userId, email, "User", new List<string>(), null);
+        => GenerateJwtToken(userId, email, "User", new List<string>(), null, null, null);
 
-    public string GenerateJwtToken(int userId, string email, string role, List<string> permissions, string? displayName = null)
+    public string GenerateJwtToken(int userId, string email, string role, List<string> permissions, string? displayName = null, int? orgId = null, string? plan = null)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
         var claims = new List<Claim>
@@ -405,6 +420,10 @@ public class AuthService : IAuthService
         };
         foreach (var perm in permissions)
             claims.Add(new Claim("permission", perm));
+        if (orgId.HasValue)
+            claims.Add(new Claim("org_id", orgId.Value.ToString()));
+        if (!string.IsNullOrEmpty(plan))
+            claims.Add(new Claim("plan", plan));
 
         var token = new JwtSecurityToken(
             issuer: _config["Jwt:Issuer"],

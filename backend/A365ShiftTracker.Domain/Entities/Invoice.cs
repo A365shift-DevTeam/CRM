@@ -2,9 +2,10 @@ using A365ShiftTracker.Domain.Common;
 
 namespace A365ShiftTracker.Domain.Entities;
 
-public class Invoice : AuditableEntity, IOwnedByUser
+public class Invoice : AuditableEntity, IOwnedByUser, IOrgScoped
 {
     public int UserId { get; set; }
+    public int OrgId { get; set; }
     public string InvoiceNumber { get; set; } = string.Empty;
     public int ProjectFinanceId { get; set; }
     public int MilestoneId { get; set; }

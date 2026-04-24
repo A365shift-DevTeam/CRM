@@ -9,6 +9,7 @@ import ForgotPassword from './pages/Auth/ForgotPassword';
 import ResetPassword from './pages/Auth/ResetPassword';
 import { ThemeProvider } from './context/ThemeContext';
 import ErrorBoundary from './components/ErrorBoundary';
+import StorageLimitHandler from './components/StorageLimitHandler/StorageLimitHandler';
 import './index.css';
 
 const Dashboard      = lazy(() => import('./pages/Dashboard/Dashboard'));
@@ -31,6 +32,7 @@ const Calendar       = lazy(() => import('./pages/Calendar/Calendar'));
 const Reports        = lazy(() => import('./pages/Reports/Reports'));
 const Legal          = lazy(() => import('./pages/Legal/Legal'));
 const Tickets        = lazy(() => import('./pages/Tickets/Tickets'));
+const PaymentSuccess = lazy(() => import('./pages/Payment/PaymentSuccess'));
 
 function PlaceholderPage({ title }) {
   return (
@@ -48,6 +50,7 @@ function App() {
       <AuthProvider>
         <ThemeProvider>
         <ToastProvider>
+        <StorageLimitHandler />
         <Suspense fallback={
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#4361EE', fontSize: 14 }}>
             Loading…
@@ -57,6 +60,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/payment/success" element={<PaymentSuccess />} />
 
           <Route path="/" element={
             <PrivateRoute>

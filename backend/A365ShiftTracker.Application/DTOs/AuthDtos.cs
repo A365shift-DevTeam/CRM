@@ -98,6 +98,9 @@ public class AuthResponse
     public bool IsTotpEnabled { get; set; } = false;
     public bool TwoFactorRequired { get; set; } = false;
     public string TwoFactorMethod { get; set; } = "email";
+    public int? OrgId { get; set; }
+    public string Plan { get; set; } = "Free";
+    public DateTime? PlanExpiresAt { get; set; }
 }
 
 public class LoginResponse
@@ -119,6 +122,11 @@ public class LoginResponse
 
     // TOTP required by admin but user hasn't set it up yet — full login granted, prompt setup
     public bool TotpSetupRequired { get; set; } = false;
+
+    // Plan & org
+    public int? OrgId { get; set; }
+    public string Plan { get; set; } = "Free";
+    public DateTime? PlanExpiresAt { get; set; }
 }
 
 public class TotpSetupResponse
