@@ -372,7 +372,8 @@ function DashboardMenuCards({ cards = [], healthData = {} }) {
 ───────────────────────────────────────── */
 export default function Dashboard() {
   const { currentUser } = useAuth();
-  const { setIsAlertSidebarOpen } = useOutletContext() || {};
+  const { setIsAlertSidebarOpen, setShowPremiumInbox } = useOutletContext() || {};
+  const navigate = useNavigate();
 
   const [projects, setProjects] = useState([]);
   const [companies, setCompanies] = useState([]);
@@ -912,42 +913,52 @@ export default function Dashboard() {
       <div className="dash-content" style={{ paddingTop: '12px' }}>
 
         {/* ── Header Row ── */}
-        <div className="dash-header lg:items-center" style={{ marginBottom: '24px' }}>
-          <div>
-            <h1 className="dash-title">
-              {greeting}, {firstName}
-              <span className="dash-title-wave">👋</span>
-            </h1>
-            <p className="dash-subtitle">
-              {projects.length} projects | {contacts.length} contacts | {timesheetEntries.length} timesheet entries tracked
-            </p>
-          </div>
-
-          {/* ── AI Alert Banner (Card Style) ── */}
-          {activeAlert && (
-            <div className="dash-alert-card w-full lg:w-auto lg:max-w-[450px] flex-1">
-              <div className="dash-alert-card-header">
-                <span className="dash-alert-label">AI INSIGHT</span>
-                <button className="dash-alert-viewall" onClick={() => setIsAlertSidebarOpen(true)}>
-                  View All <ChevronRight size={12} />
-                </button>
-              </div>
-              <motion.div
-                key={activeAlertIndex}
-                className="dash-alert-card-body"
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35 }}
-              >
-                <span className="dash-alert-title truncate">
-                  {activeAlert.title || 'System Notice'}
-                </span>
-                <span className="dash-alert-message truncate">
-                  {activeAlert.message || 'Pipeline and operations are stable.'}
-                </span>
-              </motion.div>
+        <div className="dash-header" style={{ marginBottom: '24px' }}>
+          <div className="dash-alert-card w-full flex-col lg:flex-row lg:items-center justify-between" style={{ zIndex: 1, gap: '24px' }}>
+            
+            {/* Greeting Side */}
+            <div className="flex-1" style={{ position: 'relative', zIndex: 2 }}>
+              <h1 className="dash-title" style={{ margin: 0 }}>
+                {greeting}, {firstName}
+                <span className="dash-title-wave">👋</span>
+              </h1>
+              <p className="dash-subtitle" style={{ margin: 0, marginTop: '8px' }}>
+                {projects.length} projects | {contacts.length} contacts | {timesheetEntries.length} timesheet entries tracked
+              </p>
             </div>
-          )}
+
+            {/* AI Insight Side */}
+            {activeAlert && (
+              <div className="flex-1 lg:max-w-[450px]" style={{ position: 'relative', zIndex: 2, paddingLeft: '24px', borderLeft: '1px solid var(--border-color)' }}>
+                <div className="dash-alert-card-header mb-2">
+                  <span className="dash-alert-label">AI INSIGHT</span>
+                  <button className="dash-alert-viewall" onClick={() => setShowPremiumInbox(true)}>
+                    View All <ChevronRight size={12} />
+                  </button>
+                </div>
+                <div style={{ minHeight: '44px', overflow: 'hidden' }}>
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={activeAlertIndex}
+                      className="dash-alert-card-body"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.25, ease: 'easeOut' }}
+                    >
+                      <span className="dash-alert-title truncate block">
+                        {activeAlert.title || 'System Notice'}
+                      </span>
+                      <span className="dash-alert-message truncate block text-sm mt-1">
+                        {activeAlert.message || 'Pipeline and operations are stable.'}
+                      </span>
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+              </div>
+            )}
+            
+          </div>
         </div>
 
         {/* ── Menu Cards ── */}

@@ -254,14 +254,14 @@
 /* ── AI Alert Banner (Card Style Redesign) ── */
 .dash-alert-card {
   position: relative;
-  background: linear-gradient(180deg, rgba(236, 253, 245, 0.95), rgba(255, 255, 255, 0.9));
+  background: #ffffff;
   border: none !important;
   border-radius: 14px;
   padding: 16px 20px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  box-shadow: 0 10px 32px rgba(16, 185, 129, 0.05), 0 2px 6px rgba(15, 23, 42, 0.03);
+  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.05), 0 2px 6px rgba(15, 23, 42, 0.03);
   backdrop-filter: blur(20px) saturate(1.15);
   transition: transform 0.28s cubic-bezier(.22, .68, 0, 1.05), box-shadow 0.28s ease;
   overflow: hidden;
@@ -274,29 +274,11 @@
 }
 
 .dash-alert-card::before {
-  content: '';
-  position: absolute;
-  top: -24px;
-  left: -10px;
-  width: 60%;
-  height: 92px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0));
-  transform: rotate(-8deg);
-  pointer-events: none;
-  z-index: 0;
+  display: none;
 }
 
 .dash-alert-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(to bottom right, rgba(16, 185, 129, 0.15), transparent 75%);
-  opacity: 0.9;
-  transition: opacity 0.28s ease;
-  pointer-events: none;
-  z-index: 0;
+  display: none;
 }
 
 .dash-alert-card:hover::after {

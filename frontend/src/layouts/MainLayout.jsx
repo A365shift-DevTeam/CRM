@@ -614,7 +614,7 @@ export default function MainLayout() {
 
           {/* ── Scrollable Content ── */}
           <div ref={contentRef} style={{ flexGrow: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-            <Outlet context={{ setIsAlertSidebarOpen }} />
+            <Outlet context={{ setIsAlertSidebarOpen, setShowPremiumInbox }} />
           </div>
         </div>
       </div>
