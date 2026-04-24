@@ -66,6 +66,8 @@ public class AppDbContext : DbContext
     public DbSet<Ticket> Tickets => Set<Ticket>();
     public DbSet<TicketComment> TicketComments => Set<TicketComment>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
+    public DbSet<Organization> Organizations => Set<Organization>();
+    public DbSet<OrgSalesSettings> OrgSalesSettings => Set<OrgSalesSettings>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -453,6 +455,29 @@ public class AppDbContext : DbContext
         {
             e.ToTable("ticket_comments");
             e.HasIndex(c => c.TicketId);
+        });
+
+        // ─── Organizations ────────────────────────────────
+        modelBuilder.Entity<Organization>(e =>
+        {
+            e.ToTable("organizations");
+            e.HasIndex(o => o.Slug).IsUnique();
+            e.HasMany(o => o.Members).WithOne(u => u.Organization)
+                .HasForeignKey(u => u.OrgId).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(o => o.SalesSettings).WithOne(s => s.Organization)
+                .HasForeignKey<OrgSalesSettings>(s => s.OrgId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ─── OrgSalesSettings ─────────────────────────────
+        modelBuilder.Entity<OrgSalesSettings>(e =>
+        {
+            e.ToTable("org_sales_settings");
+            e.HasIndex(s => s.OrgId).IsUnique();
+            e.Property(s => s.ProductStages).HasColumnType("jsonb");
+            e.Property(s => s.ServiceStages).HasColumnType("jsonb");
+            e.Property(s => s.DeliveryStages).HasColumnType("jsonb");
+            e.Property(s => s.FinanceStages).HasColumnType("jsonb");
+            e.Property(s => s.LegalStages).HasColumnType("jsonb");
         });
 
         // ─── Invoices ─────────────────────────────────────

@@ -14,10 +14,17 @@ import StageSettingsModal, {
     LEGAL_STORAGE_KEY,
     loadStoredStages
 } from './StageSettingsModal'
+
+const STAGE_COLOR_MAP = {
+    blue: '#4361EE', cyan: '#06B6D4', green: '#10B981',
+    orange: '#F97316', purple: '#8B5CF6', red: '#F43F5E', gray: '#64748B'
+}
+const getStageHex = (colorName) => STAGE_COLOR_MAP[colorName] || '#10B981'
 import SmartStageModal from './SmartStageModal'
 import { projectService } from '../../services/api'
 import { incomeService } from '../../services/incomeService'
 import { projectFinanceService } from '../../services/projectFinanceService'
+import { organizationService } from '../../services/organizationService'
 import { useToast } from '../../components/Toast/ToastContext'
 import { useTheme } from '../../context/ThemeContext'
 import Swal from 'sweetalert2'
@@ -87,6 +94,7 @@ const getClientColor = (name) => {
 }
 
 const SalesCard = ({ projectId, project, stages, deliveryStages, financeStages, legalStages, activeStage, onStageChange, onDelete, onEdit, onInvoice, onTimesheet, onLegal, onViewHistory, delay, clientName, brandingName, title, history = [] }) => {
+    const accentColor = getStageHex(stages[activeStage]?.color)
     const toast = useToast()
     const { themeColor } = useTheme()
     const [showNotification, setShowNotification] = useState(false)
@@ -145,7 +153,7 @@ const SalesCard = ({ projectId, project, stages, deliveryStages, financeStages, 
     return (
         <div className="sales-card" style={{ padding: 0 }}>
             {/* Left accent */}
-            <div className="sales-card-left-accent" style={{ background: '#10B981' }} />
+            <div className="sales-card-left-accent" style={{ background: accentColor }} />
 
             <div className="d-flex w-100 position-relative p-4">
                 {/* Left Column: Details */}
@@ -374,7 +382,7 @@ function Sales() {
     const [sortBy, setSortBy] = useState('id') // 'id', 'rating', 'delay'
     const [sortOrder, setSortOrder] = useState('desc')
 
-    // Distinct stages for each menu type
+    // Distinct stages for each menu type — seeded from localStorage until API loads
     const [productStages, setProductStages] = useState(() => getStoredStages('Product'))
     const [serviceStages, setServiceStages] = useState(() => getStoredStages('Service'))
     const [deliveryStages, setDeliveryStages] = useState(() => loadStoredStages(DELIVERY_STORAGE_KEY, getDefaultDeliveryStages))
@@ -384,6 +392,9 @@ function Sales() {
     // Global Labels
     const [productLabel, setProductLabel] = useState(() => localStorage.getItem('app_product_label') || 'Products')
     const [serviceLabel, setServiceLabel] = useState(() => localStorage.getItem('app_service_label') || 'Services')
+
+    // Org state for settings persistence
+    const [orgId, setOrgId] = useState(null)
 
     // Projects state
     const [projects, setProjects] = useState([])
@@ -440,7 +451,48 @@ function Sales() {
     // Fetch data on mount
     useEffect(() => {
         loadProjects();
+        loadOrgSettings();
     }, [])
+
+    const loadOrgSettings = async () => {
+        try {
+            const org = await organizationService.getMine()
+            if (!org) return
+            setOrgId(org.id)
+            const settings = await organizationService.getSalesSettings(org.id)
+            if (settings.productStages?.length) {
+                setProductStages(settings.productStages)
+                localStorage.setItem(STAGE_STORAGE_KEYS.Product, JSON.stringify(settings.productStages))
+            }
+            if (settings.serviceStages?.length) {
+                setServiceStages(settings.serviceStages)
+                localStorage.setItem(STAGE_STORAGE_KEYS.Service, JSON.stringify(settings.serviceStages))
+            }
+            if (settings.deliveryStages?.length) {
+                setDeliveryStages(settings.deliveryStages)
+                localStorage.setItem(DELIVERY_STORAGE_KEY, JSON.stringify(settings.deliveryStages))
+            }
+            if (settings.financeStages?.length) {
+                setFinanceStages(settings.financeStages)
+                localStorage.setItem(FINANCE_STORAGE_KEY, JSON.stringify(settings.financeStages))
+            }
+            if (settings.legalStages?.length) {
+                setLegalStages(settings.legalStages)
+                localStorage.setItem(LEGAL_STORAGE_KEY, JSON.stringify(settings.legalStages))
+            }
+            if (settings.productLabel) {
+                setProductLabel(settings.productLabel)
+                localStorage.setItem('app_product_label', settings.productLabel)
+            }
+            if (settings.serviceLabel) {
+                setServiceLabel(settings.serviceLabel)
+                localStorage.setItem('app_service_label', settings.serviceLabel)
+            }
+        } catch (e) {
+            // fall back to localStorage — already loaded in state initializers
+            console.warn('Could not load org settings, using local defaults', e)
+        }
+    }
 
     const loadProjects = async () => {
         try {
@@ -528,24 +580,24 @@ function Sales() {
             delay: p.delay || 0,
             type: p.type || 'Product',
             history: updatedHistory,
-            stages: currentStages, // Only holds sales custom stages, but passing it keeps it updated
+            stages: currentStages,
             startDate: p.startDate || null,
             endDate: p.endDate || null,
+            deliveryStage: logData?.dept === 'delivery' ? newStageIndex : (p.deliveryStage || 0),
+            financeStage:  logData?.dept === 'finance'  ? newStageIndex : (p.financeStage  || 0),
+            legalStage:    logData?.dept === 'legal'    ? newStageIndex : (p.legalStage    || 0),
+            activeStage:   logData?.dept === 'sales' || !logData?.dept ? newStageIndex : (p.activeStage || 0),
         };
 
         if (logData?.dept === 'delivery') {
             uiUpdates.deliveryStage = newStageIndex;
-            apiUpdates.deliveryStage = newStageIndex;
         } else if (logData?.dept === 'finance') {
             uiUpdates.financeStage = newStageIndex;
-            apiUpdates.financeStage = newStageIndex;
         } else if (logData?.dept === 'legal') {
             uiUpdates.legalStage = newStageIndex;
-            apiUpdates.legalStage = newStageIndex;
         } else {
             uiUpdates.activeStage = newStageIndex;
             uiUpdates.stages = currentStages;
-            apiUpdates.activeStage = newStageIndex;
         }
 
         // Optimistic UI update
@@ -714,7 +766,7 @@ function Sales() {
     }
 
     const [showAddModal, setShowAddModal] = useState(false)
-    const [newProjectData, setNewProjectData] = useState({ clientName: '', brandingName: 'A365Shift', type: 'Product', phone: '', startDate: '', endDate: '' })
+    const [newProjectData, setNewProjectData] = useState({ title: '', clientName: '', brandingName: 'A365Shift', type: 'Product', phone: '', startDate: '', endDate: '' })
 
     // Edit Project State
     const [showEditModal, setShowEditModal] = useState(false)
@@ -722,7 +774,7 @@ function Sales() {
     const [editProjectData, setEditProjectData] = useState({ title: '', clientName: '', brandingName: '', type: 'Product', status: '', phone: '', startDate: '', endDate: '', stages: [] })
 
     const handleAddProject = () => {
-        setNewProjectData({ clientName: '', brandingName: 'A365Shift', type: activeTab, phone: '', startDate: '', endDate: '' })
+        setNewProjectData({ title: '', clientName: '', brandingName: 'A365Shift', type: activeTab, phone: '', startDate: '', endDate: '' })
         setShowAddModal(true)
     }
 
@@ -735,8 +787,9 @@ function Sales() {
             activeStage: 0,
             history: [],
             type: newProjectData.type,
-            rating: 4.0, // Default rating
+            rating: 4.0,
             delay: 0,
+            title: newProjectData.title || '',
             clientName: newProjectData.clientName || 'New Client',
             brandingName: newProjectData.brandingName || 'A365Shift',
             phone: newProjectData.phone || '',
@@ -886,23 +939,45 @@ function Sales() {
         setShowSettings(true)
     }
 
-    const handleSaveSettings = (newStages, labels) => {
+    const handleSaveSettings = async (newStages, labels) => {
         setStagesByType(activeTab, newStages)
         localStorage.setItem(STAGE_STORAGE_KEYS[activeTab], JSON.stringify(newStages))
 
-        // Save Labels if provided
+        let nextDelivery = deliveryStages
+        let nextFinance = financeStages
+        let nextLegal = legalStages
+        let nextProductLabel = productLabel
+        let nextServiceLabel = serviceLabel
+
         if (labels) {
             setProductLabel(labels.productLabel)
             setServiceLabel(labels.serviceLabel)
             localStorage.setItem('app_product_label', labels.productLabel)
             localStorage.setItem('app_service_label', labels.serviceLabel)
+            nextProductLabel = labels.productLabel
+            nextServiceLabel = labels.serviceLabel
 
-            if (labels.deliveryStages) setDeliveryStages(labels.deliveryStages)
-            if (labels.financeStages) setFinanceStages(labels.financeStages)
-            if (labels.legalStages) setLegalStages(labels.legalStages)
+            if (labels.deliveryStages) { setDeliveryStages(labels.deliveryStages); nextDelivery = labels.deliveryStages }
+            if (labels.financeStages)  { setFinanceStages(labels.financeStages);  nextFinance  = labels.financeStages  }
+            if (labels.legalStages)    { setLegalStages(labels.legalStages);      nextLegal    = labels.legalStages    }
 
-            // Dispatch storage event to sync other tabs/components
             window.dispatchEvent(new Event('storage'))
+        }
+
+        // Persist to backend if org is linked
+        if (orgId) {
+            const payload = {
+                productStages:  activeTab === 'Product' ? newStages : getStagesByType('Product'),
+                serviceStages:  activeTab === 'Service' ? newStages : getStagesByType('Service'),
+                deliveryStages: nextDelivery,
+                financeStages:  nextFinance,
+                legalStages:    nextLegal,
+                productLabel:   nextProductLabel,
+                serviceLabel:   nextServiceLabel,
+            }
+            organizationService.upsertSalesSettings(orgId, payload).catch(e =>
+                console.warn('Failed to persist settings to backend', e)
+            )
         }
 
         setShowSettings(false)
@@ -1141,6 +1216,15 @@ function Sales() {
                 </Modal.Header>
                 <Modal.Body className="p-4">
                     <Form>
+                        <Form.Group className="mb-3">
+                            <Form.Label className="fw-semibold small text-muted">Project Title</Form.Label>
+                            <Form.Control
+                                type="text"
+                                placeholder="Enter project title"
+                                value={newProjectData.title}
+                                onChange={(e) => setNewProjectData({ ...newProjectData, title: e.target.value })}
+                            />
+                        </Form.Group>
                         <Form.Group className="mb-3">
                             <Form.Label className="fw-semibold small text-muted">Branding Name (Left)</Form.Label>
                             <Form.Control

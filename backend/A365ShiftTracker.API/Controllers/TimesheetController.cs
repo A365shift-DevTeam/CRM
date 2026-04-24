@@ -19,10 +19,10 @@ public class TimesheetController : BaseApiController
     // ─── Entries ───────────────────────────────────────
     [HttpGet("entries")]
     public async Task<ActionResult<ApiResponse<PagedResult<TimesheetEntryDto>>>> GetEntries(
-        [FromQuery] int page = 1, [FromQuery] int pageSize = 25)
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 25, [FromQuery] string? customer = null)
     {
         var userId = GetCurrentUserId();
-        var result = await _service.GetEntriesAsync(userId, page, pageSize);
+        var result = await _service.GetEntriesAsync(userId, page, pageSize, customer);
         return Ok(ApiResponse<PagedResult<TimesheetEntryDto>>.Ok(result));
     }
 

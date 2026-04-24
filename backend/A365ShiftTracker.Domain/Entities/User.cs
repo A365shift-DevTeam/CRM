@@ -25,6 +25,9 @@ public class User : BaseEntity
     public bool TwoFactorRequired { get; set; } = false;
     public string TwoFactorMethod { get; set; } = "email"; // "email" | "totp"
 
+    public int? OrgId { get; set; }
+    public Organization? Organization { get; set; }
+
     // Navigation
     public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 }

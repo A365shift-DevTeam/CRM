@@ -44,6 +44,9 @@ public class ProjectService : IProjectService
             Title = request.Title,
             ClientName = request.ClientName,
             ActiveStage = request.ActiveStage,
+            DeliveryStage = request.DeliveryStage,
+            FinanceStage = request.FinanceStage,
+            LegalStage = request.LegalStage,
             Delay = request.Delay,
             Type = request.Type,
             History = request.History is not null ? JsonSerializer.Serialize(request.History) : "[]",
@@ -71,6 +74,9 @@ public class ProjectService : IProjectService
         entity.Title = request.Title;
         entity.ClientName = request.ClientName;
         entity.ActiveStage = request.ActiveStage;
+        entity.DeliveryStage = request.DeliveryStage;
+        entity.FinanceStage = request.FinanceStage;
+        entity.LegalStage = request.LegalStage;
         entity.Delay = request.Delay;
         entity.Type = request.Type;
         if (request.History is not null)
@@ -109,6 +115,9 @@ public class ProjectService : IProjectService
         Title = p.Title,
         ClientName = p.ClientName,
         ActiveStage = p.ActiveStage,
+        DeliveryStage = p.DeliveryStage,
+        FinanceStage = p.FinanceStage,
+        LegalStage = p.LegalStage,
         Delay = p.Delay,
         Type = p.Type,
         History = p.History is not null ? JsonSerializer.Deserialize<object>(p.History) : null,

@@ -7,6 +7,9 @@ public class ProjectDto
     public string Title { get; set; } = string.Empty;
     public string? ClientName { get; set; }
     public int ActiveStage { get; set; }
+    public int DeliveryStage { get; set; }
+    public int FinanceStage { get; set; }
+    public int LegalStage { get; set; }
     public int Delay { get; set; }
     public string? Type { get; set; }
     public object? History { get; set; }
@@ -23,6 +26,9 @@ public class CreateProjectRequest
     public string Title { get; set; } = string.Empty;
     public string? ClientName { get; set; }
     public int ActiveStage { get; set; } = 0;
+    public int DeliveryStage { get; set; } = 0;
+    public int FinanceStage { get; set; } = 0;
+    public int LegalStage { get; set; } = 0;
     public int Delay { get; set; } = 0;
     public string? Type { get; set; }
     public object? History { get; set; }

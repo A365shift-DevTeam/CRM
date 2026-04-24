@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { Modal } from 'react-bootstrap'
 import {
     Clock, DollarSign, Activity, Calendar, Target, Timer, Users,
@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { FaPenToSquare } from 'react-icons/fa6'
 import StatsGrid from '../../components/StatsGrid/StatsGrid'
+import { timesheetService } from '../../services/timesheetService'
 import './AuditHistoryModal.css'
 import '../../styles/gantt.css'
 
@@ -308,6 +309,24 @@ function SingleProjectGantt({ project }) {
 
 /* ── Main Audit History Modal ── */
 export default function AuditHistoryModal({ show, onHide, project, deliveryStages = [], financeStages = [], legalStages = [] }) {
+    const [timesheetStat, setTimesheetStat] = useState(null)
+
+    useEffect(() => {
+        if (!show || !project) return
+        setTimesheetStat(null)
+        timesheetService.getEntries(1, 200, project.clientName)
+            .then(result => {
+                const entries = result?.items ?? (Array.isArray(result) ? result : [])
+                const hours = entries.reduce((sum, e) => {
+                    if (!e.startDatetime || !e.endDatetime) return sum
+                    return sum + Math.abs(new Date(e.endDatetime) - new Date(e.startDatetime)) / 3600000
+                }, 0)
+                const people = new Set(entries.map(e => e.person).filter(Boolean)).size
+                setTimesheetStat(`${people} | ${Math.round(hours)} hrs`)
+            })
+            .catch(() => setTimesheetStat('—'))
+    }, [show, project?.clientName])
+
     if (!project) return null
 
     const history = project.history || []
@@ -334,6 +353,17 @@ export default function AuditHistoryModal({ show, onHide, project, deliveryStage
     const projectTitle = project.title || project.clientName || 'Untitled Project'
     const delay = project.delay || 0
 
+    // ── Computed stat values ──
+    const dealValueFormatted = `${primaryCurrency} ${formatDealValue(totalDealValue)}`
+    const progressPct = stages.length > 1
+        ? Math.round(((project.activeStage || 0) / (stages.length - 1)) * 100)
+        : 0
+    const goLiveText = (() => {
+        if (!project.endDate) return '—'
+        const diff = Math.ceil((new Date(project.endDate) - new Date()) / 86400000)
+        return diff >= 0 ? `${diff} Days` : 'Overdue'
+    })()
+
     // ── Kanban columns ──
     const columns = [
         { id: 'sales', label: 'Sales History', items: salesHistory, color: '#3b82f6' },
@@ -344,15 +374,22 @@ export default function AuditHistoryModal({ show, onHide, project, deliveryStage
 
     const renderKanbanCard = (item, idx, color) => {
         const parts = (item.transition || '').split(' to ')
-        const fromStage = parts[0] || ''
-        const toStage = parts[1] || item.transition || ''
+        const fromStage = parts[0]?.trim() || ''
+        const toStage = parts[1]?.trim() || ''
+        const transitionLabel = fromStage && toStage
+            ? `${fromStage} → ${toStage}`
+            : (item.transition || item.description || '—')
 
         return (
             <div key={idx} className="audit-kanban-card" style={{ borderLeft: `3px solid ${color}` }}>
-                <div className="audit-kanban-card-header">{fromStage ? `${fromStage} to ${toStage}` : item.description}</div>
-                {item.description && <div className="audit-kanban-card-status">{toStage ? toStage.toLowerCase() : ''}</div>}
-                {(item.amount > 0) && (
-                    <div className="audit-amount">Amt: {item.currency || 'INR'} {parseFloat(item.amount).toLocaleString()}</div>
+                <div className="audit-kanban-card-header">{transitionLabel}</div>
+                {item.description && item.description !== item.transition && (
+                    <div className="audit-kanban-card-status">{item.description}</div>
+                )}
+                {item.amount > 0 && (
+                    <div className="audit-amount">
+                        {item.currency || 'INR'} {parseFloat(item.amount).toLocaleString()}
+                    </div>
                 )}
                 <div className="audit-date">
                     <Clock size={11} />
@@ -391,10 +428,10 @@ export default function AuditHistoryModal({ show, onHide, project, deliveryStage
 
                     {/* ── 2. Summary Stat Cards ── */}
                     <StatsGrid stats={[
-                        { label: 'Deal Value', value: '5 MN', icon: <DollarSign size={22} />, color: 'green' },
-                        { label: 'Resource', value: '4 | 170 hours', icon: <Users size={22} />, color: 'blue' },
-                        { label: 'Project Status', value: '80%', icon: <Activity size={22} />, color: 'purple' },
-                        { label: 'Go Live in', value: '30 Days', icon: <Calendar size={22} />, color: 'orange' },
+                        { label: 'Deal Value', value: dealValueFormatted, icon: <DollarSign size={22} />, color: 'green' },
+                        { label: 'Resource', value: timesheetStat ?? '…', icon: <Users size={22} />, color: 'blue' },
+                        { label: 'Project Status', value: `${progressPct}%`, icon: <Activity size={22} />, color: 'purple' },
+                        { label: 'Go Live in', value: goLiveText, icon: <Calendar size={22} />, color: 'orange' },
                     ]} />
 
                     {/* ── 3. Branding Section ── */}

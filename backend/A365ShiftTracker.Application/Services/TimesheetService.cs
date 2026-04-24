@@ -14,10 +14,11 @@ public class TimesheetService : ITimesheetService
 
     // ─── Entries ───────────────────────────────────────────
 
-    public async Task<PagedResult<TimesheetEntryDto>> GetEntriesAsync(int userId, int page, int pageSize)
+    public async Task<PagedResult<TimesheetEntryDto>> GetEntriesAsync(int userId, int page, int pageSize, string? customer = null)
     {
         var paged = await _uow.TimesheetEntries.GetPagedAsync(
-            t => t.UserId == userId, page, pageSize,
+            t => t.UserId == userId && (customer == null || t.Customer == customer),
+            page, pageSize,
             q => q.OrderByDescending(t => t.StartDatetime));
         return new PagedResult<TimesheetEntryDto>
         {

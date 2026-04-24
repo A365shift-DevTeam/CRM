@@ -40,6 +40,8 @@ public interface IUnitOfWork : IDisposable
     IRepository<Ticket> Tickets { get; }
     IRepository<TicketComment> TicketComments { get; }
     IRepository<Invoice> Invoices { get; }
+    IRepository<Organization> Organizations { get; }
+    IRepository<OrgSalesSettings> OrgSalesSettings { get; }
     Task<int> SaveChangesAsync();
     Task<IDbContextTransaction> BeginTransactionAsync();
 }

@@ -17,4 +17,7 @@ public class Project : AuditableEntity, IOwnedByUser
     public string? BrandingName { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
+    public int DeliveryStage { get; set; } = 0;
+    public int FinanceStage { get; set; } = 0;
+    public int LegalStage { get; set; } = 0;
 }

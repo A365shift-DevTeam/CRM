@@ -74,7 +74,7 @@ function ProjectCard({ project, onEdit, onDelete, onInvoice, index }) {
           <div className="proj-card-client">{project.clientName || 'No Client'}</div>
         </div>
         {isDelayed && <div className="proj-delay-badge"><AlertCircle size={11} />{project.delay}d delay</div>}
-        {active === 4 && !isDelayed && <div className="proj-won-badge"><CheckCircle2 size={11} />Won</div>}
+        {stageLabel === 'Won' && !isDelayed && <div className="proj-won-badge"><CheckCircle2 size={11} />Won</div>}
       </div>
       <div className="proj-card-stage-row">
         <span className="proj-stage-pill" style={{ color: stageColor, background: `${stageColor}12`, border: `1px solid ${stageColor}24` }}>{stageLabel}</span>
