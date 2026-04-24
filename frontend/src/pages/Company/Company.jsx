@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button, Modal, Form } from 'react-bootstrap';
-import { Building, Globe, MapPin, Edit, Trash2, Users, Briefcase, ArrowUpRight, List, Target } from 'lucide-react';
+import { Building, Globe, MapPin, Edit, Trash2, Users, Briefcase, ArrowUpRight, List, Target, LayoutGrid } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { companyService } from '../../services/companyService';
 import { contactService } from '../../services/contactService';
@@ -8,6 +8,7 @@ import { leadService } from '../../services/leadService';
 import { useToast } from '../../components/Toast/ToastContext';
 import PageToolbar from '../../components/PageToolbar/PageToolbar';
 import StatsGrid from '../../components/StatsGrid/StatsGrid';
+import StandardListView from '../../components/StandardListView/StandardListView';
 import { ChartView } from './ChartView';
 import './Company.css';
 
@@ -350,6 +351,7 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
         onClearPanelFilters={() => setPanelFilterValues({})}
         viewModes={[
           { id: 'list', label: 'List' },
+          { id: 'grid', label: 'Grid', icon: <LayoutGrid size={16} /> },
           { id: 'chart', label: 'Chart' },
         ]}
         activeView={viewMode}
@@ -361,7 +363,7 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
         <div className="d-flex justify-content-center py-5">
           <div className="spinner-border text-primary" />
         </div>
-      ) : viewMode === 'list' ? (
+      ) : viewMode === 'grid' ? (
         <div className="row g-3 mt-1">
           {filtered.map(c => (
             <div key={c.id} className="col-12 col-md-6 col-xl-4">
@@ -394,6 +396,44 @@ const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_FORM, ...c }); setSh
           {filtered.length === 0 && (
             <div className="text-center text-muted py-5">No companies found. Add your first company.</div>
           )}
+        </div>
+      ) : viewMode === 'list' ? (
+        <div className="mt-3">
+          <StandardListView
+            items={filtered}
+            columns={[
+              { id: 'name', name: 'Company Name' },
+              { id: 'industry', name: 'Industry' },
+              { id: 'size', name: 'Size' },
+              { id: 'country', name: 'Country' },
+              { id: 'website', name: 'Website' },
+              { id: 'contactCount', name: 'Contacts' },
+            ]}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            onSort={(col) => {
+              if (sortBy === col) setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+              else { setSortBy(col); setSortOrder('asc'); }
+            }}
+            renderCell={(item, col) => {
+              if (col.id === 'website' && item.website) {
+                return <a href={item.website} target="_blank" rel="noreferrer" className="text-primary text-decoration-none">{item.website}</a>;
+              }
+              if (col.id === 'contactCount') {
+                return <span className="badge bg-light text-dark border">{item.contactCount || 0}</span>;
+              }
+              return item[col.id] || '-';
+            }}
+            renderActions={(item) => (
+              <div className="d-flex gap-2 justify-content-center">
+                <button className="action-icon-btn text-info" title="Edit" onClick={() => openEdit(item)}><Edit size={16} /></button>
+                <button className="action-icon-btn text-success" title="Convert to Contact" onClick={() => handleConvertToContact(item)}><ArrowUpRight size={16} /></button>
+                <button className="action-icon-btn text-danger" title="Delete" onClick={() => handleDelete(item.id)}><Trash2 size={16} /></button>
+              </div>
+            )}
+            storageKey="company_list"
+            itemLabel="companies"
+          />
         </div>
       ) : viewMode === 'chart' ? (
         <ChartView companies={filtered} />
