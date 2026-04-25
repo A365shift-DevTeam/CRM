@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { projectService } from '../../services/projectService';
+import { contactService } from '../../services/contactService';
+import { companyService } from '../../services/companyService';
 import Pagination from '../../components/Pagination/Pagination';
 import { useToast } from '../../components/Toast/ToastContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -8,17 +10,82 @@ import {
   FileText, AlertCircle, CheckCircle2, Layers,
   Search, X, LayoutGrid, GanttChart as GanttIcon, CalendarDays,
   Plus, Minus, Settings2,
-  Tag, User, Briefcase, History, Filter, ZoomIn, ZoomOut, Calendar
+  Tag, User, Briefcase, Building2, History, Filter, ZoomIn, ZoomOut, Calendar
 } from 'lucide-react';
 import { Modal } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import AuditPanel from '../../components/AuditPanel/AuditPanel';
+import StatsGrid from '../../components/StatsGrid/StatsGrid';
 import '../../styles/gantt.css';
 
 const DEFAULT_STAGE_COLORS = ['#4361EE','#8B5CF6','#06B6D4','#10B981','#F59E0B','#F97316','#F43F5E'];
 const STAGE_COLORS = ['#06B6D4','#F59E0B','#F97316','#8B5CF6','#10B981','#64748B','#F43F5E'];
 const STAGE_LABELS = ['Demo','Proposal','Negotiation','Approval','Won','Closed','Lost'];
+
+// ── Status-based color scheme for Gantt bars ─────
+const STATUS_COLORS = {
+  onTrack: {
+    primary: '#16A34A',
+    light: '#BBF7D0',
+    gradient: 'linear-gradient(135deg, #16A34A 0%, #4ADE80 100%)',
+    label: 'ON TRACK',
+    chipBg: '#16A34A',
+    chipColor: '#fff',
+  },
+  delayed: {
+    primary: '#F97316',
+    light: '#FED7AA',
+    gradient: 'linear-gradient(135deg, #C2410C 0%, #FB923C 100%)',
+    label: 'DELAYED',
+    chipBg: '#F97316',
+    chipColor: '#fff',
+  },
+  atRisk: {
+    primary: '#DC2626',
+    light: '#FECACA',
+    gradient: 'linear-gradient(135deg, #B91C1C 0%, #EF4444 100%)',
+    label: 'AT RISK',
+    chipBg: '#DC2626',
+    chipColor: '#fff',
+  },
+};
+
+// Unified status logic — 4 rules in priority order:
+// 1. End date passed           → AT RISK  (red)
+// 2. >50% of window elapsed    → DELAYED  (orange)
+// 3. Start within 5 days       → DELAYED  (orange)
+// 4. Start > 5 days away       → ON TRACK (green)
+function calcStatus(startDate, endDate) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const DAY   = 86400000;
+  const start = startDate ? new Date(startDate) : null;
+  const end   = endDate   ? new Date(endDate)   : null;
+
+  if (!start && !end) return 'onTrack';
+
+  // Rule 1 — end date already passed
+  if (end && end < today) return 'atRisk';
+
+  // Rule 2 — more than half the window has elapsed
+  if (start && end) {
+    const total   = end - start;
+    const elapsed = today - start;
+    if (total > 0 && elapsed > 0 && elapsed / total > 0.5) return 'delayed';
+  }
+
+  // Rule 3 — start date is within the next 5 days
+  if (start) {
+    const daysUntilStart = Math.ceil((start - today) / DAY);
+    if (daysUntilStart >= 0 && daysUntilStart <= 5) return 'delayed';
+  }
+
+  return 'onTrack';
+}
+
+function getStageStatus(stage)   { return calcStatus(stage.startDate,   stage.endDate);   }
+function getProjectStatus(project) { return calcStatus(project.startDate, project.endDate); }
+
 
 const TYPE_META = {
   Standard: { color: '#4361EE', bg: 'rgba(67,97,238,0.09)' },
@@ -112,10 +179,30 @@ function ProjectCard({ project, onEdit, onDelete, onInvoice, index }) {
 function GanttView({ projects, themeColor, onEdit, onProjectUpdate }) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const [expandedIds, setExpandedIds] = React.useState(new Set());
-  const [editingStage, setEditingStage] = React.useState(null); // { projectId, stageIndex }
+  const [editingStage, setEditingStage] = React.useState(null);
   const [stageForm, setStageForm] = React.useState({ label: '', color: '#4361EE', startDate: '', endDate: '' });
   const [quarterFilter, setQuarterFilter] = React.useState('All');
   const [timeScale, setTimeScale] = React.useState('month');
+
+  // Scroll-to-today
+  const scrollAreaRef  = React.useRef(null);
+  const scrollDataRef  = React.useRef({ todayPct: 50 });
+
+  const scrollToToday = React.useCallback(() => {
+    const el = scrollAreaRef.current;
+    if (!el) return;
+    const { todayPct } = scrollDataRef.current;
+    const trackWidth = el.scrollWidth - 320;
+    if (trackWidth <= 0) return;
+    const todayPx = 320 + (todayPct / 100) * trackWidth;
+    el.scrollTo({ left: Math.max(0, todayPx - el.clientWidth * 0.38), behavior: 'smooth' });
+  }, []);
+
+  // Auto-scroll to today whenever view/scale/filter changes or data loads
+  React.useEffect(() => {
+    const t = setTimeout(scrollToToday, 180);
+    return () => clearTimeout(t);
+  }, [projects.length, timeScale, quarterFilter, scrollToToday]);
 
   const expandAll   = () => setExpandedIds(new Set(projects.map(p => p.id)));
   const collapseAll = () => setExpandedIds(new Set());
@@ -184,6 +271,8 @@ function GanttView({ projects, themeColor, onEdit, onProjectUpdate }) {
     return Math.max(1.5, ((Math.min(e, maxDate) - Math.max(s, minDate)) / span) * 100);
   };
   const todayPct = pct(today);
+  // Keep ref in sync so scrollToToday always uses fresh value
+  scrollDataRef.current = { todayPct };
 
   // ── Column headers based on time scale ─────────
   const timeColumns = [];
@@ -253,16 +342,21 @@ function GanttView({ projects, themeColor, onEdit, onProjectUpdate }) {
     return end ? `${fmt(start)}–${fmt(end)}` : fmt(start);
   };
 
-  const projectColor = '#4361EE';
+  // Calculate overall progress percentage for a project
+  const calcProgress = (project) => {
+    const stages = getStages(project);
+    const active = project.activeStage ?? 0;
+    return Math.round((active / Math.max(stages.length - 1, 1)) * 100);
+  };
 
   return (
     <div className="gantt-wrap">
       {/* ── Legend + controls ── */}
       <div className="gantt-top-bar">
         <div className="gantt-legend-row">
-          <span className="gl-item"><span className="gl-dot" style={{ background: projectColor }} />Project</span>
-          <span className="gl-item"><span className="gl-dot" style={{ background: '#8B5CF6' }} />Stage</span>
-          <span className="gl-item"><span className="gl-dot" style={{ background: '#06B6D4', opacity: 0.6 }} />Sub-stage</span>
+          <span className="gl-item"><span className="gl-dot" style={{ background: STATUS_COLORS.onTrack.primary }} />On Track</span>
+          <span className="gl-item"><span className="gl-dot" style={{ background: STATUS_COLORS.delayed.primary }} />Delayed</span>
+          <span className="gl-item"><span className="gl-dot" style={{ background: STATUS_COLORS.atRisk.primary }} />At Risk</span>
         </div>
         <div className="gantt-qfilter-row">
           <Filter size={12} className="gantt-qfilter-icon" />
@@ -288,12 +382,15 @@ function GanttView({ projects, themeColor, onEdit, onProjectUpdate }) {
           ))}
         </div>
         <div className="gantt-ctrl-row">
+          <button className="gantt-ctrl-btn gantt-today-jump-btn" onClick={scrollToToday} title="Scroll to today's date">
+            <Calendar size={11} style={{ marginRight: 4 }} />Today
+          </button>
           <button className="gantt-ctrl-btn" onClick={expandAll}>Expand All</button>
           <button className="gantt-ctrl-btn" onClick={collapseAll}>Collapse All</button>
         </div>
       </div>
 
-      <div className="gantt-scroll-area">
+      <div className="gantt-scroll-area" ref={scrollAreaRef}>
         <div className="gantt-inner" style={{ minWidth: minInnerWidth }}>
           {/* ── Header row ── */}
           <div className={`gantt-header${timeScale === 'day' ? ' gantt-header-day' : ''}`}>
@@ -356,10 +453,28 @@ function GanttView({ projects, themeColor, onEdit, onProjectUpdate }) {
                   {hasDate && (() => {
                     const l = pct(project.startDate);
                     const w = widthPct(project.startDate, project.endDate);
-                    const lbl = barLabel(project.startDate, project.endDate);
+                    const projStatus = getProjectStatus(project);
+                    const sc = STATUS_COLORS[projStatus];
+                    const progress = calcProgress(project);
+                    const stagesTotal = stages.length;
+                    const tooltip = [
+                      project.title || 'Untitled',
+                      `${fmtDate(project.startDate)} → ${fmtDate(project.endDate)}`,
+                      `Stage ${active + 1}/${stagesTotal} · ${progress}% · ${sc.label}`,
+                    ].join('\n');
                     return (
-                      <div className="gantt-bar gantt-proj-bar" style={{ left: `${l}%`, width: `${w}%`, background: projectColor }}>
-                        {w > 6 && <span className="gantt-bar-lbl">{lbl}</span>}
+                      <div className="gantt-bar gantt-proj-bar" title={tooltip} style={{
+                        left: `${l}%`, width: `${w}%`,
+                        background: sc.gradient,
+                        boxShadow: `0 3px 10px ${sc.primary}44`,
+                      }}>
+                        <span className="gantt-bar-progress-chip" style={{
+                          background: 'rgba(255,255,255,0.28)', color: '#fff',
+                        }}>{progress}%</span>
+                        {w > 14 && (
+                          <span className="gantt-bar-name">{project.title || 'Untitled'}</span>
+                        )}
+                        {w > 8 && <span className="gantt-bar-status-label">{sc.label}</span>}
                       </div>
                     );
                   })()}
@@ -369,11 +484,30 @@ function GanttView({ projects, themeColor, onEdit, onProjectUpdate }) {
 
               {/* ── Stage rows ── */}
               {isExpanded && stages.map((stage, si) => {
-                const sc       = stage.color || DEFAULT_STAGE_COLORS[si % DEFAULT_STAGE_COLORS.length];
                 const isDone   = si < active;
                 const isActive = si === active;
                 const hasStageDates = !!stage.startDate;
                 const isEditingThis = editingStage?.projectId === project.id && editingStage?.stageIndex === si;
+
+                // Compute status from dates using the unified 4-rule logic
+                const stageStatus = getStageStatus(stage);
+                const statusColor = STATUS_COLORS[stageStatus];
+
+                // Real-time progress % based on dates
+                const calcStageProgress = () => {
+                  if (!stage.startDate || !stage.endDate) return 0;
+                  const start = new Date(stage.startDate);
+                  const end   = new Date(stage.endDate);
+                  const now   = new Date(); now.setHours(0, 0, 0, 0);
+                  const total = end - start;
+                  if (total <= 0) return 0;
+                  const elapsed = now - start;
+                  return Math.max(0, Math.min(100, Math.round((elapsed / total) * 100)));
+                };
+                const stageProgress = calcStageProgress();
+
+                // Dot color based on status
+                const dotColor = isDone ? STATUS_COLORS.onTrack.primary : statusColor.primary;
 
                 return (
                   <React.Fragment key={`${project.id}-s${si}`}>
@@ -386,12 +520,12 @@ function GanttView({ projects, themeColor, onEdit, onProjectUpdate }) {
                       <div className="gantt-label-col gantt-stage-label-col">
                         <span className="gantt-s-indent" />
                         <span className={`gantt-s-dot ${isDone ? 'done' : isActive ? 'active-dot' : ''}`}
-                          style={isDone || isActive ? { background: sc, boxShadow: isActive ? `0 0 0 3px ${sc}33` : 'none' } : {}} />
-                        <span className="gantt-s-name" style={{ color: isActive ? sc : isDone ? '#334155' : '#94A3B8' }}>
+                          style={{ background: dotColor, borderColor: 'transparent', boxShadow: isActive ? `0 0 0 3px ${dotColor}33` : 'none' }} />
+                        <span className="gantt-s-name" style={{ color: isDone ? '#334155' : statusColor.primary }}>
                           {si + 1}. {stage.label}
                         </span>
-                        {isDone && <CheckCircle2 size={11} style={{ color: '#10B981', flexShrink: 0 }} />}
-                        {isActive && <span className="gantt-active-pill" style={{ color: sc, borderColor: `${sc}44`, background: `${sc}12` }}>Active</span>}
+                        {isDone && <CheckCircle2 size={11} style={{ color: STATUS_COLORS.onTrack.primary, flexShrink: 0 }} />}
+                        {isActive && <span className="gantt-active-pill" style={{ color: statusColor.primary, borderColor: `${statusColor.primary}44`, background: `${statusColor.primary}12` }}>Active</span>}
                         <button className="gantt-s-edit-btn" onClick={() => isEditingThis ? setEditingStage(null) : openStageEdit(project, si)} title="Edit stage">
                           <Settings2 size={11} />
                         </button>
@@ -403,13 +537,31 @@ function GanttView({ projects, themeColor, onEdit, onProjectUpdate }) {
                         {hasStageDates && (() => {
                           const l = pct(stage.startDate);
                           const w = widthPct(stage.startDate, stage.endDate);
-                          const lbl = barLabel(stage.startDate, stage.endDate);
+                          const barStatusColor = isDone ? STATUS_COLORS.onTrack : statusColor;
+                          const stageTooltip = [
+                            `${si + 1}. ${stage.label}`,
+                            `${fmtDate(stage.startDate)} → ${fmtDate(stage.endDate)}`,
+                            `${stageProgress}% elapsed · ${barStatusColor.label}`,
+                            isDone ? '✓ Completed' : isActive ? '▶ Active' : 'Upcoming',
+                          ].join('\n');
                           return (
                             <div
-                              className={`gantt-bar gantt-stage-bar${isDone ? ' done' : isActive ? ' active-bar' : ' pending'}`}
-                              style={{ left: `${l}%`, width: `${w}%`, background: isDone ? sc : isActive ? sc : 'transparent', borderColor: sc }}
+                              className="gantt-bar gantt-stage-bar"
+                              title={stageTooltip}
+                              style={{
+                                left: `${l}%`, width: `${w}%`,
+                                background: barStatusColor.gradient,
+                                borderColor: 'transparent',
+                                boxShadow: `0 2px 8px ${barStatusColor.primary}40`,
+                              }}
                             >
-                              {w > 5 && <span className="gantt-bar-lbl" style={{ color: isDone || isActive ? '#fff' : sc }}>{lbl}</span>}
+                              <span className="gantt-bar-progress-chip" style={{
+                                background: 'rgba(255,255,255,0.28)', color: '#fff',
+                              }}>{stageProgress}%</span>
+                              {w > 10 && (
+                                <span className="gantt-bar-name" style={{ fontSize: '9px' }}>{stage.label}</span>
+                              )}
+                              {w > 6 && <span className="gantt-bar-status-label">{barStatusColor.label}</span>}
                             </div>
                           );
                         })()}
@@ -486,8 +638,10 @@ export default function Projects() {
   const [editingProject, setEditingProject] = useState(null);
   const [modalTab, setModalTab]             = useState('details');
   const [formData, setFormData] = useState({
-    title: '', clientName: '', type: 'Standard', startDate: '', endDate: ''
+    title: '', clientName: '', companyName: '', contactName: '', type: 'Standard', startDate: '', endDate: ''
   });
+  const [contactsList, setContactsList] = useState([]);
+  const [companiesList, setCompaniesList] = useState([]);
 
   useEffect(() => {
     loadProjects();
@@ -496,6 +650,23 @@ export default function Projects() {
     window.addEventListener('crm:projects-updated', handler);
     return () => window.removeEventListener('crm:projects-updated', handler);
   }, [page, pageSize]);
+
+  // Fetch contacts & companies for dropdowns
+  useEffect(() => {
+    const fetchDropdownData = async () => {
+      try {
+        const [contactsData, companiesData] = await Promise.all([
+          contactService.getContacts(1, 200).catch(() => []),
+          companyService.getCompanies(1, 200).catch(() => []),
+        ]);
+        const contacts = contactsData?.data || contactsData?.items || (Array.isArray(contactsData) ? contactsData : []);
+        const companies = companiesData?.data || companiesData?.items || (Array.isArray(companiesData) ? companiesData : []);
+        setContactsList(contacts);
+        setCompaniesList(companies);
+      } catch (e) { console.error('Failed to load dropdown data:', e); }
+    };
+    fetchDropdownData();
+  }, []);
 
   const loadProjects = async () => {
     try {
@@ -520,12 +691,14 @@ export default function Projects() {
     setEditingProject(project);
     setModalTab('details');
     setFormData(project ? {
-      title:      project.title      || '',
-      clientName: project.clientName || '',
-      type:       project.type       || 'Standard',
-      startDate:  toInputDate(project.startDate),
-      endDate:    toInputDate(project.endDate),
-    } : { title: '', clientName: '', type: 'Standard', startDate: '', endDate: '' });
+      title:        project.title        || '',
+      clientName:   project.clientName   || '',
+      companyName:  project.companyName  || '',
+      contactName:  project.contactName  || '',
+      type:         project.type         || 'Standard',
+      startDate:    toInputDate(project.startDate),
+      endDate:      toInputDate(project.endDate),
+    } : { title: '', clientName: '', companyName: '', contactName: '', type: 'Standard', startDate: '', endDate: '' });
     setShowModal(true);
   };
 
@@ -537,9 +710,11 @@ export default function Projects() {
       if (editingProject) {
         const payload = {
           ...editingProject,
-          title:      formData.title,
-          clientName: formData.clientName,
-          type:       formData.type,
+          title:        formData.title,
+          clientName:   formData.clientName,
+          companyName:  formData.companyName,
+          contactName:  formData.contactName,
+          type:         formData.type,
           startDate,
           endDate,
         };
@@ -548,11 +723,13 @@ export default function Projects() {
         toast.success('Project updated');
       } else {
         const created = await projectService.createProject({
-          title:       formData.title,
-          clientName:  formData.clientName,
-          type:        formData.type,
-          activeStage: 0,
-          delay:       0,
+          title:        formData.title,
+          clientName:   formData.clientName,
+          companyName:  formData.companyName,
+          contactName:  formData.contactName,
+          type:         formData.type,
+          activeStage:  0,
+          delay:        0,
           startDate,
           endDate,
         });
@@ -581,10 +758,10 @@ export default function Projects() {
   });
 
   const stats = [
-    { label: 'Total',   value: projects.length,                                                       color: '#4361EE' },
-    { label: 'Active',  value: projects.filter(p => (p.activeStage ?? 0) < 4).length,                color: '#10B981' },
-    { label: 'Won',     value: projects.filter(p => (p.activeStage ?? 0) === 4).length,              color: '#8B5CF6' },
-    { label: 'Delayed', value: projects.filter(p => (p.delay || 0) > 0).length,                      color: '#F43F5E' },
+    { label: 'Total',   value: projects.length,                                                       color: 'blue',   icon: <Layers size={20} /> },
+    { label: 'Active',  value: projects.filter(p => (p.activeStage ?? 0) < 4).length,                color: 'green',  icon: <CheckCircle2 size={20} /> },
+    { label: 'Won',     value: projects.filter(p => (p.activeStage ?? 0) === 4).length,              color: 'purple', icon: <Briefcase size={20} /> },
+    { label: 'Delayed', value: projects.filter(p => (p.delay || 0) > 0).length,                      color: 'red',    icon: <AlertCircle size={20} /> },
   ];
 
   return (
@@ -595,18 +772,10 @@ export default function Projects() {
           <h2 className="projects-title">Projects</h2>
           <p className="projects-subtitle">{filtered.length} of {projects.length} projects</p>
         </div>
-        <div className="projects-stats-row">
-          {stats.map(s => (
-            <div key={s.label} className="projects-stat-pill">
-              <span className="ps-value" style={{ color: s.color }}>{s.value}</span>
-              <span className="ps-label">{s.label}</span>
-            </div>
-          ))}
-        </div>
-        <button className="projects-add-btn" style={{ background: themeColor }} onClick={() => handleOpenModal()}>
-          <FaPlus size={13} /> New Project
-        </button>
       </div>
+
+      {/* ── Stats Cards (same style as Contact page) ── */}
+      <StatsGrid stats={stats} />
 
       {/* ── Toolbar ── */}
       <div className="projects-toolbar">
@@ -634,6 +803,9 @@ export default function Projects() {
             <GanttIcon size={14} /> Gantt
           </button>
         </div>
+        <button className="projects-add-btn" style={{ background: themeColor }} onClick={() => handleOpenModal()}>
+          <FaPlus size={13} /> New Project
+        </button>
       </div>
 
       {/* ── Content ── */}
@@ -718,13 +890,46 @@ export default function Projects() {
                     onChange={e => setFormData(p => ({ ...p, title: e.target.value }))} />
                 </div>
 
-                {/* Client Name */}
+                {/* Client Name — dropdown from contacts */}
                 <div className="pm-field-group">
                   <label className="pm-label"><User size={12} />Client Name</label>
-                  <input required className="pm-input" type="text"
-                    placeholder="e.g. Acme Corp"
+                  <select required className="pm-input pm-select"
                     value={formData.clientName}
-                    onChange={e => setFormData(p => ({ ...p, clientName: e.target.value }))} />
+                    onChange={e => setFormData(p => ({ ...p, clientName: e.target.value }))}>
+                    <option value="">Select a client…</option>
+                    {contactsList.map((c, i) => {
+                      const name = c.name || c.contactName || `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email || 'Unnamed';
+                      return <option key={c.id || c._id || i} value={name}>{name}</option>;
+                    })}
+                  </select>
+                </div>
+
+                {/* Company — dropdown from companies */}
+                <div className="pm-field-group">
+                  <label className="pm-label"><Building2 size={12} />Company Name</label>
+                  <select className="pm-input pm-select"
+                    value={formData.companyName}
+                    onChange={e => setFormData(p => ({ ...p, companyName: e.target.value }))}>
+                    <option value="">Select a company…</option>
+                    {companiesList.map((c, i) => {
+                      const name = c.name || c.companyName || 'Unnamed';
+                      return <option key={c.id || c._id || i} value={name}>{name}</option>;
+                    })}
+                  </select>
+                </div>
+
+                {/* Contact Name — dropdown from contacts */}
+                <div className="pm-field-group">
+                  <label className="pm-label"><User size={12} />Contact Name</label>
+                  <select className="pm-input pm-select"
+                    value={formData.contactName}
+                    onChange={e => setFormData(p => ({ ...p, contactName: e.target.value }))}>
+                    <option value="">Select a contact…</option>
+                    {contactsList.map((c, i) => {
+                      const name = c.name || c.contactName || `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email || 'Unnamed';
+                      return <option key={c.id || c._id || i} value={name}>{name}</option>;
+                    })}
+                  </select>
                 </div>
 
                 {/* Project Type */}

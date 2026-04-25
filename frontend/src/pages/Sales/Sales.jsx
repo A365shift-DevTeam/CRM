@@ -23,6 +23,8 @@ const STAGE_COLOR_MAP = {
 const getStageHex = (colorName) => STAGE_COLOR_MAP[colorName] || '#10B981'
 import SmartStageModal from './SmartStageModal'
 import { projectService } from '../../services/api'
+import { contactService } from '../../services/contactService'
+import { companyService } from '../../services/companyService'
 import { incomeService } from '../../services/incomeService'
 import { projectFinanceService } from '../../services/projectFinanceService'
 import { organizationService } from '../../services/organizationService'
@@ -92,6 +94,46 @@ const getClientColor = (name) => {
         hash = str.charCodeAt(i) + ((hash << 5) - hash)
     }
     return CLIENT_COLORS[Math.abs(hash) % CLIENT_COLORS.length]
+}
+
+function buildWhatsAppText(project, stages, activeStage) {
+    const stageLabel = stages[activeStage]?.label || 'Unknown';
+    const progress = Math.round((activeStage / Math.max(stages.length - 1, 1)) * 100);
+    const fmt = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
+    const pipelineLines = stages.map((s, i) => {
+        if (i < activeStage) return `  ✅ ${s.label}`;
+        if (i === activeStage) return `  ▶️ *${s.label}* ← Current`;
+        return `  ⬜ ${s.label}`;
+    });
+    return [
+        `🏢 *PROJECT DETAILS*`,
+        `━━━━━━━━━━━━━━━━━━`,
+        ``,
+        `📋 *Title:* ${project.title || 'N/A'}`,
+        `🆔 *ID:* #${project.customId || String(project.id || '').slice(-6).toUpperCase()}`,
+        project.clientName  ? `👤 *Client:* ${project.clientName}`  : null,
+        project.companyName ? `🏛️ *Company:* ${project.companyName}` : null,
+        project.contactName ? `📞 *Contact:* ${project.contactName}` : null,
+        project.phone       ? `📱 *Phone:* ${project.countryCode || ''}${project.phone}` : null,
+        ``,
+        `📊 *PIPELINE STATUS*`,
+        `━━━━━━━━━━━━━━━━━━`,
+        `🔄 *Type:* ${project.type || 'Standard'}`,
+        `🎯 *Stage:* ${stageLabel} (${activeStage + 1} of ${stages.length})`,
+        `📈 *Progress:* ${progress}%`,
+        project.delay > 0 ? `⚠️ *Delay:* ${project.delay} day(s)` : `✅ *Status:* On Track`,
+        ``,
+        `📅 *TIMELINE*`,
+        `━━━━━━━━━━━━━━━━━━`,
+        `🚀 *Start:* ${fmt(project.startDate)}`,
+        `🏁 *End:* ${fmt(project.endDate)}`,
+        ``,
+        `🎯 *STAGE PIPELINE*`,
+        `━━━━━━━━━━━━━━━━━━`,
+        ...pipelineLines,
+        ``,
+        `_Shared via A365Shift CRM_ 🚀`,
+    ].filter(l => l !== null).join('\n');
 }
 
 const SalesCard = ({ projectId, project, stages, deliveryStages, financeStages, legalStages, activeStage, onStageChange, onDelete, onEdit, onInvoice, onTimesheet, onLegal, onViewHistory, delay, clientName, brandingName, title, history = [] }) => {
@@ -204,10 +246,14 @@ const SalesCard = ({ projectId, project, stages, deliveryStages, financeStages, 
                         <div className="d-flex align-items-center" style={{ gap: '6px' }}>
                             <div className="icon-outline icon-whatsapp" onClick={(e) => {
                                 e.stopPropagation();
-                                const phone = project.phone || '';
-                                if (phone) window.open(`https://wa.me/${phone.replace(/\\D/g, '')}`, '_blank');
-                                else toast.warning('No phone number for this client.');
-                            }} title="WhatsApp">
+                                const msg = buildWhatsAppText(project, stages, activeStage);
+                                const encoded = encodeURIComponent(msg);
+                                const rawPhone = project.phone ? `${project.countryCode || '+91'}${project.phone}`.replace(/\D/g, '') : '';
+                                const url = rawPhone
+                                    ? `https://wa.me/${rawPhone}?text=${encoded}`
+                                    : `https://wa.me/?text=${encoded}`;
+                                window.open(url, '_blank');
+                            }} title="Share project on WhatsApp">
                                 <FaWhatsapp size={16} />
                             </div>
                             <div className="icon-outline" onClick={(e) => { e.stopPropagation(); onViewHistory(); }} title="Audit History">
@@ -401,6 +447,10 @@ function Sales() {
     const [projects, setProjects] = useState([])
     const [, setLoading] = useState(true)
 
+    // Dropdown data for contact/company selects
+    const [contactsList, setContactsList] = useState([])
+    const [companiesList, setCompaniesList] = useState([])
+
     // Won → Invoice dialog
     const [showWonDialog, setShowWonDialog] = useState(false)
     const [wonProject, setWonProject] = useState(null)
@@ -453,7 +503,23 @@ function Sales() {
     useEffect(() => {
         loadProjects();
         loadOrgSettings();
+        loadDropdownData();
     }, [])
+
+    const loadDropdownData = async () => {
+        try {
+            const [contactsData, companiesData] = await Promise.all([
+                contactService.getContacts(1, 200).catch(() => []),
+                companyService.getCompanies(1, 200).catch(() => []),
+            ]);
+            const contacts  = contactsData?.data  || contactsData?.items  || (Array.isArray(contactsData)  ? contactsData  : []);
+            const companies = companiesData?.data || companiesData?.items || (Array.isArray(companiesData) ? companiesData : []);
+            setContactsList(contacts);
+            setCompaniesList(companies);
+        } catch (e) {
+            console.error('Failed to load dropdown data:', e);
+        }
+    }
 
     const loadOrgSettings = async () => {
         try {
@@ -767,15 +833,15 @@ function Sales() {
     }
 
     const [showAddModal, setShowAddModal] = useState(false)
-    const [newProjectData, setNewProjectData] = useState({ title: '', clientName: '', brandingName: 'A365Shift', type: 'Product', phone: '', startDate: '', endDate: '' })
+    const [newProjectData, setNewProjectData] = useState({ title: '', clientName: '', companyName: '', contactName: '', brandingName: 'A365Shift', type: 'Product', phone: '', startDate: '', endDate: '' })
 
     // Edit Project State
     const [showEditModal, setShowEditModal] = useState(false)
     const [editingProject, setEditingProject] = useState(null)
-    const [editProjectData, setEditProjectData] = useState({ title: '', clientName: '', brandingName: '', type: 'Product', status: '', phone: '', startDate: '', endDate: '', stages: [] })
+    const [editProjectData, setEditProjectData] = useState({ title: '', clientName: '', companyName: '', contactName: '', brandingName: '', type: 'Product', status: '', phone: '', startDate: '', endDate: '', stages: [] })
 
     const handleAddProject = () => {
-        setNewProjectData({ title: '', clientName: '', brandingName: 'A365Shift', type: activeTab, phone: '', startDate: '', endDate: '' })
+        setNewProjectData({ title: '', clientName: '', companyName: '', contactName: '', brandingName: 'A365Shift', type: activeTab, phone: '', startDate: '', endDate: '' })
         setShowAddModal(true)
     }
 
@@ -792,6 +858,8 @@ function Sales() {
             delay: 0,
             title: newProjectData.title || '',
             clientName: newProjectData.clientName || 'New Client',
+            companyName: newProjectData.companyName || '',
+            contactName: newProjectData.contactName || '',
             brandingName: newProjectData.brandingName || 'A365Shift',
             phone: newProjectData.phone || '',
             startDate: newProjectData.startDate || null,
@@ -845,14 +913,17 @@ function Sales() {
             ? project.stages
             : getStagesByType(project.type || 'Product')
         setEditProjectData({
-            title: project.title || '',
-            clientName: project.clientName || '',
+            title:       project.title       || '',
+            clientName:  project.clientName  || '',
+            companyName: project.companyName || '',
+            contactName: project.contactName || '',
             brandingName: project.brandingName || '',
-            type: project.type || 'Product',
-            status: project.status || '',
-            phone: project.phone || '',
-            startDate: project.startDate ? project.startDate.split('T')[0] : '',
-            endDate: project.endDate ? project.endDate.split('T')[0] : '',
+            type:        project.type        || 'Product',
+            status:      project.status      || '',
+            phone:       project.phone       || '',
+            countryCode: project.countryCode || '+91',
+            startDate:   project.startDate ? project.startDate.split('T')[0] : '',
+            endDate:     project.endDate   ? project.endDate.split('T')[0]   : '',
             stages: projectStages.map((s, i) => ({ ...s, id: s.id ?? i }))
         })
         setShowEditModal(true)
@@ -887,32 +958,38 @@ function Sales() {
 
         // UI-level updates (includes extra fields for local state)
         const uiUpdates = {
-            title: editProjectData.title,
-            clientName: editProjectData.clientName,
+            title:        editProjectData.title,
+            clientName:   editProjectData.clientName,
+            companyName:  editProjectData.companyName,
+            contactName:  editProjectData.contactName,
             brandingName: editProjectData.brandingName,
-            type: editProjectData.type,
-            status: editProjectData.status,
-            phone: editProjectData.phone,
-            startDate: editProjectData.startDate || null,
-            endDate: editProjectData.endDate || null,
-            activeStage: newActiveStage,
-            stages: customStages
+            type:         editProjectData.type,
+            status:       editProjectData.status,
+            phone:        editProjectData.phone,
+            countryCode:  editProjectData.countryCode || '+91',
+            startDate:    editProjectData.startDate || null,
+            endDate:      editProjectData.endDate   || null,
+            activeStage:  newActiveStage,
+            stages:       customStages
         }
 
         // Send ALL fields the backend expects to avoid nulling out data
         const apiUpdates = {
-            customId: editingProject.customId || '',
-            title: editProjectData.title || '',
-            clientName: editProjectData.clientName || '',
+            customId:     editingProject.customId  || '',
+            title:        editProjectData.title     || '',
+            clientName:   editProjectData.clientName  || '',
+            companyName:  editProjectData.companyName  || '',
+            contactName:  editProjectData.contactName  || '',
             brandingName: editProjectData.brandingName || '',
-            phone: editProjectData.phone || '',
-            startDate: editProjectData.startDate || null,
-            endDate: editProjectData.endDate || null,
-            activeStage: newActiveStage,
-            delay: editingProject.delay || 0,
-            type: editProjectData.type || 'Product',
-            history: editingProject.history || [],
-            stages: customStages
+            phone:        editProjectData.phone       || '',
+            countryCode:  editProjectData.countryCode || '+91',
+            startDate:    editProjectData.startDate   || null,
+            endDate:      editProjectData.endDate     || null,
+            activeStage:  newActiveStage,
+            delay:        editingProject.delay || 0,
+            type:         editProjectData.type || 'Product',
+            history:      editingProject.history || [],
+            stages:       customStages
         }
 
         // Optimistic update
@@ -1196,22 +1273,71 @@ function Sales() {
                             />
                         </Form.Group>
                         <Form.Group className="mb-3">
-                            <Form.Label className="fw-semibold small text-muted">Client Name (Right)</Form.Label>
-                            <Form.Control
-                                type="text"
-                                placeholder="Enter client name"
+                            <Form.Label className="fw-semibold small text-muted">Company Name</Form.Label>
+                            <Form.Select
+                                value={newProjectData.companyName}
+                                onChange={(e) => setNewProjectData({ ...newProjectData, companyName: e.target.value })}
+                            >
+                                <option value="">Select a company…</option>
+                                {companiesList.map((c, i) => {
+                                    const name = c.name || c.companyName || 'Unnamed';
+                                    return <option key={c.id || c._id || i} value={name}>{name}</option>;
+                                })}
+                            </Form.Select>
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label className="fw-semibold small text-muted">Client Name</Form.Label>
+                            <Form.Select
                                 value={newProjectData.clientName}
                                 onChange={(e) => setNewProjectData({ ...newProjectData, clientName: e.target.value })}
-                            />
+                            >
+                                <option value="">Select a client…</option>
+                                {contactsList.map((c, i) => {
+                                    const name = c.name || c.contactName || `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email || 'Unnamed';
+                                    return <option key={c.id || c._id || i} value={name}>{name}</option>;
+                                })}
+                            </Form.Select>
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label className="fw-semibold small text-muted">Contact Name</Form.Label>
+                            <Form.Select
+                                value={newProjectData.contactName}
+                                onChange={(e) => setNewProjectData({ ...newProjectData, contactName: e.target.value })}
+                            >
+                                <option value="">Select a contact…</option>
+                                {contactsList.map((c, i) => {
+                                    const name = c.name || c.contactName || `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email || 'Unnamed';
+                                    return <option key={c.id || c._id || i} value={name}>{name}</option>;
+                                })}
+                            </Form.Select>
                         </Form.Group>
                         <Form.Group className="mb-3">
                             <Form.Label className="fw-semibold small text-muted">Phone Number</Form.Label>
-                            <Form.Control
-                                type="text"
-                                placeholder="Enter client phone"
-                                value={newProjectData.phone}
-                                onChange={(e) => setNewProjectData({ ...newProjectData, phone: e.target.value })}
-                            />
+                            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #dee2e6', borderRadius: '0.375rem', overflow: 'hidden', background: '#fff' }}>
+                                <Form.Select
+                                    value={newProjectData.countryCode || '+91'}
+                                    onChange={(e) => setNewProjectData({ ...newProjectData, countryCode: e.target.value })}
+                                    style={{ width: '80px', flexShrink: 0, border: 'none', borderRight: '1px solid #dee2e6', borderRadius: 0, fontSize: '0.875rem', background: 'transparent', boxShadow: 'none', paddingRight: '24px' }}
+                                >
+                                    <option value="+91">+91</option>
+                                    <option value="+1">+1</option>
+                                    <option value="+44">+44</option>
+                                    <option value="+61">+61</option>
+                                    <option value="+971">+971</option>
+                                    <option value="+65">+65</option>
+                                    <option value="+81">+81</option>
+                                    <option value="+49">+49</option>
+                                    <option value="+33">+33</option>
+                                    <option value="+86">+86</option>
+                                </Form.Select>
+                                <Form.Control
+                                    type="tel"
+                                    placeholder="Enter phone number"
+                                    value={newProjectData.phone}
+                                    onChange={(e) => setNewProjectData({ ...newProjectData, phone: e.target.value })}
+                                    style={{ border: 'none', borderRadius: 0, boxShadow: 'none' }}
+                                />
+                            </div>
                         </Form.Group>
                         <Form.Group className="mb-3">
                             <Form.Label className="fw-semibold small text-muted">Project Type</Form.Label>
@@ -1295,24 +1421,79 @@ function Sales() {
                         <div className="row">
                             <div className="col-md-6">
                                 <Form.Group className="mb-3">
-                                    <Form.Label className="fw-semibold small text-muted">Client Name (Right)</Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        placeholder="Enter client name"
+                                    <Form.Label className="fw-semibold small text-muted">Company Name</Form.Label>
+                                    <Form.Select
+                                        value={editProjectData.companyName}
+                                        onChange={(e) => setEditProjectData(prev => ({ ...prev, companyName: e.target.value }))}
+                                    >
+                                        <option value="">Select a company…</option>
+                                        {companiesList.map((c, i) => {
+                                            const name = c.name || c.companyName || 'Unnamed';
+                                            return <option key={c.id || c._id || i} value={name}>{name}</option>;
+                                        })}
+                                    </Form.Select>
+                                </Form.Group>
+                            </div>
+                            <div className="col-md-6">
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="fw-semibold small text-muted">Client Name</Form.Label>
+                                    <Form.Select
                                         value={editProjectData.clientName}
                                         onChange={(e) => setEditProjectData(prev => ({ ...prev, clientName: e.target.value }))}
-                                    />
+                                    >
+                                        <option value="">Select a client…</option>
+                                        {contactsList.map((c, i) => {
+                                            const name = c.name || c.contactName || `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email || 'Unnamed';
+                                            return <option key={c.id || c._id || i} value={name}>{name}</option>;
+                                        })}
+                                    </Form.Select>
+                                </Form.Group>
+                            </div>
+                        </div>
+                        <div className="row">
+                            <div className="col-md-6">
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="fw-semibold small text-muted">Contact Name</Form.Label>
+                                    <Form.Select
+                                        value={editProjectData.contactName}
+                                        onChange={(e) => setEditProjectData(prev => ({ ...prev, contactName: e.target.value }))}
+                                    >
+                                        <option value="">Select a contact…</option>
+                                        {contactsList.map((c, i) => {
+                                            const name = c.name || c.contactName || `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email || 'Unnamed';
+                                            return <option key={c.id || c._id || i} value={name}>{name}</option>;
+                                        })}
+                                    </Form.Select>
                                 </Form.Group>
                             </div>
                             <div className="col-md-6">
                                 <Form.Group className="mb-3">
                                     <Form.Label className="fw-semibold small text-muted">Phone Number</Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        placeholder="Enter client phone"
-                                        value={editProjectData.phone}
-                                        onChange={(e) => setEditProjectData(prev => ({ ...prev, phone: e.target.value }))}
-                                    />
+                                    <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #dee2e6', borderRadius: '0.375rem', overflow: 'hidden', background: '#fff' }}>
+                                        <Form.Select
+                                            value={editProjectData.countryCode || '+91'}
+                                            onChange={(e) => setEditProjectData(prev => ({ ...prev, countryCode: e.target.value }))}
+                                            style={{ width: '80px', flexShrink: 0, border: 'none', borderRight: '1px solid #dee2e6', borderRadius: 0, fontSize: '0.875rem', background: 'transparent', boxShadow: 'none', paddingRight: '24px' }}
+                                        >
+                                            <option value="+91">+91</option>
+                                            <option value="+1">+1</option>
+                                            <option value="+44">+44</option>
+                                            <option value="+61">+61</option>
+                                            <option value="+971">+971</option>
+                                            <option value="+65">+65</option>
+                                            <option value="+81">+81</option>
+                                            <option value="+49">+49</option>
+                                            <option value="+33">+33</option>
+                                            <option value="+86">+86</option>
+                                        </Form.Select>
+                                        <Form.Control
+                                            type="tel"
+                                            placeholder="Enter phone number"
+                                            value={editProjectData.phone}
+                                            onChange={(e) => setEditProjectData(prev => ({ ...prev, phone: e.target.value }))}
+                                            style={{ border: 'none', borderRadius: 0, boxShadow: 'none' }}
+                                        />
+                                    </div>
                                 </Form.Group>
                             </div>
                         </div>
