@@ -1299,19 +1299,6 @@ function Sales() {
                             </Form.Select>
                         </Form.Group>
                         <Form.Group className="mb-3">
-                            <Form.Label className="fw-semibold small text-muted">Contact Name</Form.Label>
-                            <Form.Select
-                                value={newProjectData.contactName}
-                                onChange={(e) => setNewProjectData({ ...newProjectData, contactName: e.target.value })}
-                            >
-                                <option value="">Select a contact…</option>
-                                {contactsList.map((c, i) => {
-                                    const name = c.name || c.contactName || `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email || 'Unnamed';
-                                    return <option key={c.id || c._id || i} value={name}>{name}</option>;
-                                })}
-                            </Form.Select>
-                        </Form.Group>
-                        <Form.Group className="mb-3">
                             <Form.Label className="fw-semibold small text-muted">Phone Number</Form.Label>
                             <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #dee2e6', borderRadius: '0.375rem', overflow: 'hidden', background: '#fff' }}>
                                 <Form.Select
@@ -1451,21 +1438,6 @@ function Sales() {
                             </div>
                         </div>
                         <div className="row">
-                            <div className="col-md-6">
-                                <Form.Group className="mb-3">
-                                    <Form.Label className="fw-semibold small text-muted">Contact Name</Form.Label>
-                                    <Form.Select
-                                        value={editProjectData.contactName}
-                                        onChange={(e) => setEditProjectData(prev => ({ ...prev, contactName: e.target.value }))}
-                                    >
-                                        <option value="">Select a contact…</option>
-                                        {contactsList.map((c, i) => {
-                                            const name = c.name || c.contactName || `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email || 'Unnamed';
-                                            return <option key={c.id || c._id || i} value={name}>{name}</option>;
-                                        })}
-                                    </Form.Select>
-                                </Form.Group>
-                            </div>
                             <div className="col-md-6">
                                 <Form.Group className="mb-3">
                                     <Form.Label className="fw-semibold small text-muted">Phone Number</Form.Label>
