@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { legalService } from '../../services/legalService';
 import PageToolbar from '../../components/PageToolbar/PageToolbar';
+import PageHeader from '../../components/PageHeader/PageHeader';
 import StatsGrid from '../../components/StatsGrid/StatsGrid';
 import { useToast } from '../../components/Toast/ToastContext';
 import { Plus, FileText, Shield, AlertTriangle, Clock, List, Columns, Target } from 'lucide-react';
@@ -138,6 +139,12 @@ export default function Legal() {
 
   return (
     <div style={{ padding: '24px' }}>
+      <PageHeader 
+        title="Legal Agreements" 
+        description="Manage NDAs, MSAs, and other corporate legal agreements" 
+        icon={Shield} 
+        iconColor="#475569"
+      />
       <StatsGrid stats={statsData} />
 
       <PageToolbar

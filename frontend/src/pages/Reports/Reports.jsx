@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { reportService } from '../../services/reportService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { BarChart2 } from 'lucide-react';
 import PageToolbar from '../../components/PageToolbar/PageToolbar';
+import PageHeader from '../../components/PageHeader/PageHeader';
 import DashboardAnalytics from './DashboardAnalytics';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
@@ -49,6 +51,12 @@ export default function Reports() {
 
     return (
         <div style={{ padding: '24px' }}>
+            <PageHeader 
+                title="Reports" 
+                description="Analyze business performance, generate insights, and export data" 
+                icon={BarChart2} 
+                iconColor="#f59e0b"
+            />
             <PageToolbar
                 title="Reports"
                 extraControls={

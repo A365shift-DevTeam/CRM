@@ -9,7 +9,8 @@ import {
 import { Modal, Form, Button } from 'react-bootstrap';
 import PageToolbar from '../../components/PageToolbar/PageToolbar';
 import { motion } from 'framer-motion';
-import { Grid3x3, List, Plus } from 'lucide-react';
+import { Grid3x3, List, Plus, FileText } from 'lucide-react';
+import PageHeader from '../../components/PageHeader/PageHeader';
 
 const FILE_TYPES = {
   pdf:  { icon: FaFilePdf,   color: '#F43F5E', bg: 'rgba(244,63,94,0.09)',  label: 'PDF' },
@@ -133,6 +134,12 @@ export default function Documents() {
 
   return (
     <div className="docs-page">
+      <PageHeader 
+        title="Documents" 
+        description="Manage and organize corporate files and project documents" 
+        icon={FileText} 
+        iconColor="#8b5cf6"
+      />
       <PageToolbar
         title="Documents"
         itemCount={filtered.length}

@@ -4,6 +4,7 @@ import { User, Mail, Contact, Settings, Plus, CheckCircle, Trash2, Briefcase, Do
 import { FaWhatsapp } from 'react-icons/fa6'
 import { Button, Modal, Form, Dropdown } from 'react-bootstrap'
 import PageToolbar from '../../components/PageToolbar/PageToolbar'
+import PageHeader from '../../components/PageHeader/PageHeader'
 import StatsGrid from '../../components/StatsGrid/StatsGrid'
 import './Sales.css'
 import StageSettingsModal, {
@@ -1122,7 +1123,12 @@ function Sales() {
 
     return (
         <div className="sales-page" style={{ '--dynamic-theme-color': themeColor || '#2563EB' }}>
-
+            <PageHeader 
+                title="Sales Pipeline" 
+                description="Manage deals, track sales progress, and forecast revenue" 
+                icon={Briefcase} 
+                iconColor="#2563eb"
+            />
             <StatsGrid stats={[
                 { label: 'Total Project', value: totalProjects, icon: <Briefcase size={22} />, color: 'purple' },
                 { label: 'Total Stages', value: totalStages, icon: <Flag size={22} />, color: 'blue' },

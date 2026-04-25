@@ -7,6 +7,7 @@ import { ColumnManager } from './ColumnManager'
 import { taskService } from '../../services/api'
 import { useToast } from '../../components/Toast/ToastContext'
 import PageToolbar from '../../components/PageToolbar/PageToolbar'
+import PageHeader from '../../components/PageHeader/PageHeader'
 import StatsGrid from '../../components/StatsGrid/StatsGrid'
 import './TodoList.css'
 
@@ -218,6 +219,12 @@ const TodoList = () => {
 
     return (
         <div className="todo-list-container">
+            <PageHeader 
+              title="My Tasks" 
+              description="Manage your daily to-do list and assignments" 
+              icon={ClipboardList} 
+              iconColor="#10b981"
+            />
             <StatsGrid stats={[
                 { label: 'Total Tasks', value: totalTasks, icon: <ClipboardList size={20} />, color: 'blue' },
                 { label: 'High Priority', value: highPriorityTasks, icon: <Clock size={20} />, color: 'orange' },

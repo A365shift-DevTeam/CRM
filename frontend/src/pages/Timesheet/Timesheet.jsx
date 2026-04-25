@@ -10,6 +10,7 @@ import { ChartView } from './ChartView'
 import { TimesheetModal } from './TimesheetModal'
 import { ColumnManager } from './ColumnManager'
 import { useToast } from '../../components/Toast/ToastContext'
+import PageHeader from '../../components/PageHeader/PageHeader'
 import StatsGrid from '../../components/StatsGrid/StatsGrid'
 import './Timesheet.css'
 
@@ -330,6 +331,14 @@ const Timesheet = () => {
 
   return (
     <div className="timesheet-container">
+
+      {/* Header */}
+      <PageHeader 
+        title="Timesheet" 
+        description="Track employee work hours and project billable time" 
+        icon={Clock} 
+        iconColor="#3b82f6"
+      />
 
       {/* Stats Grid */}
       <StatsGrid stats={[

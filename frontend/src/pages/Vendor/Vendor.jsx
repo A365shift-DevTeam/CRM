@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { contactService } from '../../services/contactService';
 import PageToolbar from '../../components/PageToolbar/PageToolbar';
+import PageHeader from '../../components/PageHeader/PageHeader';
 import './Vendor.css';
 
 // Helper function to extract category from contact (handles dynamic field names)
@@ -236,10 +237,16 @@ export default function Vendor() {
     });
 
     return (
-        <div className="vendor-container">
-
-            {/* ───── LEFT SIDEBAR: FILTERS ───── */}
-            <div className="vendor-sidebar">
+        <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '20px', height: 'calc(100vh - 100px)' }}>
+            <PageHeader 
+                title="Vendors" 
+                description="Manage vendor relationships, service providers, and evaluations" 
+                icon={Building2} 
+                iconColor="#3b82f6"
+            />
+            <div className="vendor-container" style={{ padding: 0, height: '100%' }}>
+                {/* ───── LEFT SIDEBAR: FILTERS ───── */}
+                <div className="vendor-sidebar">
                 <div className="sidebar-header">
                     <Building2 size={24} className="text-primary me-2" />
                     <h5 className="mb-0 fw-bold">Vendor Specifications</h5>
@@ -889,7 +896,7 @@ export default function Vendor() {
                     </Button>
                 </Modal.Footer>
             </Modal>
-
+        </div>
         </div>
     );
 }

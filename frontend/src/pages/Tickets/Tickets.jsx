@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { ticketService } from '../../services/ticketService';
 import PageToolbar from '../../components/PageToolbar/PageToolbar';
+import PageHeader from '../../components/PageHeader/PageHeader';
 import StatsGrid from '../../components/StatsGrid/StatsGrid';
 import { useToast } from '../../components/Toast/ToastContext';
 import { useAuth } from '../../context/AuthContext';
-import { Plus, Sparkles, AlertCircle, Clock, CheckCircle, Zap, MessageSquare, List, Columns, Target } from 'lucide-react';
+import { Plus, Sparkles, AlertCircle, Clock, CheckCircle, Zap, MessageSquare, List, Columns, Target, Ticket } from 'lucide-react';
 import { FaTrash } from 'react-icons/fa6';
 import Swal from 'sweetalert2';
 import TicketModal from './TicketModal';
@@ -144,6 +145,12 @@ export default function Tickets() {
 
   return (
     <div style={{ padding: '24px' }}>
+      <PageHeader 
+        title="Tickets" 
+        description="Track and resolve internal IT and external customer support requests" 
+        icon={Ticket} 
+        iconColor="#10b981"
+      />
       {stats && <StatsGrid stats={statCards} />}
 
       <PageToolbar

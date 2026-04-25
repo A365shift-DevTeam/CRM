@@ -1,0 +1,23 @@
+.page-header {
+    margin-bottom: 24px;
+}
+
+.page-header h2 {
+    font-family: var(--font-display, 'Outfit', sans-serif);
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text-primary, #0F172A);
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+    margin-top: 0;
+}
+
+.page-header p {
+    font-family: var(--font-family, 'DM Sans', sans-serif);
+    color: var(--text-muted, #64748B);
+    font-size: 14px;
+    margin: 0;
+}

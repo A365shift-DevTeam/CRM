@@ -10,6 +10,8 @@ import PageToolbar from '../../components/PageToolbar/PageToolbar';
 import StatsGrid from '../../components/StatsGrid/StatsGrid';
 import StandardListView from '../../components/StandardListView/StandardListView';
 import { ChartView } from './ChartView';
+import PageHeader from '../../components/PageHeader/PageHeader';
+import { Building2 } from 'lucide-react';
 import './Company.css';
 
 const INDUSTRIES = ['Technology', 'Finance', 'Healthcare', 'Manufacturing', 'Retail', 'Education', 'Real Estate', 'Consulting', 'Other'];
@@ -331,6 +333,11 @@ const openEdit = (c) => {
 
   return (
     <div className="company-container">
+      <PageHeader 
+        title="Company Directory" 
+        description="Manage your business accounts, partners, and clients" 
+        icon={Building2} 
+      />
       <StatsGrid stats={stats} />
 
       <PageToolbar
@@ -630,10 +637,10 @@ const openEdit = (c) => {
                           className={`wizard-stepper-connector${wizardStep > s.n ? ' completed' : ''}`}
                           style={{
                             position: 'absolute',
-                            top: '55px',
+                            top: '37px',
                             left: '50%',
                             width: '100%',
-                            height: '3px',
+                            height: '2px',
                             zIndex: 1,
                           }}
                         />
@@ -653,23 +660,19 @@ const openEdit = (c) => {
                   <div className="wizard-step-title">Company Information</div>
                   <div className="wizard-step-desc">Provide the necessary details to register your company with us</div>
                   <div className="row g-0">
-                    <div className="col-12 wizard-field">
+                    <div className="col-6 pe-3 wizard-field">
                       <label className="wizard-label">Company Name *</label>
                       <input className="wizard-input" type="text" placeholder="e.g. Acme Corp" value={wizardForm.company_name || ''} onChange={e => setWizardForm(p => ({ ...p, company_name: e.target.value }))} />
                     </div>
-                    <div className="col-6 pe-3 wizard-field">
+                    <div className="col-6 wizard-field">
                       <label className="wizard-label">Website</label>
                       <input className="wizard-input" type="text" placeholder="acme.com" value={wizardForm.company_website || ''} onChange={e => setWizardForm(p => ({ ...p, company_website: e.target.value }))} />
                     </div>
-                    <div className="col-6 wizard-field">
+                    <div className="col-6 pe-3 wizard-field">
                       <label className="wizard-label">Country</label>
                       <input className="wizard-input" type="text" placeholder="India" value={wizardForm.company_country || ''} onChange={e => setWizardForm(p => ({ ...p, company_country: e.target.value }))} />
                     </div>
-                    <div className="col-12 wizard-field">
-                      <label className="wizard-label">Address</label>
-                      <input className="wizard-input" type="text" placeholder="Street, City, State" value={wizardForm.company_address || ''} onChange={e => setWizardForm(p => ({ ...p, company_address: e.target.value }))} />
-                    </div>
-                    <div className="col-6 pe-3 wizard-field">
+                    <div className="col-6 wizard-field">
                       <label className="wizard-label">Industry</label>
                       <div className="wizard-select-wrapper">
                         <select className="wizard-select" value={wizardForm.company_industry || ''} onChange={e => setWizardForm(p => ({ ...p, company_industry: e.target.value }))}>
@@ -678,7 +681,7 @@ const openEdit = (c) => {
                         </select>
                       </div>
                     </div>
-                    <div className="col-6 wizard-field">
+                    <div className="col-6 pe-3 wizard-field">
                       <label className="wizard-label">Company Size</label>
                       <div className="wizard-select-wrapper">
                         <select className="wizard-select" value={wizardForm.company_size || ''} onChange={e => setWizardForm(p => ({ ...p, company_size: e.target.value }))}>
@@ -687,9 +690,13 @@ const openEdit = (c) => {
                         </select>
                       </div>
                     </div>
-                    <div className="col-12 wizard-field">
-                      <label className="wizard-label">Tags (comma separated)</label>
+                    <div className="col-6 wizard-field">
+                      <label className="wizard-label">Tags</label>
                       <input className="wizard-input" type="text" placeholder="enterprise, saas, partner" value={wizardForm.company_tags || ''} onChange={e => setWizardForm(p => ({ ...p, company_tags: e.target.value }))} />
+                    </div>
+                    <div className="col-12 wizard-field">
+                      <label className="wizard-label">Address</label>
+                      <input className="wizard-input" type="text" placeholder="Street, City, State" value={wizardForm.company_address || ''} onChange={e => setWizardForm(p => ({ ...p, company_address: e.target.value }))} />
                     </div>
 
                     {isIndia(wizardForm.company_country) && <>

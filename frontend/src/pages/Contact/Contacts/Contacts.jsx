@@ -17,6 +17,7 @@ import { AIAssistModal } from './AIAssistModal'
 import { useToast } from '../../../components/Toast/ToastContext'
 import { ContactColumnManager } from './ContactColumnManager'
 import PageToolbar from '../../../components/PageToolbar/PageToolbar'
+import PageHeader from '../../../components/PageHeader/PageHeader'
 import StatsGrid from '../../../components/StatsGrid/StatsGrid'
 import Pagination from '../../../components/Pagination/Pagination'
 import './Contacts.css'
@@ -398,7 +399,11 @@ const Contacts = () => {
 
   return (
     <div className="contacts-container">
-
+      <PageHeader 
+        title="Contacts" 
+        description="Manage your people and their related data" 
+        icon={User} 
+      />
       <StatsGrid stats={[
         { label: 'Total Contacts', value: stats.total, icon: <User size={22} />, color: 'blue' },
         { label: 'Total Leads', value: stats.leads, icon: <Flag size={22} />, color: 'green' },

@@ -6,6 +6,7 @@ import { planService } from '../../services/planService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast/ToastContext';
 import StatsGrid from '../../components/StatsGrid/StatsGrid';
+import PageHeader from '../../components/PageHeader/PageHeader';
 import './Admin.css';
 
 const PRIORITY_BADGE_COLOR = { Critical: '#F43F5E', High: '#F59E0B', Medium: '#4361EE', Low: '#94A3B8' };
@@ -293,10 +294,12 @@ export default function Admin() {
     return (
         <div className="admin-page">
             {/* Header */}
-            <div className="admin-page-header">
-                <h2><FaShieldHalved style={{ color: '#3b82f6' }} /> Admin Panel</h2>
-                <p>Manage users, roles, and permissions</p>
-            </div>
+            <PageHeader 
+                title="Admin Panel" 
+                description="Manage users, roles, and permissions" 
+                icon={Shield} 
+                iconColor="#3b82f6"
+            />
 
             {/* Stat Cards */}
             <StatsGrid stats={[

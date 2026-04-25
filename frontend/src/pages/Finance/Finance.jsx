@@ -10,6 +10,7 @@ import FinanceSettingsModal, { DEFAULT_EXPENSE_FIELDS, DEFAULT_INCOME_FIELDS } f
 import { formatGlobalCurrency } from '../../utils/currencyUtils'
 import { useToast } from '../../components/Toast/ToastContext'
 import PageToolbar from '../../components/PageToolbar/PageToolbar'
+import PageHeader from '../../components/PageHeader/PageHeader'
 import StatsGrid from '../../components/StatsGrid/StatsGrid'
 import './Finance.css'
 
@@ -400,6 +401,12 @@ const Finance = () => {
 
   return (
     <div className="finance-container">
+      <PageHeader 
+        title="Finance" 
+        description="Manage company income, expenses, and track financial performance" 
+        icon={DollarSign} 
+        iconColor="#10b981"
+      />
       <StatsGrid stats={[
         { label: 'Total Expenses', value: formatCurrency(overallStats.expenseTotal), icon: <TrendingDown size={24} />, color: 'red', valueColor: '#ef4444' },
         { label: 'Total Income', value: formatCurrency(overallStats.incomeTotal), icon: <TrendingUp size={24} />, color: 'green', valueColor: '#10b981' },

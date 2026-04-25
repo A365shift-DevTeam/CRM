@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import AuditPanel from '../../components/AuditPanel/AuditPanel';
 import StatsGrid from '../../components/StatsGrid/StatsGrid';
+import PageHeader from '../../components/PageHeader/PageHeader';
 import '../../styles/gantt.css';
 
 const DEFAULT_STAGE_COLORS = ['#4361EE','#8B5CF6','#06B6D4','#10B981','#F59E0B','#F97316','#F43F5E'];
@@ -766,15 +767,12 @@ export default function Projects() {
 
   return (
     <div className="projects-page">
-      {/* ── Header ── */}
-      <div className="projects-header">
-        <div className="projects-title-block">
-          <h2 className="projects-title">Projects</h2>
-          <p className="projects-subtitle">{filtered.length} of {projects.length} projects</p>
-        </div>
-      </div>
-
-      {/* ── Stats Cards (same style as Contact page) ── */}
+      <PageHeader 
+        title="Projects & Workflows" 
+        description="Track execution stages and delivery pipelines" 
+        icon={Briefcase} 
+        iconColor="#8b5cf6"
+      />
       <StatsGrid stats={stats} />
 
       {/* ── Toolbar ── */}

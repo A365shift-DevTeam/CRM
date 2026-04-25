@@ -282,10 +282,7 @@ function MetricCard({ menuCard, health, cardIndex }) {
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-slate-400">
-            {menuCard.metricLabel || 'Overview'}
-          </div>
-          <div className="mt-1 text-[15px] font-semibold tracking-tight text-slate-900">
+          <div className="text-[15px] font-semibold tracking-tight text-slate-900">
             {menuCard.title}
           </div>
         </div>

@@ -6,6 +6,7 @@ import { leadService } from '../../services/leadService';
 import { projectService } from '../../services/api';
 import { useToast } from '../../components/Toast/ToastContext';
 import PageToolbar from '../../components/PageToolbar/PageToolbar';
+import PageHeader from '../../components/PageHeader/PageHeader';
 import Pagination from '../../components/Pagination/Pagination';
 import StatsGrid from '../../components/StatsGrid/StatsGrid';
 import AuditPanel from '../../components/AuditPanel/AuditPanel';
@@ -275,6 +276,11 @@ export default function Leads() {
 
   return (
     <div className="leads-container">
+      <PageHeader 
+        title="Sales Leads" 
+        description="Track and convert potential customers into sales deals" 
+        icon={Target} 
+      />
       <StatsGrid stats={stats} />
 
       <PageToolbar
