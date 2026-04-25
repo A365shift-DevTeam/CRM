@@ -23,16 +23,18 @@ public class DocumentsController : BaseApiController
     [HttpGet]
     public async Task<ActionResult<ApiResponse<IEnumerable<DocumentDto>>>> GetAll()
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.GetAllAsync(userId);
+        var orgId = GetCurrentOrgId() ?? 0;
+        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
+        var result = await _service.GetAllAsync(orgId);
         return Ok(ApiResponse<IEnumerable<DocumentDto>>.Ok(result));
     }
 
     [HttpGet("{entityType}/{entityId}")]
     public async Task<ActionResult<ApiResponse<IEnumerable<DocumentDto>>>> GetByEntity(string entityType, int entityId)
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.GetByEntityAsync(entityType, entityId, userId);
+        var orgId = GetCurrentOrgId() ?? 0;
+        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
+        var result = await _service.GetByEntityAsync(entityType, entityId, orgId);
         return Ok(ApiResponse<IEnumerable<DocumentDto>>.Ok(result));
     }
 
@@ -40,10 +42,12 @@ public class DocumentsController : BaseApiController
     public async Task<ActionResult<ApiResponse<DocumentDto>>> Create(CreateDocumentRequest request)
     {
         var userId = GetCurrentUserId();
+        var orgId = GetCurrentOrgId() ?? 0;
+        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
         var (allowed, current, limit) = await _limits.CheckLimitAsync(userId, "Documents");
         if (!allowed)
             return StatusCode(402, ApiResponse<object>.Fail($"Document limit reached ({current}/{limit}). Please upgrade your plan."));
-        var result = await _service.CreateAsync(request, userId);
+        var result = await _service.CreateAsync(request, userId, orgId);
         return Ok(ApiResponse<DocumentDto>.Ok(result, "Document uploaded."));
     }
 
@@ -51,7 +55,9 @@ public class DocumentsController : BaseApiController
     public async Task<ActionResult<ApiResponse<bool>>> Delete(int id)
     {
         var userId = GetCurrentUserId();
-        await _service.DeleteAsync(id, userId);
+        var orgId = GetCurrentOrgId() ?? 0;
+        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
+        await _service.DeleteAsync(id, userId, orgId);
         return Ok(ApiResponse<bool>.Ok(true, "Document deleted."));
     }
 }

@@ -26,8 +26,9 @@ public class LeadsController : BaseApiController
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 25)
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.GetAllAsync(userId, page, pageSize);
+        var orgId = GetCurrentOrgId() ?? 0;
+        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
+        var result = await _service.GetAllAsync(orgId, page, pageSize);
         return Ok(ApiResponse<PagedResult<LeadDto>>.Ok(result));
     }
 
@@ -35,10 +36,12 @@ public class LeadsController : BaseApiController
     public async Task<ActionResult<ApiResponse<LeadDto>>> Create(CreateLeadRequest request)
     {
         var userId = GetCurrentUserId();
+        var orgId = GetCurrentOrgId() ?? 0;
+        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
         var (allowed, current, limit) = await _limits.CheckLimitAsync(userId, "Leads");
         if (!allowed)
             return StatusCode(402, ApiResponse<object>.Fail($"Lead limit reached ({current}/{limit}). Please upgrade your plan."));
-        var result = await _service.CreateAsync(request, userId);
+        var result = await _service.CreateAsync(request, userId, orgId);
         return Ok(ApiResponse<LeadDto>.Ok(result, "Lead created."));
     }
 
@@ -46,7 +49,9 @@ public class LeadsController : BaseApiController
     public async Task<ActionResult<ApiResponse<LeadDto>>> Update(int id, UpdateLeadRequest request)
     {
         var userId = GetCurrentUserId();
-        var result = await _service.UpdateAsync(id, request, userId);
+        var orgId = GetCurrentOrgId() ?? 0;
+        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
+        var result = await _service.UpdateAsync(id, request, userId, orgId);
         return Ok(ApiResponse<LeadDto>.Ok(result, "Lead updated."));
     }
 
@@ -54,7 +59,9 @@ public class LeadsController : BaseApiController
     public async Task<ActionResult<ApiResponse<bool>>> Delete(int id)
     {
         var userId = GetCurrentUserId();
-        await _service.DeleteAsync(id, userId);
+        var orgId = GetCurrentOrgId() ?? 0;
+        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
+        await _service.DeleteAsync(id, userId, orgId);
         return Ok(ApiResponse<bool>.Ok(true, "Lead deleted."));
     }
 }

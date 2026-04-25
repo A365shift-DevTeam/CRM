@@ -11,10 +11,10 @@ public class CompanyService : ICompanyService
 
     public CompanyService(IUnitOfWork uow) => _uow = uow;
 
-    public async Task<PagedResult<CompanyDto>> GetAllAsync(int userId, int page, int pageSize)
+    public async Task<PagedResult<CompanyDto>> GetAllAsync(int orgId, int page, int pageSize)
     {
         var paged = await _uow.Companies.GetPagedAsync(
-            c => c.UserId == userId,
+            c => c.OrgId == orgId && !c.IsDeleted,
             page,
             pageSize,
             q => q.OrderBy(c => c.Name));
@@ -27,11 +27,12 @@ public class CompanyService : ICompanyService
         };
     }
 
-    public async Task<CompanyDto> CreateAsync(CreateCompanyRequest request, int userId)
+    public async Task<CompanyDto> CreateAsync(CreateCompanyRequest request, int userId, int orgId)
     {
         var entity = new Company
         {
             UserId = userId,
+            OrgId = orgId,
             Name = request.Name,
             Industry = request.Industry,
             Size = request.Size,
@@ -53,12 +54,12 @@ public class CompanyService : ICompanyService
         return MapToDto(entity);
     }
 
-    public async Task<CompanyDto> UpdateAsync(int id, UpdateCompanyRequest request, int userId)
+    public async Task<CompanyDto> UpdateAsync(int id, UpdateCompanyRequest request, int userId, int orgId)
     {
         var entity = await _uow.Companies.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Company {id} not found.");
 
-        if (entity.UserId != userId)
+        if (entity.OrgId != orgId)
             throw new UnauthorizedAccessException("You do not have access to this company.");
 
         entity.Name = request.Name;
@@ -81,12 +82,12 @@ public class CompanyService : ICompanyService
         return MapToDto(entity);
     }
 
-    public async Task DeleteAsync(int id, int userId)
+    public async Task DeleteAsync(int id, int userId, int orgId)
     {
         var entity = await _uow.Companies.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Company {id} not found.");
 
-        if (entity.UserId != userId)
+        if (entity.OrgId != orgId)
             throw new UnauthorizedAccessException("You do not have access to this company.");
 
         await _uow.Companies.DeleteAsync(entity);

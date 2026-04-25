@@ -32,4 +32,9 @@ export const adminService = {
         apiClient.post(`/admin/tickets/${id}/reply`, { comment, isInternal, authorName }),
     setTicketStatus: (id, status) =>
         apiClient.patch(`/admin/tickets/${id}/status`, { status }),
+
+    // Organizations
+    getOrganizations: () => apiClient.get('/admin/organizations'),
+    createOrganization: (data) => apiClient.post('/admin/organizations', data),
+    deleteOrganization: (orgId) => apiClient.delete(`/admin/organizations/${orgId}`),
 };

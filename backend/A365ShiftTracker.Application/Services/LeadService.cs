@@ -11,10 +11,10 @@ public class LeadService : ILeadService
 
     public LeadService(IUnitOfWork uow) => _uow = uow;
 
-    public async Task<PagedResult<LeadDto>> GetAllAsync(int userId, int page, int pageSize)
+    public async Task<PagedResult<LeadDto>> GetAllAsync(int orgId, int page, int pageSize)
     {
         var paged = await _uow.Leads.GetPagedAsync(
-            l => l.UserId == userId,
+            l => l.OrgId == orgId && !l.IsDeleted,
             page,
             pageSize,
             q => q.OrderByDescending(l => l.CreatedAt));
@@ -27,11 +27,12 @@ public class LeadService : ILeadService
         };
     }
 
-    public async Task<LeadDto> CreateAsync(CreateLeadRequest request, int userId)
+    public async Task<LeadDto> CreateAsync(CreateLeadRequest request, int userId, int orgId)
     {
         var entity = new Lead
         {
             UserId = userId,
+            OrgId = orgId,
             ContactId = request.ContactId,
             ContactName = request.ContactName,
             Company = request.Company,
@@ -50,12 +51,12 @@ public class LeadService : ILeadService
         return MapToDto(entity);
     }
 
-    public async Task<LeadDto> UpdateAsync(int id, UpdateLeadRequest request, int userId)
+    public async Task<LeadDto> UpdateAsync(int id, UpdateLeadRequest request, int userId, int orgId)
     {
         var entity = await _uow.Leads.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Lead {id} not found.");
 
-        if (entity.UserId != userId)
+        if (entity.OrgId != orgId)
             throw new UnauthorizedAccessException("You do not have access to this lead.");
 
         entity.ContactId = request.ContactId;
@@ -75,12 +76,12 @@ public class LeadService : ILeadService
         return MapToDto(entity);
     }
 
-    public async Task DeleteAsync(int id, int userId)
+    public async Task DeleteAsync(int id, int userId, int orgId)
     {
         var entity = await _uow.Leads.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Lead {id} not found.");
 
-        if (entity.UserId != userId)
+        if (entity.OrgId != orgId)
             throw new UnauthorizedAccessException("You do not have access to this lead.");
 
         await _uow.Leads.DeleteAsync(entity);

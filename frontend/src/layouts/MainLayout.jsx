@@ -118,21 +118,21 @@ export default function MainLayout() {
         { path: '/finance',   icon: <FaMoneyBillWave size={14} />, label: 'Finance',      permission: 'finance.view' },
         { path: '/invoice',   icon: <FaFileInvoice size={14} />,   label: 'Deal Finance', permission: 'invoice.view' },
         { path: '/legal',     icon: <FaFileInvoice size={14} />,   label: 'Legal',        permission: 'invoice.view' },
-        { path: '/documents', icon: <FaFileInvoice size={14} />,   label: 'Documents',    permission: 'dashboard.view' },
-        { path: '/calendar',  icon: <FaHouse size={14} />,         label: 'Calendar',  permission: 'dashboard.view' },
-        { path: '/tickets',  icon: <FaListCheck size={14} />,   label: 'Tickets',   permission: 'dashboard.view' },
+        { path: '/documents', icon: <FaFileInvoice size={14} />,   label: 'Documents',    permission: 'documents.view' },
+        { path: '/calendar',  icon: <FaHouse size={14} />,         label: 'Calendar',     permission: 'calendar.view' },
+        { path: '/tickets',   icon: <FaListCheck size={14} />,     label: 'Tickets',      permission: 'notifications.view' },
       ],
     },
     {
       title: 'Reports',
       items: [
-        { path: '/reports',   icon: <FaChartColumn size={14} />,   label: 'Reports',   permission: 'dashboard.view' },
+        { path: '/reports',   icon: <FaChartColumn size={14} />,   label: 'Reports',      permission: 'reports.view' },
       ],
     },
     {
       title: 'People',
       items: [
-        { path: '/hr', icon: <FaUserGroup size={14} />, label: 'HR', permission: 'dashboard.view' },
+        { path: '/hr', icon: <FaUserGroup size={14} />, label: 'HR', permission: 'activitylog.view' },
       ],
     },
     {

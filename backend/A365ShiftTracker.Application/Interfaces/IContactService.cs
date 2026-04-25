@@ -5,11 +5,11 @@ namespace A365ShiftTracker.Application.Interfaces;
 
 public interface IContactService
 {
-    Task<PagedResult<ContactDto>> GetAllAsync(int userId, int page, int pageSize);
-    Task<ContactDto> CreateAsync(CreateContactRequest request, int userId);
-    Task<ContactDto> UpdateAsync(int id, UpdateContactRequest request, int userId);
-    Task DeleteAsync(int id, int userId);
-    Task<IEnumerable<ContactDto>> GetVendorsAsync(int userId);
+    Task<PagedResult<ContactDto>> GetAllAsync(int orgId, int page, int pageSize);
+    Task<ContactDto> CreateAsync(CreateContactRequest request, int userId, int orgId);
+    Task<ContactDto> UpdateAsync(int id, UpdateContactRequest request, int userId, int orgId);
+    Task DeleteAsync(int id, int userId, int orgId);
+    Task<IEnumerable<ContactDto>> GetVendorsAsync(int orgId);
 
     // Columns (shared across users)
     Task<IEnumerable<ContactColumnDto>> GetColumnsAsync();

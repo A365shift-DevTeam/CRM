@@ -13,10 +13,10 @@ public class ContactService : IContactService
 
     public ContactService(IUnitOfWork uow) => _uow = uow;
 
-    public async Task<PagedResult<ContactDto>> GetAllAsync(int userId, int page, int pageSize)
+    public async Task<PagedResult<ContactDto>> GetAllAsync(int orgId, int page, int pageSize)
     {
         var paged = await _uow.Contacts.GetPagedAsync(
-            c => c.UserId == userId,
+            c => c.OrgId == orgId && !c.IsDeleted,
             page,
             pageSize,
             q => q.OrderByDescending(c => c.Id));
@@ -29,22 +29,23 @@ public class ContactService : IContactService
         };
     }
 
-    public async Task<ContactDto> CreateAsync(CreateContactRequest req, int userId)
+    public async Task<ContactDto> CreateAsync(CreateContactRequest req, int userId, int orgId)
     {
         var entity = MapFromRequest(new Contact(), req);
         entity.UserId = userId;
+        entity.OrgId = orgId;
         entity.Score = CalculateLeadScore(entity);
         await _uow.Contacts.AddAsync(entity);
         await _uow.SaveChangesAsync();
         return MapToDto(entity);
     }
 
-    public async Task<ContactDto> UpdateAsync(int id, UpdateContactRequest req, int userId)
+    public async Task<ContactDto> UpdateAsync(int id, UpdateContactRequest req, int userId, int orgId)
     {
         var entity = await _uow.Contacts.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Contact {id} not found.");
 
-        if (entity.UserId != userId)
+        if (entity.OrgId != orgId)
             throw new UnauthorizedAccessException("You do not have access to this contact.");
 
         MapFromRequest(entity, req);
@@ -54,22 +55,22 @@ public class ContactService : IContactService
         return MapToDto(entity);
     }
 
-    public async Task DeleteAsync(int id, int userId)
+    public async Task DeleteAsync(int id, int userId, int orgId)
     {
         var entity = await _uow.Contacts.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Contact {id} not found.");
 
-        if (entity.UserId != userId)
+        if (entity.OrgId != orgId)
             throw new UnauthorizedAccessException("You do not have access to this contact.");
 
         await _uow.Contacts.DeleteAsync(entity);
         await _uow.SaveChangesAsync();
     }
 
-    public async Task<IEnumerable<ContactDto>> GetVendorsAsync(int userId)
+    public async Task<IEnumerable<ContactDto>> GetVendorsAsync(int orgId)
     {
         return await _uow.Contacts.Query()
-            .Where(c => c.UserId == userId && (c.EntityType == "Vendor" || c.Status == "Vendor"))
+            .Where(c => c.OrgId == orgId && !c.IsDeleted && (c.EntityType == "Vendor" || c.Status == "Vendor"))
             .Select(c => new ContactDto
             {
                 Id = c.Id, CompanyId = c.CompanyId, Name = c.Name, JobTitle = c.JobTitle, Phone = c.Phone,

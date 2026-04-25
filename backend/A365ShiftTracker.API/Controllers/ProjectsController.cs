@@ -26,16 +26,18 @@ public class ProjectsController : BaseApiController
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 25)
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.GetAllAsync(userId, page, pageSize);
+        var orgId = GetCurrentOrgId() ?? 0;
+        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
+        var result = await _service.GetAllAsync(orgId, page, pageSize);
         return Ok(ApiResponse<PagedResult<ProjectDto>>.Ok(result));
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<ApiResponse<ProjectDto>>> GetById(int id)
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.GetByIdAsync(id, userId);
+        var orgId = GetCurrentOrgId() ?? 0;
+        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
+        var result = await _service.GetByIdAsync(id, orgId);
         if (result is null) return NotFound(ApiResponse<ProjectDto>.Fail("Project not found."));
         return Ok(ApiResponse<ProjectDto>.Ok(result));
     }
@@ -44,10 +46,12 @@ public class ProjectsController : BaseApiController
     public async Task<ActionResult<ApiResponse<ProjectDto>>> Create(CreateProjectRequest request)
     {
         var userId = GetCurrentUserId();
+        var orgId = GetCurrentOrgId() ?? 0;
+        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
         var (allowed, current, limit) = await _limits.CheckLimitAsync(userId, "Projects");
         if (!allowed)
             return StatusCode(402, ApiResponse<object>.Fail($"Project limit reached ({current}/{limit}). Please upgrade your plan."));
-        var result = await _service.CreateAsync(request, userId);
+        var result = await _service.CreateAsync(request, userId, orgId);
         return CreatedAtAction(nameof(GetById), new { id = result.Id },
             ApiResponse<ProjectDto>.Ok(result, "Project created."));
     }
@@ -56,7 +60,9 @@ public class ProjectsController : BaseApiController
     public async Task<ActionResult<ApiResponse<ProjectDto>>> Update(int id, UpdateProjectRequest request)
     {
         var userId = GetCurrentUserId();
-        var result = await _service.UpdateAsync(id, request, userId);
+        var orgId = GetCurrentOrgId() ?? 0;
+        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
+        var result = await _service.UpdateAsync(id, request, userId, orgId);
         return Ok(ApiResponse<ProjectDto>.Ok(result, "Project updated."));
     }
 
@@ -64,7 +70,9 @@ public class ProjectsController : BaseApiController
     public async Task<ActionResult<ApiResponse<bool>>> Delete(int id)
     {
         var userId = GetCurrentUserId();
-        await _service.DeleteAsync(id, userId);
+        var orgId = GetCurrentOrgId() ?? 0;
+        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
+        await _service.DeleteAsync(id, userId, orgId);
         return Ok(ApiResponse<bool>.Ok(true, "Project deleted."));
     }
 }

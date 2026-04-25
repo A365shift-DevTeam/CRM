@@ -10,24 +10,25 @@ public class DocumentService : IDocumentService
 
     public DocumentService(IUnitOfWork uow) => _uow = uow;
 
-    public async Task<IEnumerable<DocumentDto>> GetAllAsync(int userId)
+    public async Task<IEnumerable<DocumentDto>> GetAllAsync(int orgId)
     {
-        var docs = await _uow.Documents.FindAsync(d => d.UserId == userId);
+        var docs = await _uow.Documents.FindAsync(d => d.OrgId == orgId && !d.IsDeleted);
         return docs.OrderByDescending(d => d.CreatedAt).Select(MapToDto);
     }
 
-    public async Task<IEnumerable<DocumentDto>> GetByEntityAsync(string entityType, int entityId, int userId)
+    public async Task<IEnumerable<DocumentDto>> GetByEntityAsync(string entityType, int entityId, int orgId)
     {
         var docs = await _uow.Documents.FindAsync(d =>
-            d.UserId == userId && d.EntityType == entityType && d.EntityId == entityId);
+            d.OrgId == orgId && d.EntityType == entityType && d.EntityId == entityId);
         return docs.OrderByDescending(d => d.CreatedAt).Select(MapToDto);
     }
 
-    public async Task<DocumentDto> CreateAsync(CreateDocumentRequest request, int userId)
+    public async Task<DocumentDto> CreateAsync(CreateDocumentRequest request, int userId, int orgId)
     {
         var entity = new Document
         {
             UserId = userId,
+            OrgId = orgId,
             EntityType = request.EntityType,
             EntityId = request.EntityId,
             FileName = request.FileName,
@@ -40,11 +41,11 @@ public class DocumentService : IDocumentService
         return MapToDto(entity);
     }
 
-    public async Task DeleteAsync(int id, int userId)
+    public async Task DeleteAsync(int id, int userId, int orgId)
     {
         var entity = await _uow.Documents.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Document {id} not found.");
-        if (entity.UserId != userId) throw new UnauthorizedAccessException();
+        if (entity.OrgId != orgId) throw new UnauthorizedAccessException();
         await _uow.Documents.DeleteAsync(entity);
         await _uow.SaveChangesAsync();
     }

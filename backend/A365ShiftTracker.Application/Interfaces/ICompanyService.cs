@@ -5,8 +5,8 @@ namespace A365ShiftTracker.Application.Interfaces;
 
 public interface ICompanyService
 {
-    Task<PagedResult<CompanyDto>> GetAllAsync(int userId, int page, int pageSize);
-    Task<CompanyDto> CreateAsync(CreateCompanyRequest request, int userId);
-    Task<CompanyDto> UpdateAsync(int id, UpdateCompanyRequest request, int userId);
-    Task DeleteAsync(int id, int userId);
+    Task<PagedResult<CompanyDto>> GetAllAsync(int orgId, int page, int pageSize);
+    Task<CompanyDto> CreateAsync(CreateCompanyRequest request, int userId, int orgId);
+    Task<CompanyDto> UpdateAsync(int id, UpdateCompanyRequest request, int userId, int orgId);
+    Task DeleteAsync(int id, int userId, int orgId);
 }

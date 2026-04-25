@@ -7,6 +7,6 @@ public interface IProjectFinanceService
     Task<IEnumerable<ProjectFinanceDto>> GetAllAsync(int userId);
     Task<ProjectFinanceDto?> GetByIdAsync(int id, int userId);
     Task<ProjectFinanceDto> CreateAsync(CreateProjectFinanceRequest request, int userId);
-    Task<ProjectFinanceDto> UpdateAsync(int id, UpdateProjectFinanceRequest request, int userId);
+    Task<ProjectFinanceDto> UpdateAsync(int id, UpdateProjectFinanceRequest request, int userId, int orgId = 0);
     Task DeleteAsync(int id, int userId);
 }

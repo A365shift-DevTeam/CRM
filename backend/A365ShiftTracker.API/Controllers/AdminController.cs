@@ -2,6 +2,7 @@ using A365ShiftTracker.Application.Common;
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
 using A365ShiftTracker.Domain.Common;
+using A365ShiftTracker.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
@@ -229,5 +230,49 @@ public class AdminController : ControllerBase
         _cache.Remove($"permissions:{id}");
 
         return Ok(ApiResponse<bool>.Ok(true, $"TOTP required for user {id}. User must set it up via Settings."));
+    }
+
+    // ─── Organizations ────────────────────────────────────────
+    [HttpGet("organizations")]
+    public async Task<ActionResult<ApiResponse<IEnumerable<OrganizationDto>>>> GetAllOrganizations()
+    {
+        var orgs = await _uow.Organizations.GetAllAsync();
+        var result = orgs.Select(o => new OrganizationDto
+        {
+            Id = o.Id,
+            Name = o.Name,
+            Slug = o.Slug,
+            CreatedAt = o.CreatedAt
+        });
+        return Ok(ApiResponse<IEnumerable<OrganizationDto>>.Ok(result));
+    }
+
+    [HttpPost("organizations")]
+    public async Task<ActionResult<ApiResponse<OrganizationDto>>> CreateOrganization([FromBody] CreateOrganizationRequest request)
+    {
+        var slug = request.Slug.Trim().ToLowerInvariant();
+        var existing = (await _uow.Organizations.FindAsync(o => o.Slug == slug)).FirstOrDefault();
+        if (existing is not null)
+            return BadRequest(ApiResponse<OrganizationDto>.Fail($"Slug '{slug}' is already taken."));
+
+        var org = new Organization { Name = request.Name.Trim(), Slug = slug };
+        await _uow.Organizations.AddAsync(org);
+        await _uow.SaveChangesAsync();
+
+        return Ok(ApiResponse<OrganizationDto>.Ok(new OrganizationDto
+        {
+            Id = org.Id, Name = org.Name, Slug = org.Slug, CreatedAt = org.CreatedAt
+        }, "Organization created."));
+    }
+
+    [HttpDelete("organizations/{orgId:int}")]
+    public async Task<ActionResult<ApiResponse<bool>>> DeleteOrganization(int orgId)
+    {
+        var org = await _uow.Organizations.GetByIdAsync(orgId);
+        if (org is null) return NotFound(ApiResponse<bool>.Fail("Organization not found."));
+
+        await _uow.Organizations.DeleteAsync(org);
+        await _uow.SaveChangesAsync();
+        return Ok(ApiResponse<bool>.Ok(true, "Organization deleted."));
     }
 }

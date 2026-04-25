@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FaShieldHalved, FaShield, FaUsers, FaUserGear, FaKey, FaToggleOn, FaToggleOff, FaPen, FaPlus, FaTrash, FaLock, FaUserPlus, FaMobileScreen, FaTicket, FaReply } from 'react-icons/fa6';
-import { Send, Lock, Zap, Crown, CreditCard, Check, X } from 'lucide-react';
+import { Send, Lock, Zap, Crown, CreditCard, Check, X, Building } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 import { planService } from '../../services/planService';
 import { useAuth } from '../../context/AuthContext';
@@ -10,6 +10,68 @@ import './Admin.css';
 const PRIORITY_BADGE_COLOR = { Critical: '#F43F5E', High: '#F59E0B', Medium: '#4361EE', Low: '#94A3B8' };
 const STATUS_BADGE = { 'Open': '#3b82f6', 'In Progress': '#8b5cf6', 'Pending': '#f59e0b', 'Resolved': '#10b981', 'Closed': '#64748b' };
 const TICKET_STATUSES = ['Open', 'In Progress', 'Pending', 'Resolved', 'Closed'];
+
+// ─── Org Create Form ──────────────────────────────────────────
+
+function OrgCreateForm({ onCreated }) {
+    const [name, setName] = useState('');
+    const [slug, setSlug] = useState('');
+    const [saving, setSaving] = useState(false);
+    const toast = useToast();
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!name.trim() || !slug.trim()) return;
+        setSaving(true);
+        try {
+            const org = await adminService.createOrganization({ name: name.trim(), slug: slug.trim().toLowerCase() });
+            onCreated(org);
+            setName(''); setSlug('');
+        } catch (err) {
+            toast.error(err.message || 'Failed to create organization.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap', padding: '16px 0 4px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Organization Name</label>
+                <input
+                    value={name}
+                    onChange={e => { setName(e.target.value); setSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')); }}
+                    placeholder="Acme Corp"
+                    required
+                    style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border-color)', fontSize: 13, width: 200, background: '#fff' }}
+                />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Slug (unique ID)</label>
+                <input
+                    value={slug}
+                    onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                    placeholder="acme-corp"
+                    required
+                    style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border-color)', fontSize: 13, width: 180, background: '#fff', fontFamily: 'monospace' }}
+                />
+            </div>
+            <button
+                type="submit"
+                disabled={saving}
+                style={{
+                    background: 'linear-gradient(135deg, #4361EE, #8B5CF6)', color: '#fff',
+                    border: 'none', borderRadius: 9, padding: '9px 20px',
+                    fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer',
+                    opacity: saving ? 0.7 : 1, fontFamily: 'var(--font-display, Outfit)',
+                    display: 'flex', alignItems: 'center', gap: 6,
+                }}
+            >
+                <FaPlus size={11} /> {saving ? 'Creating…' : 'Create Organization'}
+            </button>
+        </form>
+    );
+}
 
 export default function Admin() {
     const { currentUser } = useAuth();
@@ -34,6 +96,9 @@ export default function Admin() {
     // Plan management state
     const [planEdit, setPlanEdit] = useState(null); // { userId, plan, planExpiresAt }
     const [planSaving, setPlanSaving] = useState(false);
+
+    // Organizations state
+    const [orgs, setOrgs] = useState([]);
 
     const loadTickets = useCallback(async (page = 1) => {
         setTicketsLoading(true);
@@ -60,14 +125,16 @@ export default function Admin() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [u, r, p] = await Promise.all([
+            const [u, r, p, o] = await Promise.all([
                 adminService.getUsers(),
                 adminService.getRoles(),
-                adminService.getPermissions()
+                adminService.getPermissions(),
+                adminService.getOrganizations()
             ]);
             setUsers(u);
             setRoles(r);
             setPermissions(p);
+            setOrgs(o);
         } catch (err) {
             console.error('Failed to load admin data:', err);
         } finally {
@@ -273,6 +340,9 @@ export default function Admin() {
                     <button className={`admin-tab ${activeTab === 'plans' ? 'active' : ''}`} onClick={() => setActiveTab('plans')}>
                         <Zap size={14} /> Plans
                     </button>
+                    <button className={`admin-tab ${activeTab === 'organizations' ? 'active' : ''}`} onClick={() => setActiveTab('organizations')}>
+                        <Building size={14} /> Organizations <span className="tab-count">{orgs.length}</span>
+                    </button>
                 </div>
 
                 {activeTab === 'users' && (
@@ -296,6 +366,7 @@ export default function Admin() {
                             <tr>
                                 <th>User</th>
                                 <th>Email</th>
+                                <th>Organization</th>
                                 <th>Roles</th>
                                 <th>Status</th>
                                 <th>2FA</th>
@@ -319,6 +390,9 @@ export default function Admin() {
                                 <tr key={user.id}>
                                     <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{user.displayName || '—'}</td>
                                     <td>{user.email}</td>
+                                    <td style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                                        {orgs.find(o => o.id === user.orgId)?.name || <span style={{ color: 'var(--text-muted)' }}>No org</span>}
+                                    </td>
                                     <td>
                                         {user.roles.map(r => (
                                             <span key={r} className={`role-badge ${r.toLowerCase()}`} style={{ marginRight: 4 }}>
@@ -663,12 +737,76 @@ export default function Admin() {
                 </div>
             )}
 
+            {/* ─── Organizations Tab ──────────────────────────────── */}
+            {activeTab === 'organizations' && (
+                <div className="admin-card">
+                    {/* Create org form */}
+                    <OrgCreateForm
+                        onCreated={(org) => {
+                            setOrgs(prev => [...prev, org]);
+                            toast.success('Organization created.');
+                        }}
+                    />
+                    <table className="admin-table" style={{ marginTop: 20 }}>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Slug</th>
+                                <th>Members</th>
+                                <th>Created</th>
+                                <th style={{ textAlign: 'center' }}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {orgs.length === 0 ? (
+                                <tr><td colSpan={6} className="text-center py-4 text-muted">No organizations yet.</td></tr>
+                            ) : orgs.map(org => (
+                                <tr key={org.id}>
+                                    <td style={{ fontFamily: 'monospace', color: 'var(--text-muted)', fontSize: 12 }}>#{org.id}</td>
+                                    <td style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{org.name}</td>
+                                    <td>
+                                        <span style={{ fontFamily: 'monospace', fontSize: 12, background: 'var(--bg-primary)', padding: '2px 8px', borderRadius: 6, color: '#4361EE', border: '1px solid var(--border-color)' }}>
+                                            {org.slug}
+                                        </span>
+                                    </td>
+                                    <td style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                                        {users.filter(u => u.orgId === org.id).length} users
+                                    </td>
+                                    <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                                        {new Date(org.createdAt).toLocaleDateString('en-IN')}
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <button
+                                            onClick={async () => {
+                                                if (!window.confirm(`Delete "${org.name}"? This cannot be undone.`)) return;
+                                                try {
+                                                    await adminService.deleteOrganization(org.id);
+                                                    setOrgs(prev => prev.filter(o => o.id !== org.id));
+                                                    toast.success('Organization deleted.');
+                                                } catch (e) {
+                                                    toast.error(e.message || 'Failed to delete.');
+                                                }
+                                            }}
+                                            style={{ background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.2)', borderRadius: 7, padding: '4px 12px', fontSize: 12, fontWeight: 600, color: '#F43F5E', cursor: 'pointer' }}
+                                        >
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+
             {/* ─── Modals ──────────────────────────────────────────── */}
 
             {(modalType === 'createUser' || modalType === 'editUser') && (
                 <CreateEditUserModal
                     user={modalType === 'editUser' ? modalData : null}
                     roles={roles}
+                    orgs={orgs}
                     onCreate={handleCreateUser}
                     onUpdate={handleUpdateUser}
                     onClose={() => setModalType(null)}
@@ -732,13 +870,14 @@ export default function Admin() {
 
 // ─── Create / Edit User Modal ──────────────────────────────────
 
-function CreateEditUserModal({ user, roles, onCreate, onUpdate, onClose }) {
+function CreateEditUserModal({ user, roles, orgs, onCreate, onUpdate, onClose }) {
     const isEdit = !!user;
     const [email, setEmail] = useState(user?.email || '');
     const [displayName, setDisplayName] = useState(user?.displayName || '');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [isActive, setIsActive] = useState(user?.isActive ?? true);
+    const [orgId, setOrgId] = useState(user?.orgId ?? null);
     const [selectedRoleIds, setSelectedRoleIds] = useState(
         user ? roles.filter(r => user.roles.includes(r.name)).map(r => r.id) : []
     );
@@ -760,14 +899,16 @@ function CreateEditUserModal({ user, roles, onCreate, onUpdate, onClose }) {
                 displayName: displayName.trim() || null,
                 password,
                 roleIds: selectedRoleIds,
-                isActive
+                isActive,
+                orgId: orgId || null
             });
         } else {
             onUpdate(user.id, {
                 email: email.trim(),
                 displayName: displayName.trim() || null,
                 roleIds: selectedRoleIds,
-                isActive
+                isActive,
+                orgId: orgId || null
             });
         }
     };
@@ -840,6 +981,18 @@ function CreateEditUserModal({ user, roles, onCreate, onUpdate, onClose }) {
                                 </label>
                             ))}
                         </div>
+                    </div>
+
+                    <div className="mb-3">
+                        <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>Organization</label>
+                        <select
+                            className="form-control form-control-sm"
+                            value={orgId || ''}
+                            onChange={e => setOrgId(e.target.value ? parseInt(e.target.value) : null)}
+                        >
+                            <option value="">— No Organization —</option>
+                            {(orgs || []).map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+                        </select>
                     </div>
 
                     <div className="mb-3">

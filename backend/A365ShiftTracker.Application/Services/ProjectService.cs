@@ -12,10 +12,10 @@ public class ProjectService : IProjectService
 
     public ProjectService(IUnitOfWork uow) => _uow = uow;
 
-    public async Task<PagedResult<ProjectDto>> GetAllAsync(int userId, int page, int pageSize)
+    public async Task<PagedResult<ProjectDto>> GetAllAsync(int orgId, int page, int pageSize)
     {
         var paged = await _uow.Projects.GetPagedAsync(
-            p => p.UserId == userId,
+            p => p.OrgId == orgId && !p.IsDeleted,
             page,
             pageSize,
             q => q.OrderByDescending(p => p.Id));
@@ -28,18 +28,19 @@ public class ProjectService : IProjectService
         };
     }
 
-    public async Task<ProjectDto?> GetByIdAsync(int id, int userId)
+    public async Task<ProjectDto?> GetByIdAsync(int id, int orgId)
     {
         var project = await _uow.Projects.GetByIdAsync(id);
-        if (project is null || project.UserId != userId) return null;
+        if (project is null || project.OrgId != orgId) return null;
         return MapToDto(project);
     }
 
-    public async Task<ProjectDto> CreateAsync(CreateProjectRequest request, int userId)
+    public async Task<ProjectDto> CreateAsync(CreateProjectRequest request, int userId, int orgId)
     {
         var entity = new Project
         {
             UserId = userId,
+            OrgId = orgId,
             CustomId = request.CustomId,
             Title = request.Title,
             ClientName = request.ClientName,
@@ -62,12 +63,12 @@ public class ProjectService : IProjectService
         return MapToDto(entity);
     }
 
-    public async Task<ProjectDto> UpdateAsync(int id, UpdateProjectRequest request, int userId)
+    public async Task<ProjectDto> UpdateAsync(int id, UpdateProjectRequest request, int userId, int orgId)
     {
         var entity = await _uow.Projects.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Project {id} not found.");
 
-        if (entity.UserId != userId)
+        if (entity.OrgId != orgId)
             throw new UnauthorizedAccessException("You do not have access to this project.");
 
         entity.CustomId = request.CustomId;
@@ -93,12 +94,12 @@ public class ProjectService : IProjectService
         return MapToDto(entity);
     }
 
-    public async Task DeleteAsync(int id, int userId)
+    public async Task DeleteAsync(int id, int userId, int orgId)
     {
         var entity = await _uow.Projects.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Project {id} not found.");
 
-        if (entity.UserId != userId)
+        if (entity.OrgId != orgId)
             throw new UnauthorizedAccessException("You do not have access to this project.");
 
         await _uow.Projects.DeleteAsync(entity);

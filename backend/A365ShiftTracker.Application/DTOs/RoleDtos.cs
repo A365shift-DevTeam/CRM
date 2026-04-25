@@ -75,6 +75,7 @@ public class CreateUserRequest
     public string Password { get; set; } = string.Empty;
     public List<int> RoleIds { get; set; } = new();
     public bool IsActive { get; set; } = true;
+    public int? OrgId { get; set; }
 }
 
 public class UpdateUserRequest
@@ -83,4 +84,5 @@ public class UpdateUserRequest
     public string? DisplayName { get; set; }
     public List<int>? RoleIds { get; set; }
     public bool? IsActive { get; set; }
+    public int? OrgId { get; set; }
 }

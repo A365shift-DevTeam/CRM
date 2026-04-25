@@ -44,6 +44,7 @@ public class AdminService : IAdminService
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             IsActive = request.IsActive
         };
+        user.OrgId = request.OrgId;
 
         await _uow.Users.AddAsync(user);
         await _uow.SaveChangesAsync();
@@ -89,6 +90,8 @@ public class AdminService : IAdminService
 
         if (request.IsActive.HasValue)
             user.IsActive = request.IsActive.Value;
+
+        if (request.OrgId.HasValue) user.OrgId = request.OrgId;
 
         await _uow.Users.UpdateAsync(user);
 

@@ -106,7 +106,7 @@ public class ProjectFinanceService : IProjectFinanceService
         return MapToDto(entity);
     }
 
-    public async Task<ProjectFinanceDto> UpdateAsync(int id, UpdateProjectFinanceRequest request, int userId)
+    public async Task<ProjectFinanceDto> UpdateAsync(int id, UpdateProjectFinanceRequest request, int userId, int orgId = 0)
     {
         var entity = await _uow.ProjectFinances.Query()
             .Include(pf => pf.Milestones)
@@ -192,7 +192,7 @@ public class ProjectFinanceService : IProjectFinanceService
                 TaxAmount = 0m,
                 TotalAmount = milestoneValue,
                 Currency = entity.Currency
-            }, userId);
+            }, userId, orgId);
         }
 
         return MapToDto(entity);
