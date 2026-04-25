@@ -5,6 +5,7 @@ import { adminService } from '../../services/adminService';
 import { planService } from '../../services/planService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast/ToastContext';
+import StatsGrid from '../../components/StatsGrid/StatsGrid';
 import './Admin.css';
 
 const PRIORITY_BADGE_COLOR = { Critical: '#F43F5E', High: '#F59E0B', Medium: '#4361EE', Low: '#94A3B8' };
@@ -298,29 +299,11 @@ export default function Admin() {
             </div>
 
             {/* Stat Cards */}
-            <div className="admin-stats-grid">
-                <div className="admin-stat-card">
-                    <div className="admin-stat-icon blue"><FaUsers size={24} /></div>
-                    <div className="admin-stat-info">
-                        <span className="admin-stat-label">Total Users</span>
-                        <span className="admin-stat-number">{users.length}</span>
-                    </div>
-                </div>
-                <div className="admin-stat-card">
-                    <div className="admin-stat-icon green"><FaUserGear size={24} /></div>
-                    <div className="admin-stat-info">
-                        <span className="admin-stat-label">Roles</span>
-                        <span className="admin-stat-number">{roles.length}</span>
-                    </div>
-                </div>
-                <div className="admin-stat-card">
-                    <div className="admin-stat-icon purple"><FaKey size={24} /></div>
-                    <div className="admin-stat-info">
-                        <span className="admin-stat-label">Permissions</span>
-                        <span className="admin-stat-number">{permissions.length}</span>
-                    </div>
-                </div>
-            </div>
+            <StatsGrid stats={[
+                { label: 'Total Users', value: users.length, icon: <FaUsers size={22} />, color: 'blue' },
+                { label: 'Roles', value: roles.length, icon: <FaUserGear size={22} />, color: 'green' },
+                { label: 'Permissions', value: permissions.length, icon: <FaKey size={22} />, color: 'purple' },
+            ]} />
 
             {/* Toolbar */}
             <div className="admin-toolbar">

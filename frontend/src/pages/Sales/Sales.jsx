@@ -4,6 +4,7 @@ import { User, Mail, Contact, Settings, Plus, CheckCircle, Trash2, Briefcase, Do
 import { FaWhatsapp } from 'react-icons/fa6'
 import { Button, Modal, Form, Dropdown } from 'react-bootstrap'
 import PageToolbar from '../../components/PageToolbar/PageToolbar'
+import StatsGrid from '../../components/StatsGrid/StatsGrid'
 import './Sales.css'
 import StageSettingsModal, {
     getDefaultDeliveryStages,
@@ -1045,66 +1046,26 @@ function Sales() {
     return (
         <div className="sales-page" style={{ '--dynamic-theme-color': themeColor || '#2563EB' }}>
 
-            <div className="sales-stats-grid">
-                {/* Card 0: Total Projects */}
-                <div className="stat-card">
-                    <div className="stat-header">
-                        <div className="stat-icon-wrapper purple">
-                            <Briefcase size={24} />
-                        </div>
-                        <div className="stat-content">
-                            <div className="stat-title">Total Project</div>
-                            <div className="stat-value">{totalProjects}</div>
+            <StatsGrid stats={[
+                { label: 'Total Project', value: totalProjects, icon: <Briefcase size={22} />, color: 'purple' },
+                { label: 'Total Stages', value: totalStages, icon: <Flag size={22} />, color: 'blue' },
+                { label: 'Avg. Percentage', value: (
+                    <div className="d-flex align-items-baseline gap-2 m-0 p-0">
+                        <span>{totalProgress}%</span>
+                        <div className="text-success small d-flex align-items-center" style={{ fontSize: '11px' }}>
+                            <ArrowUpRight size={12} className="me-1" />3%
                         </div>
                     </div>
-                </div>
-                {/* Card 1: Stages */}
-                <div className="stat-card">
-                    <div className="stat-header">
-                        <div className="stat-icon-wrapper blue">
-                            <Flag size={24} />
-                        </div>
-                        <div className="stat-content">
-                            <div className="stat-title">Total Stages</div>
-                            <div className="stat-value">{totalStages}</div>
+                ), icon: <CheckCircle size={22} />, color: 'green' },
+                { label: 'Delays', value: (
+                    <div className="d-flex align-items-baseline gap-2 m-0 p-0">
+                        <span>{totalDelays}</span>
+                        <div className="text-muted small" style={{ fontSize: '10px' }}>
+                            ({notOnTrack} Not on Track)
                         </div>
                     </div>
-                </div>
-
-                {/* Card 2: Progress */}
-                <div className="stat-card">
-                    <div className="stat-header">
-                        <div className="stat-icon-wrapper green">
-                            <CheckCircle size={24} />
-                        </div>
-                        <div className="stat-content">
-                            <div className="stat-title">Avg. Percentage</div>
-                            <div className="d-flex align-items-baseline gap-2">
-                                <div className="stat-value">{totalProgress}%</div>
-                                <div className="text-success small d-flex align-items-center">
-                                    <ArrowUpRight size={14} className="me-1" />3%
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Card 3: Delays */}
-                <div className="stat-card">
-                    <div className="stat-header">
-                        <div className="stat-icon-wrapper orange">
-                            <AlertTriangle size={24} />
-                        </div>
-                        <div className="stat-content">
-                            <div className="stat-title">Delays</div>
-                            <div className="stat-value">{totalDelays}</div>
-                            <small className="text-muted" style={{ fontSize: '11px' }}>{notOnTrack} Not on Track</small>
-                        </div>
-                    </div>
-                </div>
-
-
-            </div>
+                ), icon: <AlertTriangle size={22} />, color: 'orange' },
+            ]} />
 
             {/* New Unified Toolbar */}
             <div className="mb-4">
