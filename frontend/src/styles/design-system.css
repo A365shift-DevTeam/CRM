@@ -31,7 +31,7 @@
   --ios-sep:      rgba(60,60,67,0.12);
 
   /* ── Backgrounds ── */
-  --ios-bg:            #F2F2F7;
+  --ios-bg:            transparent;
   --ios-bg-card:       #FFFFFF;
   --ios-bg-grouped:    #F2F2F7;
 

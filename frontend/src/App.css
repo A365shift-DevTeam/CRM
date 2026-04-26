@@ -9,3 +9,66 @@
   flex: 1;
   padding: 20px;
 }
+
+/* Global Premium Background Gradient */
+body {
+  min-height: 100vh;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #0f172a;
+  
+  /* Premium CRM Background: Vibrant Warm Violet (top-left) → Cool Teal (bottom-right) with clean white center */
+  background: 
+    radial-gradient(ellipse at 0% 0%, rgba(139, 92, 246, 0.45) 0%, transparent 55%), /* Warm Violet / Lavender */
+    radial-gradient(ellipse at 15% 15%, rgba(167, 139, 250, 0.3) 0%, transparent 45%), /* Soft Violet Glow */
+    radial-gradient(ellipse at 100% 100%, rgba(20, 184, 166, 0.45) 0%, transparent 55%), /* Cool Teal-Green */
+    radial-gradient(ellipse at 85% 85%, rgba(45, 212, 191, 0.3) 0%, transparent 45%), /* Soft Teal Glow */
+    radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.3) 60%, transparent 80%), /* Bright White Center Wash */
+    linear-gradient(135deg, #f3e8ff 0%, #ffffff 35%, #ffffff 65%, #ccfbf1 100%) !important;
+  background-attachment: fixed;
+  overflow-x: hidden;
+}
+
+/* Subtle digital dot grid overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(rgba(100, 116, 139, 0.10) 1px, transparent 1px);
+  background-size: 22px 22px;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ── Override all page-level solid backgrounds to show the global gradient ── */
+:root {
+  --bg-primary: transparent !important;
+  --bg-primary-flat: transparent !important;
+  --ios-bg: transparent !important;
+}
+
+/* Page wrappers — force transparent */
+.sales-page,
+.dash-root,
+.finance-page,
+.legal-page-wrapper,
+.legal-page,
+.leads-page,
+.contacts-container,
+.timesheet-page,
+.todo-page,
+.invoice-page,
+.company-container,
+.admin-page,
+.settings-page,
+.projects-page,
+.documents-page,
+.calendar-page,
+.tickets-page,
+.vendor-page {
+  background: transparent !important;
+}
+
+/* Disable Dashboard's competing dot-grid since we have a global one */
+.dash-root::before {
+  display: none !important;
+}
