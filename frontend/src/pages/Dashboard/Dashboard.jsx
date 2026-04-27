@@ -276,7 +276,7 @@ function MetricCard({ menuCard, health, cardIndex }) {
       {/* The dynamic color gradient overlay fading to white/transparent */}
       <div className={`pointer-events-none absolute inset-0 ${menuCard.accentText} opacity-[0.08]`} style={{ background: 'linear-gradient(135deg, currentColor 0%, transparent 60%)' }} />
 
-      <div className="relative z-10 flex items-start justify-between gap-3">
+      <div className="relative z-10 flex items-center justify-between gap-3">
         <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${menuCard.gradient} text-white shadow-md`}>
           <Icon size={18} />
         </div>
@@ -332,7 +332,7 @@ function MetricCard({ menuCard, health, cardIndex }) {
           />
         </div>
 
-        <StatusRow subtitle={menuCard.subtitle} />
+
       </div>
     </div>
   );
