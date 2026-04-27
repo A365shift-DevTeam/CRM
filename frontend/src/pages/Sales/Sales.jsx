@@ -133,7 +133,7 @@ function buildWhatsAppText(project, stages, activeStage) {
         `━━━━━━━━━━━━━━━━━━`,
         ...pipelineLines,
         ``,
-        `_Shared via A365Shift CRM_ 🚀`,
+        `_Shared via Ambot365 CRM_ 🚀`,
     ].filter(l => l !== null).join('\n');
 }
 
@@ -834,7 +834,7 @@ function Sales() {
     }
 
     const [showAddModal, setShowAddModal] = useState(false)
-    const [newProjectData, setNewProjectData] = useState({ title: '', clientName: '', companyName: '', contactName: '', brandingName: 'A365Shift', type: 'Product', phone: '', startDate: '', endDate: '' })
+    const [newProjectData, setNewProjectData] = useState({ title: '', clientName: '', companyName: '', contactName: '', brandingName: 'Ambot365', type: 'Product', phone: '', startDate: '', endDate: '' })
 
     // Edit Project State
     const [showEditModal, setShowEditModal] = useState(false)
@@ -842,7 +842,7 @@ function Sales() {
     const [editProjectData, setEditProjectData] = useState({ title: '', clientName: '', companyName: '', contactName: '', brandingName: '', type: 'Product', status: '', phone: '', startDate: '', endDate: '', stages: [] })
 
     const handleAddProject = () => {
-        setNewProjectData({ title: '', clientName: '', companyName: '', contactName: '', brandingName: 'A365Shift', type: activeTab, phone: '', startDate: '', endDate: '' })
+        setNewProjectData({ title: '', clientName: '', companyName: '', contactName: '', brandingName: 'Ambot365', type: activeTab, phone: '', startDate: '', endDate: '' })
         setShowAddModal(true)
     }
 
@@ -861,7 +861,7 @@ function Sales() {
             clientName: newProjectData.clientName || 'New Client',
             companyName: newProjectData.companyName || '',
             contactName: newProjectData.contactName || '',
-            brandingName: newProjectData.brandingName || 'A365Shift',
+            brandingName: newProjectData.brandingName || 'Ambot365',
             phone: newProjectData.phone || '',
             startDate: newProjectData.startDate || null,
             endDate: newProjectData.endDate || null,
@@ -1273,7 +1273,7 @@ function Sales() {
                             <Form.Label className="fw-semibold small text-muted">Branding Name (Left)</Form.Label>
                             <Form.Control
                                 type="text"
-                                placeholder="e.g. A365Shift"
+                                placeholder="e.g. Ambot365"
                                 value={newProjectData.brandingName}
                                 onChange={(e) => setNewProjectData({ ...newProjectData, brandingName: e.target.value })}
                             />
@@ -1404,7 +1404,7 @@ function Sales() {
                                     <Form.Label className="fw-semibold small text-muted">Branding Name (Left)</Form.Label>
                                     <Form.Control
                                         type="text"
-                                        placeholder="e.g. A365Shift"
+                                        placeholder="e.g. Ambot365"
                                         value={editProjectData.brandingName}
                                         onChange={(e) => setEditProjectData(prev => ({ ...prev, brandingName: e.target.value }))}
                                     />

@@ -8,7 +8,7 @@ export default function About() {
     return (
         <div className="p-6 max-w-4xl mx-auto">
             <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-                <FaCircleInfo className="text-slate-500" /> About A365 Tracker
+                <FaCircleInfo className="text-slate-500" /> About Ambot365 Tracker
             </h2>
 
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -17,7 +17,7 @@ export default function About() {
                     style={{ background: `linear-gradient(135deg, ${themeColor} 0%, #0f172a 100%)` }}
                 >
                     <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-4 border border-white/30">
-                        <span className="text-3xl font-bold">A365</span>
+                        <span className="text-3xl font-bold">Ambot365</span>
                     </div>
                     <h3 className="text-2xl font-bold">Tracker Application v2.0</h3>
                     <p className="text-white/80 mt-2 max-w-md">

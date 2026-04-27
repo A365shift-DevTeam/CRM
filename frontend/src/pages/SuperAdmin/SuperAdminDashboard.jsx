@@ -511,9 +511,9 @@ export default function SuperAdminDashboard() {
       <aside className="sa-sidebar">
         {/* Brand */}
         <div className="sa-sidebar-brand">
-          <div className="sa-brand-logo"><span>A3</span></div>
+          <div className="sa-brand-logo"><span>AB</span></div>
           <div className="sa-brand-text">
-            <div className="sa-brand-name">A365 Tracker</div>
+            <div className="sa-brand-name">Ambot365 Tracker</div>
             <div className="sa-brand-sub">Platform Admin</div>
           </div>
         </div>

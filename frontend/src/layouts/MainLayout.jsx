@@ -133,7 +133,7 @@ export default function MainLayout() {
 
 
 
-  let currentPageLabel = 'A365 Tracker';
+  let currentPageLabel = 'Ambot365 Tracker';
   if (location.pathname === '/') currentPageLabel = 'Dashboard';
   if (location.pathname === '/settings') currentPageLabel = 'Settings';
   if (location.pathname === '/about') currentPageLabel = 'About';
@@ -245,14 +245,14 @@ export default function MainLayout() {
                   boxShadow: `0 4px 12px ${hexToRgba(themeColor, 0.3)}`,
                   flexShrink: 0,
                 }}>
-                  <span style={{ color: '#fff', fontWeight: 900, fontSize: '14px', fontFamily: 'Outfit, sans-serif', letterSpacing: '-0.5px' }}>A3</span>
+                  <span style={{ color: '#fff', fontWeight: 900, fontSize: '14px', fontFamily: 'Outfit, sans-serif', letterSpacing: '-0.5px' }}>AB</span>
                 </div>
                 <div>
                   <div style={{
                     color: '#0F172A', fontWeight: 800, fontSize: '15px',
                     fontFamily: 'Outfit, sans-serif', letterSpacing: '-0.5px', lineHeight: '1',
                   }}>
-                    A365 Tracker
+                    Ambot365 Tracker
                   </div>
                   <div style={{ color: '#94A3B8', fontSize: '10px', fontWeight: 500, marginTop: '1px', letterSpacing: '0.03em' }}>
                     Enterprise CRM

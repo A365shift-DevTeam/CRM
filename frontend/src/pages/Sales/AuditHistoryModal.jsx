@@ -436,7 +436,7 @@ export default function AuditHistoryModal({ show, onHide, project, deliveryStage
 
                     {/* ── 3. Branding Section ── */}
                     <div className="audit-branding-section">
-                        <span className="brand-name">{project.brandingName || 'A365Shift'}</span>
+                        <span className="brand-name">{project.brandingName || 'Ambot365'}</span>
                         <span className="handshake-icon">🤝</span>
                         <span className="brand-name">{project.clientName || 'Client'}</span>
                     </div>

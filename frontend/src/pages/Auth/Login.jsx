@@ -134,7 +134,7 @@ export default function Login() {
             <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'linear-gradient(135deg, #4361EE 0%, #7C3AED 100%)', boxShadow: '0 8px 28px rgba(67,97,238,0.45)' }}>
               <ShieldCheck size={20} className="text-white" />
             </div>
-            <h1 className="text-[24px] font-bold text-white tracking-tight" style={{ fontFamily: 'Outfit, sans-serif', letterSpacing: '-0.02em' }}>A365Shift CRM</h1>
+            <h1 className="text-[24px] font-bold text-white tracking-tight" style={{ fontFamily: 'Outfit, sans-serif', letterSpacing: '-0.02em' }}>Ambot365 CRM</h1>
             <p className="text-slate-500 text-[12.5px] mt-1">
               {step === 'credentials' ? 'Sign in to your workspace' : step === 'otp' ? 'Check your email for a code' : 'Enter your authenticator code'}
             </p>
