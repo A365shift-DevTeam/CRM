@@ -1,30 +1,5 @@
 namespace A365ShiftTracker.Application.DTOs;
 
-// ─── Role DTOs ─────────────────────────────────────────────
-public class RoleDto
-{
-    public int Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string? Description { get; set; }
-    public bool IsSystem { get; set; }
-    public List<string> Permissions { get; set; } = new(); // permission codes
-}
-
-public class CreateRoleRequest
-{
-    public string Name { get; set; } = string.Empty;
-    public string? Description { get; set; }
-    public List<int> PermissionIds { get; set; } = new();
-}
-
-public class UpdateRoleRequest
-{
-    public string? Name { get; set; }
-    public string? Description { get; set; }
-    public List<int>? PermissionIds { get; set; }
-}
-
-// ─── Permission DTOs ───────────────────────────────────────
 public class PermissionDto
 {
     public int Id { get; set; }
@@ -32,30 +7,6 @@ public class PermissionDto
     public string Action { get; set; } = string.Empty;
     public string Code { get; set; } = string.Empty;
     public string? Description { get; set; }
-}
-
-// ─── User Management DTOs ──────────────────────────────────
-public class UserDto
-{
-    public int Id { get; set; }
-    public string Email { get; set; } = string.Empty;
-    public string? DisplayName { get; set; }
-    public bool IsActive { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime? LastLoginAt { get; set; }
-    public List<string> Roles { get; set; } = new();
-    public List<string> Permissions { get; set; } = new(); // flattened permission codes
-    public bool TwoFactorRequired { get; set; }
-    public string TwoFactorMethod { get; set; } = "email";
-    public bool IsTotpEnabled { get; set; }
-    public int? OrgId { get; set; }
-    public string Plan { get; set; } = "Free";
-    public DateTime? PlanExpiresAt { get; set; }
-}
-
-public class UpdateUserRolesRequest
-{
-    public List<int> RoleIds { get; set; } = new();
 }
 
 public class UpdateUserStatusRequest
@@ -66,23 +17,4 @@ public class UpdateUserStatusRequest
 public class AdminResetPasswordRequest
 {
     public string NewPassword { get; set; } = string.Empty;
-}
-
-public class CreateUserRequest
-{
-    public string Email { get; set; } = string.Empty;
-    public string? DisplayName { get; set; }
-    public string Password { get; set; } = string.Empty;
-    public List<int> RoleIds { get; set; } = new();
-    public bool IsActive { get; set; } = true;
-    public int? OrgId { get; set; }
-}
-
-public class UpdateUserRequest
-{
-    public string? Email { get; set; }
-    public string? DisplayName { get; set; }
-    public List<int>? RoleIds { get; set; }
-    public bool? IsActive { get; set; }
-    public int? OrgId { get; set; }
 }

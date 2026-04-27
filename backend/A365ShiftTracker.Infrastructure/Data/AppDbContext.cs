@@ -13,8 +13,6 @@ namespace A365ShiftTracker.Infrastructure.Data;
 
 public class AppDbContext : DbContext
 {
-    // IHttpContextAccessor is singleton — safe for DbContext pooling.
-    // ICurrentUserService (scoped) was replaced to allow AddDbContextPool.
     private readonly IHttpContextAccessor? _httpContextAccessor;
     private readonly IConfiguration? _configuration;
     private readonly ChannelWriter<IReadOnlyList<AuditLog>>? _auditChannel;
@@ -31,11 +29,23 @@ public class AppDbContext : DbContext
         _auditChannel = auditChannel;
     }
 
+    // Read org context directly from the ambient HTTP request.
+    // IHttpContextAccessor is singleton and safe for use in pooled DbContext.
+    private bool IsSuperAdmin =>
+        _httpContextAccessor?.HttpContext?.User?.FindFirst(ClaimTypes.Role)?.Value == "SUPER_ADMIN";
+
+    private int? CurrentOrgId
+    {
+        get
+        {
+            var orgStr = _httpContextAccessor?.HttpContext?.User?.FindFirst("org_id")?.Value;
+            return int.TryParse(orgStr, out var oid) ? oid : null;
+        }
+    }
+
     public DbSet<User> Users => Set<User>();
-    public DbSet<Role> Roles => Set<Role>();
     public DbSet<Permission> Permissions => Set<Permission>();
-    public DbSet<UserRole> UserRoles => Set<UserRole>();
-    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+    public DbSet<OrgRolePermission> OrgRolePermissions => Set<OrgRolePermission>();
     public DbSet<Contact> Contacts => Set<Contact>();
     public DbSet<ContactColumn> ContactColumns => Set<ContactColumn>();
     public DbSet<Project> Projects => Set<Project>();
@@ -73,8 +83,6 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // ─── Encryption converters ─────────────────────────
-        // Use a placeholder key during EF design-time migration scaffolding (real validation happens in Program.cs)
         var encKey = _configuration?["Encryption:Key"];
         if (string.IsNullOrWhiteSpace(encKey))
             encKey = new string('x', 32);
@@ -87,21 +95,8 @@ public class AppDbContext : DbContext
         {
             e.ToTable("users");
             e.HasIndex(u => u.Email).IsUnique();
-            e.HasMany(u => u.UserRoles).WithOne(ur => ur.User)
-                .HasForeignKey(ur => ur.UserId).OnDelete(DeleteBehavior.Cascade);
-            e.Property(u => u.TotpSecret).HasConversion(strConv); // encrypt TOTP secret at rest
-            e.Property(u => u.Plan).HasMaxLength(20).HasDefaultValue("Free");
-        });
-
-        // ─── Roles ─────────────────────────────────────────
-        modelBuilder.Entity<Role>(e =>
-        {
-            e.ToTable("roles");
-            e.HasIndex(r => r.Name).IsUnique();
-            e.HasMany(r => r.UserRoles).WithOne(ur => ur.Role)
-                .HasForeignKey(ur => ur.RoleId).OnDelete(DeleteBehavior.Cascade);
-            e.HasMany(r => r.RolePermissions).WithOne(rp => rp.Role)
-                .HasForeignKey(rp => rp.RoleId).OnDelete(DeleteBehavior.Cascade);
+            e.Property(u => u.Role).HasMaxLength(20).HasDefaultValue("EMPLOYEE");
+            e.Property(u => u.TotpSecret).HasConversion(strConv);
         });
 
         // ─── Permissions ───────────────────────────────────
@@ -109,100 +104,16 @@ public class AppDbContext : DbContext
         {
             e.ToTable("permissions");
             e.HasIndex(p => p.Code).IsUnique();
-            e.HasMany(p => p.RolePermissions).WithOne(rp => rp.Permission)
-                .HasForeignKey(rp => rp.PermissionId).OnDelete(DeleteBehavior.Cascade);
         });
 
-        // ─── User Roles (junction) ─────────────────────────
-        modelBuilder.Entity<UserRole>(e =>
+        // ─── OrgRolePermissions ────────────────────────────
+        modelBuilder.Entity<OrgRolePermission>(e =>
         {
-            e.ToTable("user_roles");
-            e.HasIndex(ur => new { ur.UserId, ur.RoleId }).IsUnique();
+            e.ToTable("org_role_permissions");
+            e.HasIndex(o => new { o.OrgId, o.Role, o.PermissionCode }).IsUnique();
+            e.HasOne(o => o.Organization).WithMany(org => org.RolePermissions)
+                .HasForeignKey(o => o.OrgId).OnDelete(DeleteBehavior.Cascade);
         });
-
-        // ─── Role Permissions (junction) ────────────────────
-        modelBuilder.Entity<RolePermission>(e =>
-        {
-            e.ToTable("role_permissions");
-            e.HasIndex(rp => new { rp.RoleId, rp.PermissionId }).IsUnique();
-        });
-
-        // ─── Seed: Roles ────────────────────────────────────
-        modelBuilder.Entity<Role>().HasData(
-            new Role { Id = 1, Name = "Admin", Description = "Full access to all features", IsSystem = true },
-            new Role { Id = 2, Name = "Manager", Description = "Can manage teams and view reports", IsSystem = true },
-            new Role { Id = 3, Name = "User", Description = "Standard user with limited access", IsSystem = true }
-        );
-
-        // ─── Seed: Permissions ──────────────────────────────
-        var permissions = new List<Permission>();
-        var id = 1;
-        var modules = new[]
-        {
-            "Dashboard", "Sales", "Contacts", "Timesheet",
-            "Finance", "TodoList", "Invoice", "AIAgents", "Admin",
-            "ActivityLog", "Notifications", "Calendar", "Notes",
-            "Tags", "EmailTemplates", "Documents", "Reports"
-        };
-        var actions = new[] { "View", "Create", "Edit", "Delete" };
-
-        foreach (var module in modules)
-        {
-            foreach (var action in actions)
-            {
-                permissions.Add(new Permission
-                {
-                    Id = id,
-                    Module = module,
-                    Action = action,
-                    Code = $"{module.ToLower()}.{action.ToLower()}",
-                    Description = $"{action} access to {module}"
-                });
-                id++;
-            }
-        }
-        modelBuilder.Entity<Permission>().HasData(permissions);
-
-        // ─── Seed: Admin gets ALL permissions ────────────────
-        var adminPerms = new List<RolePermission>();
-        for (int i = 1; i < id; i++)
-        {
-            adminPerms.Add(new RolePermission { Id = i, RoleId = 1, PermissionId = i });
-        }
-        modelBuilder.Entity<RolePermission>().HasData(adminPerms);
-
-        // ─── Seed: User gets View on most modules ────────────
-        var userPerms = new List<RolePermission>();
-        var userPermId = id; // continue from where permissions ended
-        var userViewModules = new[] { "Dashboard", "Sales", "Contacts", "Timesheet", "Finance", "TodoList", "Invoice", "AIAgents", "ActivityLog", "Notifications", "Calendar", "Notes", "Tags", "EmailTemplates", "Documents", "Reports" };
-        foreach (var module in userViewModules)
-        {
-            var viewPerm = permissions.Find(p => p.Code == $"{module.ToLower()}.view");
-            if (viewPerm != null)
-            {
-                userPerms.Add(new RolePermission { Id = userPermId++, RoleId = 3, PermissionId = viewPerm.Id });
-            }
-        }
-        // User can also create/edit tasks and timesheet
-        var extraUserPerms = new[] { "todolist.create", "todolist.edit", "timesheet.create", "timesheet.edit" };
-        foreach (var code in extraUserPerms)
-        {
-            var perm = permissions.Find(p => p.Code == code);
-            if (perm != null)
-            {
-                userPerms.Add(new RolePermission { Id = userPermId++, RoleId = 3, PermissionId = perm.Id });
-            }
-        }
-        modelBuilder.Entity<RolePermission>().HasData(userPerms);
-
-        // ─── Seed: Manager gets everything except Admin module ─
-        var managerPerms = new List<RolePermission>();
-        var mgrPermId = userPermId;
-        foreach (var perm in permissions.Where(p => p.Module != "Admin"))
-        {
-            managerPerms.Add(new RolePermission { Id = mgrPermId++, RoleId = 2, PermissionId = perm.Id });
-        }
-        modelBuilder.Entity<RolePermission>().HasData(managerPerms);
 
         // ─── Contacts ──────────────────────────────────────
         modelBuilder.Entity<Contact>(e =>
@@ -213,7 +124,7 @@ public class AppDbContext : DbContext
             e.HasIndex(c => c.Company);
             e.HasIndex(c => c.UserId);
             e.HasIndex(c => c.OrgId);
-            e.HasIndex(c => new { c.UserId, c.CreatedAt }); // ReportService contact growth queries
+            e.HasIndex(c => new { c.UserId, c.CreatedAt });
             e.Property(c => c.Name).HasConversion(strConv);
             e.Property(c => c.Phone).HasConversion(strConv);
             e.Property(c => c.Gstin).HasConversion(strConv);
@@ -224,7 +135,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ContactColumn>(e =>
         {
             e.ToTable("contact_columns");
-            e.HasIndex(c => c.ColId).IsUnique();
+            e.HasIndex(c => new { c.OrgId, c.ColId }).IsUnique();
             e.Property(c => c.Config).HasColumnType("jsonb");
         });
 
@@ -246,13 +157,14 @@ public class AppDbContext : DbContext
             e.ToTable("tasks");
             e.Property(t => t.Values).HasColumnType("jsonb");
             e.HasIndex(t => t.UserId);
+            e.HasIndex(t => t.OrgId);
         });
 
         // ─── Task Columns ──────────────────────────────────
         modelBuilder.Entity<TaskColumn>(e =>
         {
             e.ToTable("task_columns");
-            e.HasIndex(c => c.ColId).IsUnique();
+            e.HasIndex(c => new { c.OrgId, c.ColId }).IsUnique();
             e.Property(c => c.Config).HasColumnType("jsonb");
         });
 
@@ -273,20 +185,9 @@ public class AppDbContext : DbContext
             e.Property(pf => pf.DealValue).HasConversion(decNullConv);
         });
 
-        modelBuilder.Entity<Milestone>(e =>
-        {
-            e.ToTable("milestones");
-        });
-
-        modelBuilder.Entity<Stakeholder>(e =>
-        {
-            e.ToTable("stakeholders");
-        });
-
-        modelBuilder.Entity<Charge>(e =>
-        {
-            e.ToTable("charges");
-        });
+        modelBuilder.Entity<Milestone>(e => e.ToTable("milestones"));
+        modelBuilder.Entity<Stakeholder>(e => e.ToTable("stakeholders"));
+        modelBuilder.Entity<Charge>(e => e.ToTable("charges"));
 
         // ─── Expenses ──────────────────────────────────────
         modelBuilder.Entity<Expense>(e =>
@@ -294,7 +195,8 @@ public class AppDbContext : DbContext
             e.ToTable("expenses");
             e.Property(ex => ex.Details).HasColumnType("jsonb");
             e.HasIndex(ex => ex.UserId);
-            e.HasIndex(ex => new { ex.UserId, ex.Date }); // ReportService date-range filter
+            e.HasIndex(ex => ex.OrgId);
+            e.HasIndex(ex => new { ex.UserId, ex.Date });
             e.Property(ex => ex.Amount).HasConversion(decConv);
         });
 
@@ -303,7 +205,8 @@ public class AppDbContext : DbContext
         {
             e.ToTable("incomes");
             e.HasIndex(i => i.UserId);
-            e.HasIndex(i => new { i.UserId, i.Date }); // ReportService date-range filter
+            e.HasIndex(i => i.OrgId);
+            e.HasIndex(i => new { i.UserId, i.Date });
             e.Property(i => i.Amount).HasConversion(decConv);
         });
 
@@ -313,13 +216,14 @@ public class AppDbContext : DbContext
             e.ToTable("timesheet_entries");
             e.Property(te => te.Values).HasColumnType("jsonb");
             e.HasIndex(te => te.UserId);
+            e.HasIndex(te => te.OrgId);
         });
 
         // ─── Timesheet Columns ─────────────────────────────
         modelBuilder.Entity<TimesheetColumn>(e =>
         {
             e.ToTable("timesheet_columns");
-            e.HasIndex(c => c.ColId).IsUnique();
+            e.HasIndex(c => new { c.OrgId, c.ColId }).IsUnique();
             e.Property(c => c.Config).HasColumnType("jsonb");
         });
 
@@ -345,6 +249,7 @@ public class AppDbContext : DbContext
         {
             e.ToTable("activity_logs");
             e.HasIndex(a => a.UserId);
+            e.HasIndex(a => a.OrgId);
             e.HasIndex(a => new { a.EntityType, a.EntityId });
         });
 
@@ -353,7 +258,8 @@ public class AppDbContext : DbContext
         {
             e.ToTable("notifications");
             e.HasIndex(n => n.UserId);
-            e.HasIndex(n => new { n.UserId, n.IsRead }); // unread count queries
+            e.HasIndex(n => n.OrgId);
+            e.HasIndex(n => new { n.UserId, n.IsRead });
         });
 
         // ─── Saved Filters ──────────────────────────────
@@ -361,6 +267,7 @@ public class AppDbContext : DbContext
         {
             e.ToTable("saved_filters");
             e.HasIndex(f => f.UserId);
+            e.HasIndex(f => f.OrgId);
         });
 
         // ─── Notes ───────────────────────────────────────
@@ -368,6 +275,7 @@ public class AppDbContext : DbContext
         {
             e.ToTable("notes");
             e.HasIndex(n => n.UserId);
+            e.HasIndex(n => n.OrgId);
             e.HasIndex(n => new { n.EntityType, n.EntityId });
         });
 
@@ -376,6 +284,7 @@ public class AppDbContext : DbContext
         {
             e.ToTable("tags");
             e.HasIndex(t => t.UserId);
+            e.HasIndex(t => t.OrgId);
         });
 
         // ─── Entity Tags (junction) ─────────────────────
@@ -392,6 +301,7 @@ public class AppDbContext : DbContext
         {
             e.ToTable("email_templates");
             e.HasIndex(t => t.UserId);
+            e.HasIndex(t => t.OrgId);
         });
 
         // ─── Documents ───────────────────────────────────
@@ -439,6 +349,7 @@ public class AppDbContext : DbContext
         {
             e.ToTable("legal_agreements");
             e.HasIndex(l => l.UserId);
+            e.HasIndex(l => l.OrgId);
             e.HasIndex(l => l.Status);
             e.HasIndex(l => l.Type);
             e.HasIndex(l => l.ExpiryDate);
@@ -449,6 +360,7 @@ public class AppDbContext : DbContext
         {
             e.ToTable("tickets");
             e.HasIndex(t => t.UserId);
+            e.HasIndex(t => t.OrgId);
             e.HasIndex(t => t.Status);
             e.HasIndex(t => t.Priority);
             e.HasIndex(t => t.TicketNumber).IsUnique();
@@ -491,6 +403,7 @@ public class AppDbContext : DbContext
         {
             e.ToTable("invoices");
             e.HasIndex(i => i.UserId);
+            e.HasIndex(i => i.OrgId);
             e.HasIndex(i => i.InvoiceNumber).IsUnique();
             e.HasIndex(i => i.ProjectFinanceId);
             e.HasIndex(i => i.Status);
@@ -506,26 +419,87 @@ public class AppDbContext : DbContext
             e.Property(i => i.TotalAmount).HasConversion(decConv).HasPrecision(18, 2);
         });
 
-        // ─── Global soft-delete query filter ──────────────
-        foreach (var entityType in modelBuilder.Model.GetEntityTypes()
-            .Where(t => typeof(AuditableEntity).IsAssignableFrom(t.ClrType) && !t.ClrType.IsAbstract))
+        // ─── Seed: Permission codes ──────────────────────
+        var permissions = new List<Permission>();
+        var id = 1;
+        var modules = new[]
         {
-            var param = System.Linq.Expressions.Expression.Parameter(entityType.ClrType, "e");
-            var prop = System.Linq.Expressions.Expression.Property(param, nameof(AuditableEntity.IsDeleted));
-            var filter = System.Linq.Expressions.Expression.Lambda(
-                System.Linq.Expressions.Expression.Equal(prop, System.Linq.Expressions.Expression.Constant(false)),
-                param);
-            entityType.SetQueryFilter(filter);
+            "Dashboard", "Sales", "Contacts", "Timesheet",
+            "Finance", "TodoList", "Invoice", "AIAgents", "Admin",
+            "ActivityLog", "Notifications", "Calendar", "Notes",
+            "Tags", "EmailTemplates", "Documents", "Reports"
+        };
+        var actions = new[] { "View", "Create", "Edit", "Delete" };
+        foreach (var module in modules)
+            foreach (var action in actions)
+                permissions.Add(new Permission
+                {
+                    Id = id++,
+                    Module = module,
+                    Action = action,
+                    Code = $"{module.ToLower()}.{action.ToLower()}",
+                    Description = $"{action} access to {module}"
+                });
+        modelBuilder.Entity<Permission>().HasData(permissions);
+
+        // ─── Seed: SUPER_ADMIN user ──────────────────────
+        modelBuilder.Entity<User>().HasData(new User
+        {
+            Id = 1,
+            Email = "superadmin@platform.com",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("SuperAdmin@123!"),
+            DisplayName = "Super Admin",
+            Role = "SUPER_ADMIN",
+            IsFirstLogin = false,
+            IsActive = true,
+            OrgId = null,
+            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+        });
+
+        // ─── Global query filters: soft-delete + org scope ────
+        // Single pass combines both filters so EF Core has one filter per type.
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes()
+            .Where(t => !t.ClrType.IsAbstract))
+        {
+            var clrType = entityType.ClrType;
+            var param = System.Linq.Expressions.Expression.Parameter(clrType, "e");
+            System.Linq.Expressions.Expression? combined = null;
+
+            // Soft-delete: AuditableEntity types
+            if (typeof(AuditableEntity).IsAssignableFrom(clrType))
+            {
+                var isDeleted = System.Linq.Expressions.Expression.Property(param, nameof(AuditableEntity.IsDeleted));
+                combined = System.Linq.Expressions.Expression.Equal(isDeleted, System.Linq.Expressions.Expression.Constant(false));
+            }
+
+            // Org scope: IOrgScoped types — SUPER_ADMIN bypasses, everyone else sees only their org
+            if (typeof(IOrgScoped).IsAssignableFrom(clrType))
+            {
+                var thisConst = System.Linq.Expressions.Expression.Constant(this);
+                var isSuperAdminExpr = System.Linq.Expressions.Expression.Property(thisConst, nameof(IsSuperAdmin));
+                var orgIdProp = System.Linq.Expressions.Expression.Property(param, "OrgId");
+                var currentOrgIdExpr = System.Linq.Expressions.Expression.Property(thisConst, nameof(CurrentOrgId));
+
+                // CurrentOrgId is int? — unwrap: HasValue && OrgId == Value
+                var hasValue = System.Linq.Expressions.Expression.Property(currentOrgIdExpr, "HasValue");
+                var value = System.Linq.Expressions.Expression.Property(currentOrgIdExpr, "Value");
+                var orgEquals = System.Linq.Expressions.Expression.AndAlso(hasValue,
+                    System.Linq.Expressions.Expression.Equal(orgIdProp, value));
+                var orgFilter = System.Linq.Expressions.Expression.OrElse(isSuperAdminExpr, orgEquals);
+
+                combined = combined != null
+                    ? System.Linq.Expressions.Expression.AndAlso(combined, orgFilter)
+                    : orgFilter;
+            }
+
+            if (combined != null)
+                entityType.SetQueryFilter(System.Linq.Expressions.Expression.Lambda(combined, param));
         }
 
         // ─── Snake case column naming convention ───────────
         foreach (var entity in modelBuilder.Model.GetEntityTypes())
-        {
             foreach (var property in entity.GetProperties())
-            {
                 property.SetColumnName(ToSnakeCase(property.Name));
-            }
-        }
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -540,7 +514,6 @@ public class AppDbContext : DbContext
         var userName = claimsPrincipal?.FindFirstValue(ClaimTypes.Name)
                     ?? claimsPrincipal?.FindFirstValue("name");
 
-        // Name claim missing (old token or background context) — look up display_name from DB
         if (string.IsNullOrEmpty(userName) && userId.HasValue)
             userName = await GetDisplayNameAsync(userId.Value);
 
@@ -548,7 +521,6 @@ public class AppDbContext : DbContext
         var ipAddress = _httpContextAccessor?.HttpContext?.Connection?.RemoteIpAddress?.ToString();
 
         var auditEntries = new List<AuditLog>();
-
         var softDeleteFields = new HashSet<string> { "IsDeleted", "DeletedAt", "DeletedByUserId", "DeletedByName" };
 
         foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
@@ -568,7 +540,7 @@ public class AppDbContext : DbContext
                 auditEntries.Add(new AuditLog
                 {
                     EntityName = entry.Entity.GetType().Name,
-                    EntityId = 0, // updated after save
+                    EntityId = 0,
                     FieldName = "_record",
                     OldValue = null,
                     NewValue = "created",
@@ -615,9 +587,7 @@ public class AppDbContext : DbContext
                     }
 
                     var skipFields = new HashSet<string>(softDeleteFields)
-                    {
-                        "UpdatedAt", "UpdatedByUserId", "UpdatedByName"
-                    };
+                        { "UpdatedAt", "UpdatedByUserId", "UpdatedByName" };
 
                     foreach (var prop in entry.Properties
                         .Where(p => p.IsModified && !skipFields.Contains(p.Metadata.Name)))
@@ -660,7 +630,6 @@ public class AppDbContext : DbContext
             }
         }
 
-        // Snapshot Added entries before save so we can fix EntityIds after
         var addedSnapshots = ChangeTracker.Entries<AuditableEntity>()
             .Where(e => e.State == EntityState.Added)
             .Select(e => (entry: e, log: auditEntries.FirstOrDefault(l => l.Action == "Created" && l.EntityName == e.Entity.GetType().Name && l.EntityId == 0)))
@@ -669,11 +638,8 @@ public class AppDbContext : DbContext
 
         var result = await base.SaveChangesAsync(cancellationToken);
 
-        // Fix EntityId for newly-inserted records
         foreach (var (entry, log) in addedSnapshots)
-        {
             if (log != null) log.EntityId = entry.Entity.Id;
-        }
 
         if (auditEntries.Count > 0)
         {
@@ -689,7 +655,6 @@ public class AppDbContext : DbContext
         return result;
     }
 
-    // Used by AuditBackgroundService to persist audit logs without re-triggering audit collection.
     public Task<int> SaveChangesWithoutAuditAsync(CancellationToken cancellationToken = default)
         => base.SaveChangesAsync(cancellationToken);
 
@@ -700,25 +665,18 @@ public class AppDbContext : DbContext
         {
             foreach (var property in entry.Properties)
             {
-                // Check the actual boxed value — handles both DateTime and DateTime?
-                // (a non-null DateTime? boxes to DateTime, so this covers both cases)
                 if (property.CurrentValue is DateTime dt && dt.Kind != DateTimeKind.Utc)
-                {
                     property.CurrentValue = NormalizeDateTime(dt);
-                }
             }
         }
     }
 
-    private static DateTime NormalizeDateTime(DateTime value)
+    private static DateTime NormalizeDateTime(DateTime value) => value.Kind switch
     {
-        return value.Kind switch
-        {
-            DateTimeKind.Utc => value,
-            DateTimeKind.Local => value.ToUniversalTime(),
-            _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
-        };
-    }
+        DateTimeKind.Utc => value,
+        DateTimeKind.Local => value.ToUniversalTime(),
+        _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+    };
 
     private async Task<string?> GetDisplayNameAsync(int userId)
     {
@@ -730,18 +688,10 @@ public class AppDbContext : DbContext
             return await conn.ExecuteScalarAsync<string?>(
                 "SELECT display_name FROM users WHERE id = @Id", new { Id = userId });
         }
-        catch
-        {
-            return null;
-        }
+        catch { return null; }
     }
 
-    private static string ToSnakeCase(string name)
-    {
-        return string.Concat(
-            name.Select((c, i) =>
-                i > 0 && char.IsUpper(c) ? "_" + c.ToString().ToLower() : c.ToString().ToLower()
-            )
-        );
-    }
+    private static string ToSnakeCase(string name) =>
+        string.Concat(name.Select((c, i) =>
+            i > 0 && char.IsUpper(c) ? "_" + c.ToString().ToLower() : c.ToString().ToLower()));
 }

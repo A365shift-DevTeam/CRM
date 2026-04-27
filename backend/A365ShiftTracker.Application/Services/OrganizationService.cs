@@ -11,47 +11,10 @@ public class OrganizationService : IOrganizationService
 
     public OrganizationService(IUnitOfWork uow) => _uow = uow;
 
-    public async Task<OrganizationDto> CreateAsync(CreateOrganizationRequest request, int userId)
+    public async Task<OrganizationDto?> GetCurrentOrgAsync(int orgId)
     {
-        var slug = request.Slug.Trim().ToLowerInvariant();
-
-        var existing = (await _uow.Organizations.FindAsync(o => o.Slug == slug)).FirstOrDefault();
-        if (existing is not null)
-            throw new InvalidOperationException($"Organization slug '{slug}' is already taken.");
-
-        var org = new Organization { Name = request.Name.Trim(), Slug = slug };
-        await _uow.Organizations.AddAsync(org);
-        await _uow.SaveChangesAsync();
-
-        var user = await _uow.Users.GetByIdAsync(userId)
-            ?? throw new KeyNotFoundException("User not found.");
-        user.OrgId = org.Id;
-        await _uow.Users.UpdateAsync(user);
-        await _uow.SaveChangesAsync();
-
-        return MapToDto(org);
-    }
-
-    public async Task<OrganizationDto?> GetMineAsync(int userId)
-    {
-        var user = await _uow.Users.GetByIdAsync(userId);
-        if (user?.OrgId is null) return null;
-
-        var org = await _uow.Organizations.GetByIdAsync(user.OrgId.Value);
-        return org is null ? null : MapToDto(org);
-    }
-
-    public async Task JoinAsync(JoinOrganizationRequest request, int userId)
-    {
-        var slug = request.Slug.Trim().ToLowerInvariant();
-        var org = (await _uow.Organizations.FindAsync(o => o.Slug == slug)).FirstOrDefault()
-            ?? throw new KeyNotFoundException($"Organization '{slug}' not found.");
-
-        var user = await _uow.Users.GetByIdAsync(userId)
-            ?? throw new KeyNotFoundException("User not found.");
-        user.OrgId = org.Id;
-        await _uow.Users.UpdateAsync(user);
-        await _uow.SaveChangesAsync();
+        var org = await _uow.Organizations.GetByIdAsync(orgId);
+        return org is null ? null : MapToDto(org, 0);
     }
 
     public async Task<OrgSalesSettingsDto> GetSalesSettingsAsync(int orgId)
@@ -107,22 +70,15 @@ public class OrganizationService : IOrganizationService
 
     private static OrgSalesSettingsDto DefaultSettings(int orgId) => new()
     {
-        OrgId          = orgId,
-        ProductStages  = null,
-        ServiceStages  = null,
-        DeliveryStages = null,
-        FinanceStages  = null,
-        LegalStages    = null,
-        ProductLabel   = "Products",
-        ServiceLabel   = "Services",
-        UpdatedAt      = DateTime.UtcNow,
+        OrgId = orgId, ProductLabel = "Products", ServiceLabel = "Services",
+        UpdatedAt = DateTime.UtcNow,
     };
 
-    private static OrganizationDto MapToDto(Organization o) => new()
+    private static OrganizationDto MapToDto(Organization o, int userCount) => new()
     {
-        Id        = o.Id,
-        Name      = o.Name,
-        Slug      = o.Slug,
-        CreatedAt = o.CreatedAt,
+        Id = o.Id, Name = o.Name, Slug = o.Slug,
+        Status = o.Status, CreatedAt = o.CreatedAt,
+        TrialEndsAt = o.TrialEndsAt, SuspendedAt = o.SuspendedAt,
+        UserCount = userCount
     };
 }

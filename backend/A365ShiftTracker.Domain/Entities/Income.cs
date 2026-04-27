@@ -2,9 +2,10 @@ using A365ShiftTracker.Domain.Common;
 
 namespace A365ShiftTracker.Domain.Entities;
 
-public class Income : AuditableEntity, IOwnedByUser
+public class Income : AuditableEntity, IOwnedByUser, IOrgScoped
 {
     public int UserId { get; set; }
+    public int OrgId { get; set; }
     public DateTime Date { get; set; }
     public string? Category { get; set; }
     public decimal Amount { get; set; }
@@ -13,6 +14,6 @@ public class Income : AuditableEntity, IOwnedByUser
     public string? ProjectDepartment { get; set; }
     public string? ReceiptUrl { get; set; }
     public string Status { get; set; } = "Pending"; // Pending, Raised, Paid
-    public string? Source { get; set; }   // e.g. "invoice", "manual"
+    public string? Source { get; set; }
     public string? InvoiceId { get; set; }
 }

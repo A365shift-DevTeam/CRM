@@ -73,7 +73,10 @@
       "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); gh pr list --state open --json number,title,isDraft,author)",
       "PowerShell(gh auth *)",
       "Bash(gh auth *)",
-      "Bash(gh pr *)"
+      "Bash(gh pr *)",
+      "Bash(rm E:/Arul/CRM/CRM/backend/A365ShiftTracker.Domain/Entities/Role.cs)",
+      "Bash(rm E:/Arul/CRM/CRM/backend/A365ShiftTracker.Domain/Entities/UserRole.cs)",
+      "Bash(rm E:/Arul/CRM/CRM/backend/A365ShiftTracker.Domain/Entities/RolePermission.cs)"
     ]
   }
 }

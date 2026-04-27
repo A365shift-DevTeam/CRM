@@ -2,8 +2,9 @@ using A365ShiftTracker.Domain.Common;
 
 namespace A365ShiftTracker.Domain.Entities;
 
-public class TimesheetColumn : AuditableEntity
+public class TimesheetColumn : AuditableEntity, IOrgScoped
 {
+    public int OrgId { get; set; }
     public string ColId { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Type { get; set; } = "text";

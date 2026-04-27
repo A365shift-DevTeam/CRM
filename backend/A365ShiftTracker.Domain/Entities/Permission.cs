@@ -8,7 +8,4 @@ public class Permission : BaseEntity
     public string Action { get; set; } = string.Empty;   // e.g. "View", "Create", "Edit", "Delete"
     public string Code { get; set; } = string.Empty;     // e.g. "sales.view", "contacts.edit"
     public string? Description { get; set; }
-
-    // Navigation
-    public ICollection<RolePermission> RolePermissions { get; set; } = new List<RolePermission>();
 }

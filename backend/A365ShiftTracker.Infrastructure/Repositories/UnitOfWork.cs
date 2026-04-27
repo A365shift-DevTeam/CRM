@@ -12,10 +12,8 @@ public class UnitOfWork : IUnitOfWork
     public UnitOfWork(AppDbContext context) => _context = context;
 
     private IRepository<User>? _users;
-    private IRepository<Role>? _roles;
     private IRepository<Permission>? _permissions;
-    private IRepository<UserRole>? _userRoles;
-    private IRepository<RolePermission>? _rolePermissions;
+    private IRepository<OrgRolePermission>? _orgRolePermissions;
     private IRepository<Contact>? _contacts;
     private IRepository<ContactColumn>? _contactColumns;
     private IRepository<Project>? _projects;
@@ -50,10 +48,8 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<OrgSalesSettings>? _orgSalesSettings;
 
     public IRepository<User> Users => _users ??= new Repository<User>(_context);
-    public IRepository<Role> Roles => _roles ??= new Repository<Role>(_context);
     public IRepository<Permission> Permissions => _permissions ??= new Repository<Permission>(_context);
-    public IRepository<UserRole> UserRoles => _userRoles ??= new Repository<UserRole>(_context);
-    public IRepository<RolePermission> RolePermissions => _rolePermissions ??= new Repository<RolePermission>(_context);
+    public IRepository<OrgRolePermission> OrgRolePermissions => _orgRolePermissions ??= new Repository<OrgRolePermission>(_context);
     public IRepository<Contact> Contacts => _contacts ??= new Repository<Contact>(_context);
     public IRepository<ContactColumn> ContactColumns => _contactColumns ??= new Repository<ContactColumn>(_context);
     public IRepository<Project> Projects => _projects ??= new Repository<Project>(_context);

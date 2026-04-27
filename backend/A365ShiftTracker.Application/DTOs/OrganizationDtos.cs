@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace A365ShiftTracker.Application.DTOs;
 
 public class OrganizationDto
@@ -5,18 +7,70 @@ public class OrganizationDto
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Slug { get; set; } = string.Empty;
+    public string Status { get; set; } = "TRIAL"; // TRIAL | ACTIVE | SUSPENDED
     public DateTime CreatedAt { get; set; }
+    public DateTime? TrialEndsAt { get; set; }
+    public DateTime? SuspendedAt { get; set; }
+    public int UserCount { get; set; }
 }
 
 public class CreateOrganizationRequest
 {
+    [Required]
+    [StringLength(100)]
     public string Name { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(50)]
     public string Slug { get; set; } = string.Empty;
+
+    public DateTime? TrialEndsAt { get; set; }
 }
 
-public class JoinOrganizationRequest
+public class UpdateOrgStatusRequest
 {
-    public string Slug { get; set; } = string.Empty;
+    [Required]
+    public string Status { get; set; } = string.Empty; // TRIAL | ACTIVE | SUSPENDED
+}
+
+public class UserDto
+{
+    public int Id { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public string? DisplayName { get; set; }
+    public string Role { get; set; } = string.Empty;
+    public bool IsActive { get; set; }
+    public bool IsFirstLogin { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? LastLoginAt { get; set; }
+    public int? OrgId { get; set; }
+}
+
+public class CreateUserRequest
+{
+    [Required]
+    [EmailAddress]
+    [StringLength(256)]
+    public string Email { get; set; } = string.Empty;
+
+    [StringLength(100)]
+    public string? DisplayName { get; set; }
+
+    [Required]
+    public string Role { get; set; } = "EMPLOYEE"; // MANAGER | EMPLOYEE (ORG_ADMIN only via SuperAdmin)
+}
+
+public class UpdateUserRequest
+{
+    public string? DisplayName { get; set; }
+    public string? Role { get; set; }
+    public bool? IsActive { get; set; }
+}
+
+public class SetRolePermissionsRequest
+{
+    [Required]
+    public List<string> PermissionCodes { get; set; } = new();
 }
 
 public class OrgSalesSettingsDto

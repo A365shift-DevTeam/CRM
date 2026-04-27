@@ -50,6 +50,10 @@ export default function Login() {
         }
       } else if (result.user?.totpSetupRequired) {
         navigate('/settings', { state: { totpSetupRequired: true } });
+      } else if (result.user?.isFirstLogin) {
+        navigate('/first-login-reset');
+      } else if (result.user?.role === 'SUPER_ADMIN') {
+        navigate('/super-admin');
       } else {
         navigate('/');
       }
@@ -66,7 +70,9 @@ export default function Login() {
     try {
       const data = await apiClient.post('/auth/verify-otp', { code: otpCode, partialToken });
       await completeLogin(data);
-      navigate('/');
+      if (data.isFirstLogin) navigate('/first-login-reset');
+      else if (data.role === 'SUPER_ADMIN') navigate('/super-admin');
+      else navigate('/');
     } catch (err) {
       setError(err.message);
     }

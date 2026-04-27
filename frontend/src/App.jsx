@@ -7,32 +7,36 @@ import MainLayout from './layouts/MainLayout';
 import Login from './pages/Auth/Login';
 import ForgotPassword from './pages/Auth/ForgotPassword';
 import ResetPassword from './pages/Auth/ResetPassword';
+import FirstLoginReset from './pages/Auth/FirstLoginReset';
 import { ThemeProvider } from './context/ThemeContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import StorageLimitHandler from './components/StorageLimitHandler/StorageLimitHandler';
+import OrgSuspendedBanner from './components/OrgSuspendedBanner';
 import './index.css';
 
-const Dashboard      = lazy(() => import('./pages/Dashboard/Dashboard'));
-const Sales          = lazy(() => import('./pages/Sales/Sales'));
-const Contact        = lazy(() => import('./pages/Contact/Contacts/Contacts'));
-const Timesheet      = lazy(() => import('./pages/Timesheet/Timesheet'));
-const Finance        = lazy(() => import('./pages/Finance/Finance'));
-const TodoList       = lazy(() => import('./pages/TodoList/TodoList'));
-const Invoice        = lazy(() => import('./pages/Invoice/Invoice'));
-const AIFollowup     = lazy(() => import('./pages/AIFollowup/AIFollowup'));
-const Vendor         = lazy(() => import('./pages/Vendor/Vendor'));
-const AIAgentsLayout = lazy(() => import('./pages/AIAgents/AIAgentsLayout'));
-const Admin          = lazy(() => import('./pages/Admin/Admin'));
-const Settings       = lazy(() => import('./pages/Settings/Settings'));
-const Projects       = lazy(() => import('./pages/Projects/Projects'));
-const Documents      = lazy(() => import('./pages/Documents/Documents'));
-const Company        = lazy(() => import('./pages/Company/Company'));
-const Leads          = lazy(() => import('./pages/Leads/Leads'));
-const Calendar       = lazy(() => import('./pages/Calendar/Calendar'));
-const Reports        = lazy(() => import('./pages/Reports/Reports'));
-const Legal          = lazy(() => import('./pages/Legal/Legal'));
-const Tickets        = lazy(() => import('./pages/Tickets/Tickets'));
-const PaymentSuccess = lazy(() => import('./pages/Payment/PaymentSuccess'));
+const Dashboard          = lazy(() => import('./pages/Dashboard/Dashboard'));
+const Sales              = lazy(() => import('./pages/Sales/Sales'));
+const Contact            = lazy(() => import('./pages/Contact/Contacts/Contacts'));
+const Timesheet          = lazy(() => import('./pages/Timesheet/Timesheet'));
+const Finance            = lazy(() => import('./pages/Finance/Finance'));
+const TodoList           = lazy(() => import('./pages/TodoList/TodoList'));
+const Invoice            = lazy(() => import('./pages/Invoice/Invoice'));
+const AIFollowup         = lazy(() => import('./pages/AIFollowup/AIFollowup'));
+const Vendor             = lazy(() => import('./pages/Vendor/Vendor'));
+const AIAgentsLayout     = lazy(() => import('./pages/AIAgents/AIAgentsLayout'));
+const Admin              = lazy(() => import('./pages/Admin/Admin'));
+const Settings           = lazy(() => import('./pages/Settings/Settings'));
+const Projects           = lazy(() => import('./pages/Projects/Projects'));
+const Documents          = lazy(() => import('./pages/Documents/Documents'));
+const Company            = lazy(() => import('./pages/Company/Company'));
+const Leads              = lazy(() => import('./pages/Leads/Leads'));
+const Calendar           = lazy(() => import('./pages/Calendar/Calendar'));
+const Reports            = lazy(() => import('./pages/Reports/Reports'));
+const Legal              = lazy(() => import('./pages/Legal/Legal'));
+const Tickets            = lazy(() => import('./pages/Tickets/Tickets'));
+const PaymentSuccess     = lazy(() => import('./pages/Payment/PaymentSuccess'));
+const SuperAdminDashboard = lazy(() => import('./pages/SuperAdmin/SuperAdminDashboard'));
+const OrgUserManagement  = lazy(() => import('./pages/OrgSettings/OrgUserManagement'));
 
 function PlaceholderPage({ title }) {
   return (
@@ -50,6 +54,7 @@ function App() {
       <AuthProvider>
         <ThemeProvider>
         <ToastProvider>
+        <OrgSuspendedBanner />
         <StorageLimitHandler />
         <Suspense fallback={
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#4361EE', fontSize: 14 }}>
@@ -57,11 +62,23 @@ function App() {
           </div>
         }>
         <Routes>
+          {/* Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/payment/success" element={<PaymentSuccess />} />
 
+          {/* First-login password reset — requires auth cookie but no org gate */}
+          <Route path="/first-login-reset" element={<FirstLoginReset />} />
+
+          {/* SUPER_ADMIN portal */}
+          <Route path="/super-admin" element={
+            <PrivateRoute requiredRole="SUPER_ADMIN">
+              <SuperAdminDashboard />
+            </PrivateRoute>
+          } />
+
+          {/* Main CRM app (all org users) */}
           <Route path="/" element={
             <PrivateRoute>
               <MainLayout />
@@ -76,6 +93,13 @@ function App() {
             <Route path="invoice" element={<PrivateRoute permission="invoice.view"><Invoice /></PrivateRoute>} />
             <Route path="admin" element={<PrivateRoute permission="admin.view"><Admin /></PrivateRoute>} />
             <Route path="settings" element={<PrivateRoute permission="dashboard.view"><Settings /></PrivateRoute>} />
+
+            {/* Org admin: user management */}
+            <Route path="org/users" element={
+              <PrivateRoute requiredRole="ORG_ADMIN">
+                <OrgUserManagement />
+              </PrivateRoute>
+            } />
 
             {/* CRM modules */}
             <Route path="company" element={<PrivateRoute permission="contacts.view"><Company /></PrivateRoute>} />

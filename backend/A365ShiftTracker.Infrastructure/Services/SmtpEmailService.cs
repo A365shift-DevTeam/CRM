@@ -80,4 +80,46 @@ public class SmtpEmailService : IEmailService
         await client.SendAsync(message);
         await client.DisconnectAsync(true);
     }
+
+    public async Task SendWelcomeEmailAsync(string toEmail, string displayName, string orgName, string tempPassword)
+    {
+        var smtpHost = _config["Smtp:Host"] ?? "smtp.gmail.com";
+        var smtpPort = int.Parse(_config["Smtp:Port"] ?? "587");
+        var username  = _config["Smtp:Username"] ?? string.Empty;
+        var password  = _config["Smtp:Password"] ?? string.Empty;
+        var fromName  = _config["Smtp:FromName"] ?? "A365 CRM";
+        var fromEmail = _config["Smtp:FromEmail"] ?? username;
+
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress(fromName, fromEmail));
+        message.To.Add(new MailboxAddress(displayName, toEmail));
+        message.Subject = $"Welcome to {orgName} on A365 CRM";
+
+        var safeName = System.Net.WebUtility.HtmlEncode(displayName);
+        var safeOrg  = System.Net.WebUtility.HtmlEncode(orgName);
+
+        message.Body = new TextPart("html")
+        {
+            Text = $"""
+                <div style="font-family:DM Sans,sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#f8fafc;border-radius:16px;">
+                  <h2 style="color:#1e293b;margin-bottom:8px;">Welcome to {safeOrg}!</h2>
+                  <p style="color:#64748b;margin-bottom:16px;">Hi {safeName}, your account has been created. Use the credentials below to log in.</p>
+                  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:16px;">
+                    <p style="margin:0;color:#64748b;font-size:13px;">Email</p>
+                    <p style="margin:4px 0 16px;color:#1e293b;font-weight:600;">{System.Net.WebUtility.HtmlEncode(toEmail)}</p>
+                    <p style="margin:0;color:#64748b;font-size:13px;">Temporary Password</p>
+                    <p style="margin:4px 0 0;color:#4361EE;font-weight:700;font-size:18px;letter-spacing:2px;">{System.Net.WebUtility.HtmlEncode(tempPassword)}</p>
+                  </div>
+                  <p style="color:#64748b;">You will be required to set a new password on your first login.</p>
+                  <p style="color:#94a3b8;font-size:12px;margin-top:24px;">If you did not expect this email, please contact your administrator.</p>
+                </div>
+                """
+        };
+
+        using var client = new SmtpClient();
+        await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
+        await client.AuthenticateAsync(username, password);
+        await client.SendAsync(message);
+        await client.DisconnectAsync(true);
+    }
 }

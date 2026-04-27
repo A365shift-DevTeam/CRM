@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { FaShieldHalved, FaShield, FaUsers, FaUserGear, FaKey, FaToggleOn, FaToggleOff, FaPen, FaPlus, FaTrash, FaLock, FaUserPlus, FaMobileScreen, FaTicket, FaReply } from 'react-icons/fa6';
-import { Send, Lock, Zap, Crown, CreditCard, Check, X, Building } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { FaShieldHalved, FaShield, FaUsers, FaKey, FaToggleOn, FaToggleOff, FaMobileScreen, FaTicket, FaReply } from 'react-icons/fa6';
+import { Send, Lock } from 'lucide-react';
 import { adminService } from '../../services/adminService';
-import { planService } from '../../services/planService';
+import { organizationService } from '../../services/organizationService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast/ToastContext';
 import StatsGrid from '../../components/StatsGrid/StatsGrid';
@@ -12,95 +12,29 @@ import './Admin.css';
 const PRIORITY_BADGE_COLOR = { Critical: '#F43F5E', High: '#F59E0B', Medium: '#4361EE', Low: '#94A3B8' };
 const STATUS_BADGE = { 'Open': '#3b82f6', 'In Progress': '#8b5cf6', 'Pending': '#f59e0b', 'Resolved': '#10b981', 'Closed': '#64748b' };
 const TICKET_STATUSES = ['Open', 'In Progress', 'Pending', 'Resolved', 'Closed'];
-
-// ─── Org Create Form ──────────────────────────────────────────
-
-function OrgCreateForm({ onCreated }) {
-    const [name, setName] = useState('');
-    const [slug, setSlug] = useState('');
-    const [saving, setSaving] = useState(false);
-    const toast = useToast();
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!name.trim() || !slug.trim()) return;
-        setSaving(true);
-        try {
-            const org = await adminService.createOrganization({ name: name.trim(), slug: slug.trim().toLowerCase() });
-            onCreated(org);
-            setName(''); setSlug('');
-        } catch (err) {
-            toast.error(err.message || 'Failed to create organization.');
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    return (
-        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap', padding: '16px 0 4px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Organization Name</label>
-                <input
-                    value={name}
-                    onChange={e => { setName(e.target.value); setSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')); }}
-                    placeholder="Acme Corp"
-                    required
-                    style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border-color)', fontSize: 13, width: 200, background: '#fff' }}
-                />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Slug (unique ID)</label>
-                <input
-                    value={slug}
-                    onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                    placeholder="acme-corp"
-                    required
-                    style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border-color)', fontSize: 13, width: 180, background: '#fff', fontFamily: 'monospace' }}
-                />
-            </div>
-            <button
-                type="submit"
-                disabled={saving}
-                style={{
-                    background: 'linear-gradient(135deg, #4361EE, #8B5CF6)', color: '#fff',
-                    border: 'none', borderRadius: 9, padding: '9px 20px',
-                    fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer',
-                    opacity: saving ? 0.7 : 1, fontFamily: 'var(--font-display, Outfit)',
-                    display: 'flex', alignItems: 'center', gap: 6,
-                }}
-            >
-                <FaPlus size={11} /> {saving ? 'Creating…' : 'Create Organization'}
-            </button>
-        </form>
-    );
-}
+const ROLE_COLORS = {
+    SUPER_ADMIN: { bg: 'rgba(239,68,68,0.1)', color: '#dc2626' },
+    ORG_ADMIN:   { bg: 'rgba(139,92,246,0.1)', color: '#7c3aed' },
+    MANAGER:     { bg: 'rgba(67,97,238,0.1)', color: '#4361EE' },
+    EMPLOYEE:    { bg: 'rgba(34,197,94,0.1)', color: '#16a34a' },
+};
 
 export default function Admin() {
     const { currentUser } = useAuth();
     const toast = useToast();
     const [activeTab, setActiveTab] = useState('users');
     const [users, setUsers] = useState([]);
-    const [roles, setRoles] = useState([]);
     const [permissions, setPermissions] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Tickets state
     const [tickets, setTickets] = useState([]);
     const [ticketsLoading, setTicketsLoading] = useState(false);
     const [ticketPage, setTicketPage] = useState(1);
     const [ticketTotal, setTicketTotal] = useState(0);
     const [replyTicket, setReplyTicket] = useState(null);
 
-    // Modal state
-    const [modalType, setModalType] = useState(null);
-    const [modalData, setModalData] = useState(null);
-
-    // Plan management state
-    const [planEdit, setPlanEdit] = useState(null); // { userId, plan, planExpiresAt }
-    const [planSaving, setPlanSaving] = useState(false);
-
-    // Organizations state
-    const [orgs, setOrgs] = useState([]);
+    const [modal2FA, setModal2FA] = useState(null); // user object
+    const ticketsLoadedRef = useRef(false);
 
     const loadTickets = useCallback(async (page = 1) => {
         setTicketsLoading(true);
@@ -109,106 +43,35 @@ export default function Admin() {
             setTickets(result?.items ?? []);
             setTicketTotal(result?.totalCount ?? 0);
             setTicketPage(page);
-        } catch (err) {
+        } catch {
             toast.error('Failed to load tickets');
         } finally {
             setTicketsLoading(false);
         }
     }, [toast]);
 
+    useEffect(() => { loadData(); }, []);
     useEffect(() => {
-        loadData();
-    }, []);
-
-    useEffect(() => {
-        if (activeTab === 'tickets') loadTickets(1);
-    }, [activeTab, loadTickets]);
+        if (activeTab === 'tickets' && !ticketsLoadedRef.current) {
+            ticketsLoadedRef.current = true;
+            loadTickets(1);
+        }
+    }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const loadData = async () => {
         setLoading(true);
         try {
-            const [u, r, p, o] = await Promise.all([
+            const [u, p] = await Promise.all([
                 adminService.getUsers(),
-                adminService.getRoles(),
                 adminService.getPermissions(),
-                adminService.getOrganizations()
             ]);
-            setUsers(u);
-            setRoles(r);
-            setPermissions(p);
-            setOrgs(o);
+            setUsers(u ?? []);
+            setPermissions(p ?? []);
         } catch (err) {
-            console.error('Failed to load admin data:', err);
+            toast.error('Failed to load admin data');
+            console.error(err);
         } finally {
             setLoading(false);
-        }
-    };
-
-    // ─── User Actions ──────────────────────────────────────────
-
-    const handleToggleUserStatus = async (user) => {
-        if (user.id === currentUser.id) return toast.warning("You cannot deactivate yourself.");
-        try {
-            const updated = await adminService.updateUserStatus(user.id, !user.isActive);
-            setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
-            toast.success(`User ${updated.isActive ? 'activated' : 'deactivated'} successfully`);
-        } catch (err) {
-            toast.error(err.message || 'Failed to update user status');
-        }
-    };
-
-    const handleSaveUserRoles = async (userId, roleIds) => {
-        try {
-            const updated = await adminService.updateUserRoles(userId, roleIds);
-            setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
-            setModalType(null);
-            toast.success('User roles updated successfully');
-        } catch (err) {
-            toast.error(err.message || 'Failed to update user roles');
-        }
-    };
-
-    const handleDeleteUser = async (user) => {
-        if (user.id === currentUser.id) return toast.warning("You cannot delete yourself.");
-        if (!window.confirm(`Are you sure you want to delete "${user.displayName || user.email}"? This action cannot be undone.`)) return;
-        try {
-            await adminService.deleteUser(user.id);
-            setUsers(prev => prev.filter(u => u.id !== user.id));
-            toast.success('User deleted successfully');
-        } catch (err) {
-            toast.error(err.message || 'Failed to delete user');
-        }
-    };
-
-    const handleCreateUser = async (data) => {
-        try {
-            const created = await adminService.createUser(data);
-            setUsers(prev => [...prev, created]);
-            setModalType(null);
-            toast.success(`User "${created.displayName || created.email}" created successfully`);
-        } catch (err) {
-            toast.error(err.message || 'Failed to create user');
-        }
-    };
-
-    const handleUpdateUser = async (userId, data) => {
-        try {
-            const updated = await adminService.updateUser(userId, data);
-            setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
-            setModalType(null);
-            toast.success(`User "${updated.displayName || updated.email}" updated successfully`);
-        } catch (err) {
-            toast.error(err.message || 'Failed to update user');
-        }
-    };
-
-    const handleResetPassword = async (userId, newPassword) => {
-        try {
-            await adminService.resetUserPassword(userId, newPassword);
-            setModalType(null);
-            toast.success('Password has been reset successfully');
-        } catch (err) {
-            toast.error(err.message || 'Failed to reset password');
         }
     };
 
@@ -221,11 +84,11 @@ export default function Admin() {
             } else {
                 await adminService.removeUserTwoFactor(userId);
                 setUsers(prev => prev.map(u => u.id === userId ? { ...u, twoFactorRequired: false } : u));
-                toast.success('2FA requirement removed for user');
+                toast.success('2FA requirement removed');
             }
-            setModalType(null);
+            setModal2FA(null);
         } catch (err) {
-            toast.error(err.message || 'Failed to update 2FA setting');
+            toast.error(err.message || 'Failed to update 2FA');
         }
     };
 
@@ -233,8 +96,8 @@ export default function Admin() {
         try {
             await adminService.resetUserTotp(userId);
             setUsers(prev => prev.map(u => u.id === userId ? { ...u, isTotpEnabled: false, twoFactorRequired: false, twoFactorMethod: 'email' } : u));
-            toast.success('TOTP has been reset for this user');
-            setModalType(null);
+            toast.success('TOTP reset');
+            setModal2FA(null);
         } catch (err) {
             toast.error(err.message || 'Failed to reset TOTP');
         }
@@ -244,44 +107,24 @@ export default function Admin() {
         try {
             await adminService.requireUserTotp(userId);
             setUsers(prev => prev.map(u => u.id === userId ? { ...u, twoFactorRequired: true, twoFactorMethod: 'totp' } : u));
-            toast.success('TOTP required — user must set it up via Settings');
-            setModalType(null);
+            toast.success('TOTP required');
+            setModal2FA(null);
         } catch (err) {
             toast.error(err.message || 'Failed to require TOTP');
         }
     };
 
-    // ─── Role Actions ──────────────────────────────────────────
-
-    const handleSaveRole = async (roleId, data) => {
+    const handleDeactivateUser = async (user) => {
+        if (user.id === currentUser.id) return toast.warning("You cannot deactivate yourself.");
+        if (!window.confirm(`Deactivate "${user.displayName || user.email}"?`)) return;
         try {
-            if (roleId) {
-                const updated = await adminService.updateRole(roleId, data);
-                setRoles(prev => prev.map(r => r.id === updated.id ? updated : r));
-                toast.success(`Role "${updated.name}" updated successfully`);
-            } else {
-                const created = await adminService.createRole(data);
-                setRoles(prev => [...prev, created]);
-                toast.success(`Role "${created.name}" created successfully`);
-            }
-            setModalType(null);
+            await organizationService.deactivateUser(user.id);
+            setUsers(prev => prev.map(u => u.id === user.id ? { ...u, isActive: false } : u));
+            toast.success('User deactivated');
         } catch (err) {
-            toast.error(err.message || 'Failed to save role');
+            toast.error(err.message || 'Failed to deactivate user');
         }
     };
-
-    const handleDeleteRole = async (roleId) => {
-        if (!window.confirm('Delete this role?')) return;
-        try {
-            await adminService.deleteRole(roleId);
-            setRoles(prev => prev.filter(r => r.id !== roleId));
-            toast.success('Role deleted successfully');
-        } catch (err) {
-            toast.error(err.message || 'Failed to delete role');
-        }
-    };
-
-    // ─── Render ────────────────────────────────────────────────
 
     if (loading) {
         return (
@@ -293,29 +136,23 @@ export default function Admin() {
 
     return (
         <div className="admin-page">
-            {/* Header */}
-            <PageHeader 
-                title="Admin Panel" 
-                description="Manage users, roles, and permissions" 
-                icon={Shield} 
+            <PageHeader
+                title="Admin Panel"
+                description="Manage users, permissions, and support tickets"
+                icon={FaShieldHalved}
                 iconColor="#3b82f6"
             />
 
-            {/* Stat Cards */}
             <StatsGrid stats={[
                 { label: 'Total Users', value: users.length, icon: <FaUsers size={22} />, color: 'blue' },
-                { label: 'Roles', value: roles.length, icon: <FaUserGear size={22} />, color: 'green' },
                 { label: 'Permissions', value: permissions.length, icon: <FaKey size={22} />, color: 'purple' },
+                { label: 'Open Tickets', value: ticketTotal, icon: <FaTicket size={22} />, color: 'green' },
             ]} />
 
-            {/* Toolbar */}
             <div className="admin-toolbar">
                 <div className="admin-tabs">
                     <button className={`admin-tab ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
                         <FaUsers size={14} /> Users <span className="tab-count">{users.length}</span>
-                    </button>
-                    <button className={`admin-tab ${activeTab === 'roles' ? 'active' : ''}`} onClick={() => setActiveTab('roles')}>
-                        <FaUserGear size={14} /> Roles <span className="tab-count">{roles.length}</span>
                     </button>
                     <button className={`admin-tab ${activeTab === 'permissions' ? 'active' : ''}`} onClick={() => setActiveTab('permissions')}>
                         <FaKey size={14} /> Permissions <span className="tab-count">{permissions.length}</span>
@@ -323,25 +160,7 @@ export default function Admin() {
                     <button className={`admin-tab ${activeTab === 'tickets' ? 'active' : ''}`} onClick={() => setActiveTab('tickets')}>
                         <FaTicket size={14} /> Support Tickets {ticketTotal > 0 && <span className="tab-count">{ticketTotal}</span>}
                     </button>
-                    <button className={`admin-tab ${activeTab === 'plans' ? 'active' : ''}`} onClick={() => setActiveTab('plans')}>
-                        <Zap size={14} /> Plans
-                    </button>
-                    <button className={`admin-tab ${activeTab === 'organizations' ? 'active' : ''}`} onClick={() => setActiveTab('organizations')}>
-                        <Building size={14} /> Organizations <span className="tab-count">{orgs.length}</span>
-                    </button>
                 </div>
-
-                {activeTab === 'users' && (
-                    <button className="admin-add-btn" onClick={() => { setModalType('createUser'); setModalData(null); }}>
-                        <FaUserPlus size={12} /> New User
-                    </button>
-                )}
-
-                {activeTab === 'roles' && (
-                    <button className="admin-add-btn" onClick={() => { setModalType('createRole'); setModalData(null); }}>
-                        <FaPlus size={12} /> New Role
-                    </button>
-                )}
             </div>
 
             {/* Users Tab */}
@@ -352,155 +171,82 @@ export default function Admin() {
                             <tr>
                                 <th>User</th>
                                 <th>Email</th>
-                                <th>Organization</th>
-                                <th>Roles</th>
+                                <th>Role</th>
                                 <th>Status</th>
+                                <th>First Login</th>
                                 <th>2FA</th>
                                 <th>Last Login</th>
                                 <th style={{ textAlign: 'center' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {users.map(user => {
-                                const twoFALabel = user.isTotpEnabled
-                                    ? 'TOTP'
-                                    : user.twoFactorRequired
-                                        ? 'Email OTP'
-                                        : 'Off';
+                            {users.length === 0 ? (
+                                <tr><td colSpan={8} className="text-center py-4 text-muted">No users found.</td></tr>
+                            ) : users.map(user => {
+                                const roleStyle = ROLE_COLORS[user.role] || { bg: 'rgba(148,163,184,0.1)', color: '#94a3b8' };
+                                const twoFALabel = user.isTotpEnabled ? 'TOTP' : user.twoFactorRequired ? 'Email OTP' : 'Off';
                                 const twoFAColor = user.isTotpEnabled
                                     ? { background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }
                                     : user.twoFactorRequired
                                         ? { background: 'rgba(67,97,238,0.12)', color: '#4361EE', border: '1px solid rgba(67,97,238,0.3)' }
                                         : { background: 'rgba(148,163,184,0.1)', color: '#94a3b8', border: '1px solid rgba(148,163,184,0.2)' };
                                 return (
-                                <tr key={user.id}>
-                                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{user.displayName || '—'}</td>
-                                    <td>{user.email}</td>
-                                    <td style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                                        {orgs.find(o => o.id === user.orgId)?.name || <span style={{ color: 'var(--text-muted)' }}>No org</span>}
-                                    </td>
-                                    <td>
-                                        {user.roles.map(r => (
-                                            <span key={r} className={`role-badge ${r.toLowerCase()}`} style={{ marginRight: 4 }}>
-                                                {r}
+                                    <tr key={user.id}>
+                                        <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{user.displayName || '—'}</td>
+                                        <td>{user.email}</td>
+                                        <td>
+                                            <span style={{
+                                                display: 'inline-block', padding: '2px 8px', borderRadius: 999,
+                                                fontSize: 11, fontWeight: 700,
+                                                background: roleStyle.bg, color: roleStyle.color,
+                                            }}>
+                                                {user.role}
                                             </span>
-                                        ))}
-                                        {user.roles.length === 0 && <span style={{ color: '#94a3b8' }}>No role</span>}
-                                    </td>
-                                    <td>
-                                        <span className={`status-badge ${user.isActive ? 'active' : 'inactive'}`}>
-                                            <span className={`status-dot ${user.isActive ? 'active' : 'inactive'}`} />
-                                            {user.isActive ? 'Active' : 'Inactive'}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '2px 8px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600, ...twoFAColor }}>
-                                            {user.isTotpEnabled ? <FaMobileScreen size={10} /> : <FaShield size={10} />}
-                                            {twoFALabel}
-                                        </span>
-                                    </td>
-                                    <td style={{ color: '#94a3b8', fontSize: '0.8rem' }}>
-                                        {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'Never'}
-                                    </td>
-                                    <td>
-                                        <div className="admin-actions">
-                                            <div
-                                                className="admin-action-icon edit"
-                                                title="Edit User"
-                                                onClick={() => { setModalType('editUser'); setModalData(user); }}
-                                            >
-                                                <FaPen size={14} />
+                                        </td>
+                                        <td>
+                                            <span className={`status-badge ${user.isActive ? 'active' : 'inactive'}`}>
+                                                <span className={`status-dot ${user.isActive ? 'active' : 'inactive'}`} />
+                                                {user.isActive ? 'Active' : 'Inactive'}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {user.isFirstLogin
+                                                ? <span style={{ fontSize: 11, color: '#d97706', fontWeight: 600 }}>Pending</span>
+                                                : <span style={{ fontSize: 11, color: '#94a3b8' }}>Done</span>}
+                                        </td>
+                                        <td>
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '2px 8px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600, ...twoFAColor }}>
+                                                {user.isTotpEnabled ? <FaMobileScreen size={10} /> : <FaShield size={10} />}
+                                                {twoFALabel}
+                                            </span>
+                                        </td>
+                                        <td style={{ color: '#94a3b8', fontSize: '0.8rem' }}>
+                                            {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'Never'}
+                                        </td>
+                                        <td>
+                                            <div className="admin-actions">
+                                                <div
+                                                    className="admin-action-icon password"
+                                                    title="Manage 2FA"
+                                                    onClick={() => setModal2FA(user)}
+                                                    style={{ color: (user.twoFactorRequired || user.isTotpEnabled) ? '#4361EE' : undefined }}
+                                                >
+                                                    <FaShield size={14} />
+                                                </div>
+                                                {user.isActive && user.role !== 'ORG_ADMIN' && user.id !== currentUser?.id && (
+                                                    <div
+                                                        className="admin-action-icon delete"
+                                                        title="Deactivate"
+                                                        onClick={() => handleDeactivateUser(user)}
+                                                    >
+                                                        <FaToggleOn size={18} />
+                                                    </div>
+                                                )}
                                             </div>
-                                            <div
-                                                className={`admin-action-icon toggle ${user.isActive ? '' : 'inactive'} ${user.id === currentUser.id ? 'disabled' : ''}`}
-                                                title={user.isActive ? 'Deactivate' : 'Activate'}
-                                                onClick={() => user.id !== currentUser.id && handleToggleUserStatus(user)}
-                                            >
-                                                {user.isActive ? <FaToggleOn size={18} /> : <FaToggleOff size={18} />}
-                                            </div>
-                                            <div
-                                                className="admin-action-icon password"
-                                                title="Manage 2FA"
-                                                onClick={() => { setModalType('manage2FA'); setModalData(user); }}
-                                                style={{ color: (user.twoFactorRequired || user.isTotpEnabled) ? '#4361EE' : undefined }}
-                                            >
-                                                <FaShield size={14} />
-                                            </div>
-                                            <div
-                                                className="admin-action-icon password"
-                                                title="Change Password"
-                                                onClick={() => { setModalType('resetPassword'); setModalData(user); }}
-                                            >
-                                                <FaLock size={14} />
-                                            </div>
-                                            <div
-                                                className={`admin-action-icon delete ${user.id === currentUser.id ? 'disabled' : ''}`}
-                                                title="Delete User"
-                                                onClick={() => user.id !== currentUser.id && handleDeleteUser(user)}
-                                            >
-                                                <FaTrash size={14} />
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
+                                        </td>
+                                    </tr>
                                 );
                             })}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-
-            {/* Roles Tab */}
-            {activeTab === 'roles' && (
-                <div className="admin-card">
-                    <table className="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Role</th>
-                                <th>Description</th>
-                                <th>Permissions</th>
-                                <th>Type</th>
-                                <th style={{ textAlign: 'center' }}>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {roles.map(role => (
-                                <tr key={role.id}>
-                                    <td style={{ fontWeight: 600 }}>
-                                        <span className={`role-badge ${role.name.toLowerCase()}`}>{role.name}</span>
-                                    </td>
-                                    <td style={{ color: 'var(--text-muted)' }}>{role.description || '—'}</td>
-                                    <td>
-                                        <span style={{ color: '#3b82f6', fontWeight: 700 }}>{role.permissions.length}</span>
-                                        <span style={{ color: '#94a3b8', marginLeft: 4 }}>permissions</span>
-                                    </td>
-                                    <td>
-                                        <span className={`type-badge ${role.isSystem ? 'system' : 'custom'}`}>
-                                            {role.isSystem ? 'System' : 'Custom'}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div className="admin-actions">
-                                            <div
-                                                className="admin-action-icon edit"
-                                                title="Edit Role"
-                                                onClick={() => { setModalType('editRole'); setModalData(role); }}
-                                            >
-                                                <FaPen size={14} />
-                                            </div>
-                                            {!role.isSystem && (
-                                                <div
-                                                    className="admin-action-icon delete"
-                                                    title="Delete Role"
-                                                    onClick={() => handleDeleteRole(role.id)}
-                                                >
-                                                    <FaTrash size={14} />
-                                                </div>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
                         </tbody>
                     </table>
                 </div>
@@ -523,9 +269,7 @@ export default function Admin() {
                                 <tr key={perm.id}>
                                     <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{perm.module}</td>
                                     <td>
-                                        <span className={`action-badge ${perm.action.toLowerCase()}`}>
-                                            {perm.action}
-                                        </span>
+                                        <span className={`action-badge ${perm.action.toLowerCase()}`}>{perm.action}</span>
                                     </td>
                                     <td><code style={{ fontSize: '0.8rem', color: '#6366f1' }}>{perm.code}</code></td>
                                     <td style={{ color: 'var(--text-muted)' }}>{perm.description}</td>
@@ -543,305 +287,87 @@ export default function Admin() {
                         <div className="text-center p-4"><div className="spinner-border text-primary spinner-border-sm" /></div>
                     ) : (
                         <>
-                        <table className="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>Ticket #</th>
-                                    <th>Title</th>
-                                    <th>Raised By</th>
-                                    <th>Priority</th>
-                                    <th>Status</th>
-                                    <th>Created</th>
-                                    <th style={{ textAlign: 'center' }}>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {tickets.length === 0 ? (
-                                    <tr><td colSpan={7} className="text-center py-4 text-muted">No tickets found.</td></tr>
-                                ) : tickets.map(t => (
-                                    <tr key={t.id}>
-                                        <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#4361EE', fontSize: 12 }}>{t.ticketNumber}</td>
-                                        <td style={{ fontWeight: 600, color: 'var(--text-primary)', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</td>
-                                        <td style={{ fontSize: 12, color: '#64748b' }}>
-                                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 12 }}>{t.createdByName || '—'}</div>
-                                            <div style={{ color: '#94a3b8', fontSize: 11 }}>{t.raisedByEmail || ''}</div>
-                                        </td>
-                                        <td>
-                                            <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: `${PRIORITY_BADGE_COLOR[t.priority]}18`, color: PRIORITY_BADGE_COLOR[t.priority] }}>
-                                                {t.priority}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: `${STATUS_BADGE[t.status]}18`, color: STATUS_BADGE[t.status] }}>
-                                                {t.status}
-                                            </span>
-                                        </td>
-                                        <td style={{ fontSize: 12, color: '#94a3b8' }}>{new Date(t.createdAt).toLocaleDateString()}</td>
-                                        <td style={{ textAlign: 'center' }}>
-                                            <button
-                                                className="admin-action-icon edit"
-                                                title="Reply"
-                                                onClick={async () => {
-                                                    const full = await adminService.getTicket(t.id);
-                                                    setReplyTicket(full);
-                                                }}
-                                                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', fontSize: 12 }}
-                                            >
-                                                <FaReply size={11} /> Reply
-                                            </button>
-                                        </td>
+                            <table className="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ticket #</th>
+                                        <th>Title</th>
+                                        <th>Raised By</th>
+                                        <th>Priority</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th style={{ textAlign: 'center' }}>Action</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                        {ticketTotal > 20 && (
-                            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: '12px 0' }}>
-                                <button className="modal-btn cancel" disabled={ticketPage === 1} onClick={() => loadTickets(ticketPage - 1)} style={{ padding: '4px 12px', fontSize: 12 }}>Prev</button>
-                                <span style={{ fontSize: 12, color: '#64748b', alignSelf: 'center' }}>Page {ticketPage}</span>
-                                <button className="modal-btn cancel" disabled={ticketPage * 20 >= ticketTotal} onClick={() => loadTickets(ticketPage + 1)} style={{ padding: '4px 12px', fontSize: 12 }}>Next</button>
-                            </div>
-                        )}
+                                </thead>
+                                <tbody>
+                                    {tickets.length === 0 ? (
+                                        <tr><td colSpan={7} className="text-center py-4 text-muted">No tickets found.</td></tr>
+                                    ) : tickets.map(t => (
+                                        <tr key={t.id}>
+                                            <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#4361EE', fontSize: 12 }}>{t.ticketNumber}</td>
+                                            <td style={{ fontWeight: 600, color: 'var(--text-primary)', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</td>
+                                            <td style={{ fontSize: 12, color: '#64748b' }}>
+                                                <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 12 }}>{t.createdByName || '—'}</div>
+                                            </td>
+                                            <td>
+                                                <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: `${PRIORITY_BADGE_COLOR[t.priority]}18`, color: PRIORITY_BADGE_COLOR[t.priority] }}>
+                                                    {t.priority}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: `${STATUS_BADGE[t.status]}18`, color: STATUS_BADGE[t.status] }}>
+                                                    {t.status}
+                                                </span>
+                                            </td>
+                                            <td style={{ fontSize: 12, color: '#94a3b8' }}>{new Date(t.createdAt).toLocaleDateString()}</td>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <button
+                                                    className="admin-action-icon edit"
+                                                    title="Reply"
+                                                    onClick={async () => {
+                                                        const full = await adminService.getTicket(t.id);
+                                                        setReplyTicket(full);
+                                                    }}
+                                                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', fontSize: 12 }}
+                                                >
+                                                    <FaReply size={11} /> Reply
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            {ticketTotal > 20 && (
+                                <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: '12px 0' }}>
+                                    <button className="modal-btn cancel" disabled={ticketPage === 1} onClick={() => loadTickets(ticketPage - 1)} style={{ padding: '4px 12px', fontSize: 12 }}>Prev</button>
+                                    <span style={{ fontSize: 12, color: '#64748b', alignSelf: 'center' }}>Page {ticketPage}</span>
+                                    <button className="modal-btn cancel" disabled={ticketPage * 20 >= ticketTotal} onClick={() => loadTickets(ticketPage + 1)} style={{ padding: '4px 12px', fontSize: 12 }}>Next</button>
+                                </div>
+                            )}
                         </>
                     )}
                 </div>
             )}
 
-            {/* ─── Plans Tab ─────────────────────────────────────── */}
-            {activeTab === 'plans' && (
-                <div className="admin-card">
-                    <table className="admin-table">
-                        <thead>
-                            <tr>
-                                <th>User</th>
-                                <th>Email</th>
-                                <th>Current Plan</th>
-                                <th>Expires</th>
-                                <th style={{ textAlign: 'center' }}>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {users.length === 0 ? (
-                                <tr><td colSpan={5} className="text-center py-4 text-muted">No users found.</td></tr>
-                            ) : users.map(user => (
-                                <React.Fragment key={user.id}>
-                                    <tr>
-                                        <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{user.displayName || user.email}</td>
-                                        <td style={{ fontSize: 12.5, color: '#64748b' }}>{user.email}</td>
-                                        <td>
-                                            <span style={{
-                                                display: 'inline-flex', alignItems: 'center', gap: 5,
-                                                padding: '3px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700,
-                                                background: user.plan === 'Pro' ? 'rgba(245,158,11,0.12)' : user.plan === 'Basic' ? 'rgba(67,97,238,0.1)' : 'var(--bg-primary)',
-                                                color: user.plan === 'Pro' ? '#f59e0b' : user.plan === 'Basic' ? '#4361EE' : 'var(--text-muted)',
-                                                border: user.plan === 'Pro' ? '1px solid rgba(245,158,11,0.3)' : user.plan === 'Basic' ? '1px solid rgba(67,97,238,0.25)' : '1px solid var(--border-color)',
-                                            }}>
-                                                {user.plan === 'Pro' ? <Crown size={11} /> : user.plan === 'Basic' ? <Zap size={11} /> : <CreditCard size={11} />}
-                                                {user.plan || 'Free'}
-                                            </span>
-                                        </td>
-                                        <td style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
-                                            {user.planExpiresAt ? new Date(user.planExpiresAt).toLocaleDateString('en-IN') : '—'}
-                                        </td>
-                                        <td style={{ textAlign: 'center' }}>
-                                            <button
-                                                onClick={() => setPlanEdit({ userId: user.id, plan: user.plan || 'Free', planExpiresAt: user.planExpiresAt || '' })}
-                                                style={{
-                                                    background: 'var(--bg-primary)', border: '1px solid var(--border-color)',
-                                                    borderRadius: 7, padding: '5px 12px', fontSize: 12, fontWeight: 600,
-                                                    cursor: 'pointer', color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: 4,
-                                                }}
-                                            >
-                                                <FaPen size={10} /> Edit Plan
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    {planEdit?.userId === user.id && (
-                                        <tr>
-                                            <td colSpan={5} style={{ padding: '12px 16px', background: 'rgba(67,97,238,0.04)', borderTop: '1px solid var(--border-color)' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                                                    <select
-                                                        value={planEdit.plan}
-                                                        onChange={e => setPlanEdit(p => ({ ...p, plan: e.target.value }))}
-                                                        style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border-color)', fontSize: 13, fontWeight: 600, background: '#fff' }}
-                                                    >
-                                                        <option value="Free">Free</option>
-                                                        <option value="Basic">Basic</option>
-                                                        <option value="Pro">Pro</option>
-                                                    </select>
-                                                    <input
-                                                        type="date"
-                                                        value={planEdit.planExpiresAt ? planEdit.planExpiresAt.slice(0, 10) : ''}
-                                                        onChange={e => setPlanEdit(p => ({ ...p, planExpiresAt: e.target.value }))}
-                                                        style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border-color)', fontSize: 13, background: '#fff' }}
-                                                        placeholder="Expiry date (optional)"
-                                                    />
-                                                    <button
-                                                        disabled={planSaving}
-                                                        onClick={async () => {
-                                                            setPlanSaving(true);
-                                                            try {
-                                                                await planService.updateUserPlan(planEdit.userId, {
-                                                                    plan: planEdit.plan,
-                                                                    planExpiresAt: planEdit.planExpiresAt || null,
-                                                                });
-                                                                toast.success('Plan updated.');
-                                                                setPlanEdit(null);
-                                                                const updated = await adminService.getUsers();
-                                                                setUsers(updated);
-                                                            } catch (e) {
-                                                                toast.error('Failed to update plan.');
-                                                            } finally {
-                                                                setPlanSaving(false);
-                                                            }
-                                                        }}
-                                                        style={{
-                                                            background: 'linear-gradient(135deg, #4361EE, #8B5CF6)', color: '#fff',
-                                                            border: 'none', borderRadius: 8, padding: '7px 16px',
-                                                            fontSize: 13, fontWeight: 700, cursor: planSaving ? 'not-allowed' : 'pointer',
-                                                            display: 'inline-flex', alignItems: 'center', gap: 4, opacity: planSaving ? 0.7 : 1,
-                                                        }}
-                                                    >
-                                                        <Check size={13} /> {planSaving ? 'Saving…' : 'Save'}
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setPlanEdit(null)}
-                                                        style={{
-                                                            background: 'transparent', border: '1px solid var(--border-color)',
-                                                            borderRadius: 8, padding: '7px 12px', fontSize: 13, cursor: 'pointer', color: 'var(--text-muted)',
-                                                        }}
-                                                    >
-                                                        <X size={13} />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )}
-                                </React.Fragment>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-
-            {/* ─── Organizations Tab ──────────────────────────────── */}
-            {activeTab === 'organizations' && (
-                <div className="admin-card">
-                    {/* Create org form */}
-                    <OrgCreateForm
-                        onCreated={(org) => {
-                            setOrgs(prev => [...prev, org]);
-                            toast.success('Organization created.');
-                        }}
-                    />
-                    <table className="admin-table" style={{ marginTop: 20 }}>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Name</th>
-                                <th>Slug</th>
-                                <th>Members</th>
-                                <th>Created</th>
-                                <th style={{ textAlign: 'center' }}>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {orgs.length === 0 ? (
-                                <tr><td colSpan={6} className="text-center py-4 text-muted">No organizations yet.</td></tr>
-                            ) : orgs.map(org => (
-                                <tr key={org.id}>
-                                    <td style={{ fontFamily: 'monospace', color: 'var(--text-muted)', fontSize: 12 }}>#{org.id}</td>
-                                    <td style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{org.name}</td>
-                                    <td>
-                                        <span style={{ fontFamily: 'monospace', fontSize: 12, background: 'var(--bg-primary)', padding: '2px 8px', borderRadius: 6, color: '#4361EE', border: '1px solid var(--border-color)' }}>
-                                            {org.slug}
-                                        </span>
-                                    </td>
-                                    <td style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                                        {users.filter(u => u.orgId === org.id).length} users
-                                    </td>
-                                    <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                                        {new Date(org.createdAt).toLocaleDateString('en-IN')}
-                                    </td>
-                                    <td style={{ textAlign: 'center' }}>
-                                        <button
-                                            onClick={async () => {
-                                                if (!window.confirm(`Delete "${org.name}"? This cannot be undone.`)) return;
-                                                try {
-                                                    await adminService.deleteOrganization(org.id);
-                                                    setOrgs(prev => prev.filter(o => o.id !== org.id));
-                                                    toast.success('Organization deleted.');
-                                                } catch (e) {
-                                                    toast.error(e.message || 'Failed to delete.');
-                                                }
-                                            }}
-                                            style={{ background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.2)', borderRadius: 7, padding: '4px 12px', fontSize: 12, fontWeight: 600, color: '#F43F5E', cursor: 'pointer' }}
-                                        >
-                                            Delete
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-
-            {/* ─── Modals ──────────────────────────────────────────── */}
-
-            {(modalType === 'createUser' || modalType === 'editUser') && (
-                <CreateEditUserModal
-                    user={modalType === 'editUser' ? modalData : null}
-                    roles={roles}
-                    orgs={orgs}
-                    onCreate={handleCreateUser}
-                    onUpdate={handleUpdateUser}
-                    onClose={() => setModalType(null)}
-                />
-            )}
-
-            {modalType === 'editUserRoles' && modalData && (
-                <EditUserRolesModal
-                    user={modalData}
-                    roles={roles}
-                    onSave={handleSaveUserRoles}
-                    onClose={() => setModalType(null)}
-                />
-            )}
-
-            {modalType === 'resetPassword' && modalData && (
-                <ResetPasswordModal
-                    user={modalData}
-                    onSave={handleResetPassword}
-                    onClose={() => setModalType(null)}
-                />
-            )}
-
-            {modalType === 'manage2FA' && modalData && (
+            {/* 2FA Modal */}
+            {modal2FA && (
                 <Manage2FAModal
-                    user={modalData}
+                    user={modal2FA}
                     onSaveEmailOtp={handleSave2FA}
                     onResetTotp={handleResetTotp}
                     onRequireTotp={handleRequireTotp}
-                    onClose={() => setModalType(null)}
+                    onClose={() => setModal2FA(null)}
                 />
             )}
 
-            {(modalType === 'editRole' || modalType === 'createRole') && (
-                <EditRoleModal
-                    role={modalType === 'editRole' ? modalData : null}
-                    permissions={permissions}
-                    onSave={handleSaveRole}
-                    onClose={() => setModalType(null)}
-                />
-            )}
-
+            {/* Ticket Reply Modal */}
             {replyTicket && (
                 <TicketReplyModal
                     ticket={replyTicket}
                     adminName={currentUser?.displayName || 'Admin'}
                     onClose={() => setReplyTicket(null)}
                     onReplySent={(comment) => {
-                        setReplyTicket(prev => ({ ...prev, comments: [...(prev.comments ?? []), comment], status: prev.status === 'Open' ? 'In Progress' : prev.status }));
+                        setReplyTicket(prev => ({ ...prev, comments: [...(prev.comments ?? []), comment] }));
                         setTickets(prev => prev.map(t => t.id === replyTicket.id ? { ...t, status: t.status === 'Open' ? 'In Progress' : t.status } : t));
                     }}
                     onStatusChanged={(updated) => {
@@ -854,482 +380,104 @@ export default function Admin() {
     );
 }
 
-// ─── Create / Edit User Modal ──────────────────────────────────
-
-function CreateEditUserModal({ user, roles, orgs, onCreate, onUpdate, onClose }) {
-    const isEdit = !!user;
-    const [email, setEmail] = useState(user?.email || '');
-    const [displayName, setDisplayName] = useState(user?.displayName || '');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [isActive, setIsActive] = useState(user?.isActive ?? true);
-    const [orgId, setOrgId] = useState(user?.orgId ?? null);
-    const [selectedRoleIds, setSelectedRoleIds] = useState(
-        user ? roles.filter(r => user.roles.includes(r.name)).map(r => r.id) : []
-    );
-
-    const toggleRole = (id) => {
-        setSelectedRoleIds(prev =>
-            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-        );
-    };
-
-    const handleSubmit = () => {
-        if (!email.trim()) return alert('Email is required.');
-        if (!isEdit) {
-            if (!password.trim()) return alert('Password is required.');
-            if (password.length < 6) return alert('Password must be at least 6 characters.');
-            if (password !== confirmPassword) return alert('Passwords do not match.');
-            onCreate({
-                email: email.trim(),
-                displayName: displayName.trim() || null,
-                password,
-                roleIds: selectedRoleIds,
-                isActive,
-                orgId: orgId || null
-            });
-        } else {
-            onUpdate(user.id, {
-                email: email.trim(),
-                displayName: displayName.trim() || null,
-                roleIds: selectedRoleIds,
-                isActive,
-                orgId: orgId || null
-            });
-        }
-    };
-
-    return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-box" onClick={e => e.stopPropagation()}>
-                <div className="modal-box-header">
-                    <h3>{isEdit ? `Edit User — ${user.displayName || user.email}` : 'Create New User'}</h3>
-                </div>
-                <div className="modal-box-body">
-                    <div className="mb-3">
-                        <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>Display Name</label>
-                        <input
-                            className="form-control form-control-sm"
-                            value={displayName}
-                            onChange={e => setDisplayName(e.target.value)}
-                            placeholder="Enter display name"
-                        />
-                    </div>
-
-                    <div className="mb-3">
-                        <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>Email</label>
-                        <input
-                            type="email"
-                            className="form-control form-control-sm"
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            placeholder="Enter email address"
-                        />
-                    </div>
-
-                    {!isEdit && (
-                        <>
-                            <div className="mb-3">
-                                <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>Password</label>
-                                <input
-                                    type="password"
-                                    className="form-control form-control-sm"
-                                    value={password}
-                                    onChange={e => setPassword(e.target.value)}
-                                    placeholder="Enter password (min 6 characters)"
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>Confirm Password</label>
-                                <input
-                                    type="password"
-                                    className="form-control form-control-sm"
-                                    value={confirmPassword}
-                                    onChange={e => setConfirmPassword(e.target.value)}
-                                    placeholder="Confirm password"
-                                />
-                            </div>
-                        </>
-                    )}
-
-                    <div className="mb-3">
-                        <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>Roles</label>
-                        <div className="d-flex flex-column gap-2">
-                            {roles.map(role => (
-                                <label key={role.id} className={`perm-check ${selectedRoleIds.includes(role.id) ? 'checked' : ''}`}>
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedRoleIds.includes(role.id)}
-                                        onChange={() => toggleRole(role.id)}
-                                    />
-                                    <span style={{ fontWeight: 600 }}>{role.name}</span>
-                                    <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>— {role.description}</span>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="mb-3">
-                        <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>Organization</label>
-                        <select
-                            className="form-control form-control-sm"
-                            value={orgId || ''}
-                            onChange={e => setOrgId(e.target.value ? parseInt(e.target.value) : null)}
-                        >
-                            <option value="">— No Organization —</option>
-                            {(orgs || []).map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
-                        </select>
-                    </div>
-
-                    <div className="mb-3">
-                        <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>Status</label>
-                        <div
-                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
-                            onClick={() => setIsActive(prev => !prev)}
-                        >
-                            {isActive ? <FaToggleOn size={22} color="#22c55e" /> : <FaToggleOff size={22} color="#94a3b8" />}
-                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: isActive ? '#22c55e' : '#94a3b8' }}>
-                                {isActive ? 'Active' : 'Inactive'}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                <div className="modal-box-footer">
-                    <button className="modal-btn cancel" onClick={onClose}>Cancel</button>
-                    <button className="modal-btn primary" onClick={handleSubmit}>
-                        {isEdit ? 'Update User' : 'Create User'}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// ─── Edit User Roles Modal ─────────────────────────────────────
-
-function EditUserRolesModal({ user, roles, onSave, onClose }) {
-    const [selectedRoleIds, setSelectedRoleIds] = useState(
-        roles.filter(r => user.roles.includes(r.name)).map(r => r.id)
-    );
-
-    const toggleRole = (id) => {
-        setSelectedRoleIds(prev =>
-            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-        );
-    };
-
-    return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-box" onClick={e => e.stopPropagation()}>
-                <div className="modal-box-header">
-                    <h3>Edit Roles — {user.displayName || user.email}</h3>
-                </div>
-                <div className="modal-box-body">
-                    <div className="d-flex flex-column gap-2">
-                        {roles.map(role => (
-                            <label key={role.id} className={`perm-check ${selectedRoleIds.includes(role.id) ? 'checked' : ''}`}>
-                                <input
-                                    type="checkbox"
-                                    checked={selectedRoleIds.includes(role.id)}
-                                    onChange={() => toggleRole(role.id)}
-                                />
-                                <span style={{ fontWeight: 600 }}>{role.name}</span>
-                                <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>— {role.description}</span>
-                            </label>
-                        ))}
-                    </div>
-                </div>
-                <div className="modal-box-footer">
-                    <button className="modal-btn cancel" onClick={onClose}>Cancel</button>
-                    <button className="modal-btn primary" onClick={() => onSave(user.id, selectedRoleIds)}>
-                        Save Roles
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// ─── Edit/Create Role Modal ─────────────────────────────────────
-
-function EditRoleModal({ role, permissions, onSave, onClose }) {
-    const [name, setName] = useState(role?.name || '');
-    const [description, setDescription] = useState(role?.description || '');
-    const [selectedPermIds, setSelectedPermIds] = useState(
-        role ? permissions.filter(p => role.permissions.includes(p.code)).map(p => p.id) : []
-    );
-
-    const togglePerm = (id) => {
-        setSelectedPermIds(prev =>
-            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-        );
-    };
-
-    const toggleModule = (module) => {
-        const modulePerms = permissions.filter(p => p.module === module);
-        const allSelected = modulePerms.every(p => selectedPermIds.includes(p.id));
-        if (allSelected) {
-            setSelectedPermIds(prev => prev.filter(id => !modulePerms.find(p => p.id === id)));
-        } else {
-            const newIds = modulePerms.map(p => p.id).filter(id => !selectedPermIds.includes(id));
-            setSelectedPermIds(prev => [...prev, ...newIds]);
-        }
-    };
-
-    const modules = [...new Set(permissions.map(p => p.module))];
-
-    const handleSubmit = () => {
-        if (!name.trim()) return alert('Role name is required.');
-        onSave(role?.id || null, {
-            name: name.trim(),
-            description: description.trim(),
-            permissionIds: selectedPermIds
-        });
-    };
-
-    return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-box" onClick={e => e.stopPropagation()}>
-                <div className="modal-box-header">
-                    <h3>{role ? `Edit Role — ${role.name}` : 'Create New Role'}</h3>
-                </div>
-                <div className="modal-box-body">
-                    <div className="mb-3">
-                        <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>Role Name</label>
-                        <input
-                            className="form-control form-control-sm"
-                            value={name}
-                            onChange={e => setName(e.target.value)}
-                            disabled={role?.isSystem}
-                        />
-                    </div>
-
-                    <div className="mb-3">
-                        <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>Description</label>
-                        <input
-                            className="form-control form-control-sm"
-                            value={description}
-                            onChange={e => setDescription(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="mb-3">
-                        <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>
-                            Permissions ({selectedPermIds.length} selected)
-                        </label>
-                        {modules.map(module => {
-                            const modulePerms = permissions.filter(p => p.module === module);
-                            const allChecked = modulePerms.every(p => selectedPermIds.includes(p.id));
-                            const someChecked = modulePerms.some(p => selectedPermIds.includes(p.id));
-                            return (
-                                <div key={module} style={{ marginBottom: '0.75rem' }}>
-                                    <label
-                                        style={{ fontWeight: 700, fontSize: '0.8rem', color: '#334155', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}
-                                        onClick={() => toggleModule(module)}
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            checked={allChecked}
-                                            ref={el => { if (el) el.indeterminate = someChecked && !allChecked; }}
-                                            readOnly
-                                        />
-                                        {module}
-                                    </label>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', paddingLeft: '1.5rem' }}>
-                                        {modulePerms.map(perm => (
-                                            <label key={perm.id} className={`perm-check ${selectedPermIds.includes(perm.id) ? 'checked' : ''}`} style={{ fontSize: '0.75rem' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedPermIds.includes(perm.id)}
-                                                    onChange={() => togglePerm(perm.id)}
-                                                />
-                                                {perm.action}
-                                            </label>
-                                        ))}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-                <div className="modal-box-footer">
-                    <button className="modal-btn cancel" onClick={onClose}>Cancel</button>
-                    <button className="modal-btn primary" onClick={handleSubmit}>
-                        {role ? 'Update Role' : 'Create Role'}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
 // ─── Manage 2FA Modal ─────────────────────────────────────────
 
 function Manage2FAModal({ user, onSaveEmailOtp, onResetTotp, onRequireTotp, onClose }) {
     const emailOtpOn = user.twoFactorRequired && user.twoFactorMethod === 'email' && !user.isTotpEnabled;
     const totpRequiredNotSetup = user.twoFactorRequired && user.twoFactorMethod === 'totp' && !user.isTotpEnabled;
     const [emailEnabled, setEmailEnabled] = useState(emailOtpOn);
-    const [confirm, setConfirm] = useState(null); // 'reset-totp' | 'require-totp'
+    const [confirm, setConfirm] = useState(null);
 
-    const statusLabel = user.isTotpEnabled
-        ? 'TOTP (authenticator app)'
-        : totpRequiredNotSetup
-            ? 'TOTP required — setup pending'
-            : user.twoFactorRequired
-                ? 'Email OTP'
-                : 'None';
-    const statusColor = user.isTotpEnabled
-        ? '#10b981'
-        : totpRequiredNotSetup
-            ? '#f59e0b'
-            : user.twoFactorRequired
-                ? '#4361EE'
-                : '#94a3b8';
+    const statusLabel = user.isTotpEnabled ? 'TOTP (authenticator app)'
+        : totpRequiredNotSetup ? 'TOTP required — setup pending'
+        : user.twoFactorRequired ? 'Email OTP' : 'None';
+    const statusColor = user.isTotpEnabled ? '#10b981' : totpRequiredNotSetup ? '#f59e0b' : user.twoFactorRequired ? '#4361EE' : '#94a3b8';
 
     const sectionStyle = { padding: '14px 16px', borderRadius: 10, marginBottom: 12, border: '1px solid rgba(148,163,184,0.15)', background: 'rgba(248,250,252,0.6)' };
 
     if (confirm === 'reset-totp') {
         return (
-            <div className="modal-overlay" onClick={onClose}>
-                <div className="modal-box" onClick={e => e.stopPropagation()}>
-                    <div className="modal-box-header">
-                        <h3>Reset TOTP — {user.displayName || user.email}</h3>
-                    </div>
-                    <div className="modal-box-body">
-                        <div className="p-3 rounded mb-3" style={{ background: 'rgba(244,63,94,0.07)', border: '1px solid rgba(244,63,94,0.2)', fontSize: '0.85rem', color: '#f43f5e' }}>
-                            This will <strong>permanently remove</strong> the user's authenticator app setup. They will need to re-enroll via Settings &gt; Security.
-                        </div>
-                    </div>
-                    <div className="modal-box-footer">
-                        <button className="modal-btn cancel" onClick={() => setConfirm(null)}>Cancel</button>
-                        <button className="modal-btn warning" onClick={() => onResetTotp(user.id)}>Reset TOTP</button>
+            <div className="modal-overlay" onClick={onClose}><div className="modal-box" onClick={e => e.stopPropagation()}>
+                <div className="modal-box-header"><h3>Reset TOTP — {user.displayName || user.email}</h3></div>
+                <div className="modal-box-body">
+                    <div className="p-3 rounded mb-3" style={{ background: 'rgba(244,63,94,0.07)', border: '1px solid rgba(244,63,94,0.2)', fontSize: '0.85rem', color: '#f43f5e' }}>
+                        This will <strong>permanently remove</strong> the user's authenticator app setup.
                     </div>
                 </div>
-            </div>
+                <div className="modal-box-footer">
+                    <button className="modal-btn cancel" onClick={() => setConfirm(null)}>Cancel</button>
+                    <button className="modal-btn warning" onClick={() => onResetTotp(user.id)}>Reset TOTP</button>
+                </div>
+            </div></div>
         );
     }
 
     if (confirm === 'require-totp') {
         return (
-            <div className="modal-overlay" onClick={onClose}>
-                <div className="modal-box" onClick={e => e.stopPropagation()}>
-                    <div className="modal-box-header">
-                        <h3>Require TOTP — {user.displayName || user.email}</h3>
-                    </div>
-                    <div className="modal-box-body">
-                        <div className="p-3 rounded mb-3" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', fontSize: '0.85rem', color: '#d97706' }}>
-                            The user will be allowed to log in but will see a prompt to set up their authenticator app via <strong>Settings &gt; Security</strong> before full access is enforced.
-                        </div>
-                    </div>
-                    <div className="modal-box-footer">
-                        <button className="modal-btn cancel" onClick={() => setConfirm(null)}>Cancel</button>
-                        <button className="modal-btn primary" onClick={() => onRequireTotp(user.id)}>Require TOTP</button>
+            <div className="modal-overlay" onClick={onClose}><div className="modal-box" onClick={e => e.stopPropagation()}>
+                <div className="modal-box-header"><h3>Require TOTP — {user.displayName || user.email}</h3></div>
+                <div className="modal-box-body">
+                    <div className="p-3 rounded mb-3" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', fontSize: '0.85rem', color: '#d97706' }}>
+                        The user will be prompted to set up their authenticator app via Settings on next login.
                     </div>
                 </div>
-            </div>
+                <div className="modal-box-footer">
+                    <button className="modal-btn cancel" onClick={() => setConfirm(null)}>Cancel</button>
+                    <button className="modal-btn primary" onClick={() => onRequireTotp(user.id)}>Require TOTP</button>
+                </div>
+            </div></div>
         );
     }
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-box" onClick={e => e.stopPropagation()}>
-                <div className="modal-box-header">
-                    <h3>Manage 2FA — {user.displayName || user.email}</h3>
+        <div className="modal-overlay" onClick={onClose}><div className="modal-box" onClick={e => e.stopPropagation()}>
+            <div className="modal-box-header"><h3>Manage 2FA — {user.displayName || user.email}</h3></div>
+            <div className="modal-box-body">
+                <div className="mb-3 p-3 rounded d-flex align-items-center gap-2" style={{ background: 'rgba(67,97,238,0.05)', border: '1px solid rgba(67,97,238,0.12)' }}>
+                    <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Current 2FA:</span>
+                    <span style={{ fontWeight: 700, fontSize: '0.85rem', color: statusColor }}>{statusLabel}</span>
                 </div>
-                <div className="modal-box-body">
 
-                    {/* Status row */}
-                    <div className="mb-3 p-3 rounded d-flex align-items-center gap-2" style={{ background: 'rgba(67,97,238,0.05)', border: '1px solid rgba(67,97,238,0.12)' }}>
-                        <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Current 2FA:</span>
-                        <span style={{ fontWeight: 700, fontSize: '0.85rem', color: statusColor }}>{statusLabel}</span>
-                    </div>
-
-                    {/* ── Email OTP section ── */}
-                    <div style={sectionStyle}>
-                        <div className="d-flex align-items-center justify-content-between mb-1">
-                            <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                Email OTP
-                            </div>
-                            {!user.isTotpEnabled && !totpRequiredNotSetup && (
-                                <div
-                                    style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
-                                    onClick={() => setEmailEnabled(prev => !prev)}
-                                >
-                                    {emailEnabled ? <FaToggleOn size={20} color="#4361EE" /> : <FaToggleOff size={20} color="#94a3b8" />}
-                                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: emailEnabled ? '#4361EE' : '#94a3b8' }}>
-                                        {emailEnabled ? 'On' : 'Off'}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-                        <p style={{ fontSize: '0.77rem', color: '#94a3b8', margin: 0 }}>
-                            User receives a 6-digit code by email on each login.
-                        </p>
-                        {(user.isTotpEnabled || totpRequiredNotSetup) && (
-                            <p style={{ fontSize: '0.77rem', color: '#f59e0b', marginTop: 4 }}>
-                                TOTP is {user.isTotpEnabled ? 'active' : 'required'}. Disable it first to switch to Email OTP.
-                            </p>
-                        )}
-                    </div>
-
-                    {/* ── TOTP section ── */}
-                    <div style={sectionStyle}>
-                        <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)', marginBottom: 4 }}>
-                            Authenticator App (TOTP)
-                        </div>
-                        {user.isTotpEnabled ? (
-                            <div>
-                                <p style={{ fontSize: '0.77rem', color: '#10b981', marginBottom: 8 }}>
-                                    Active — user has configured their authenticator app.
-                                </p>
-                                <button
-                                    onClick={() => setConfirm('reset-totp')}
-                                    className="px-3 py-1 rounded-lg text-xs font-medium"
-                                    style={{ background: 'rgba(244,63,94,0.1)', color: '#f43f5e', border: '1px solid rgba(244,63,94,0.3)', cursor: 'pointer' }}
-                                >
-                                    Reset TOTP
-                                </button>
-                            </div>
-                        ) : totpRequiredNotSetup ? (
-                            <div>
-                                <p style={{ fontSize: '0.77rem', color: '#d97706', marginBottom: 8 }}>
-                                    Required by admin — user has not yet set it up.
-                                </p>
-                                <button
-                                    onClick={() => onResetTotp(user.id)}
-                                    className="px-3 py-1 rounded-lg text-xs font-medium"
-                                    style={{ background: 'rgba(244,63,94,0.1)', color: '#f43f5e', border: '1px solid rgba(244,63,94,0.3)', cursor: 'pointer' }}
-                                >
-                                    Cancel Requirement
-                                </button>
-                            </div>
-                        ) : (
-                            <div>
-                                <p style={{ fontSize: '0.77rem', color: '#94a3b8', marginBottom: 8 }}>
-                                    Not enabled. Admin can require the user to set it up.
-                                </p>
-                                <button
-                                    onClick={() => setConfirm('require-totp')}
-                                    className="px-3 py-1 rounded-lg text-xs font-medium text-white"
-                                    style={{ background: 'var(--button-brand, #5286A5)', border: 'none', cursor: 'pointer' }}
-                                >
-                                    Require TOTP
-                                </button>
+                <div style={sectionStyle}>
+                    <div className="d-flex align-items-center justify-content-between mb-1">
+                        <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>Email OTP</div>
+                        {!user.isTotpEnabled && !totpRequiredNotSetup && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }} onClick={() => setEmailEnabled(prev => !prev)}>
+                                {emailEnabled ? <FaToggleOn size={20} color="#4361EE" /> : <FaToggleOff size={20} color="#94a3b8" />}
+                                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: emailEnabled ? '#4361EE' : '#94a3b8' }}>{emailEnabled ? 'On' : 'Off'}</span>
                             </div>
                         )}
                     </div>
-
+                    <p style={{ fontSize: '0.77rem', color: '#94a3b8', margin: 0 }}>User receives a 6-digit code by email on each login.</p>
                 </div>
-                <div className="modal-box-footer">
-                    <button className="modal-btn cancel" onClick={onClose}>Cancel</button>
-                    {!user.isTotpEnabled && !totpRequiredNotSetup && (
-                        <button className="modal-btn primary" onClick={() => onSaveEmailOtp(user.id, emailEnabled, 'email')}>
-                            Save
-                        </button>
+
+                <div style={sectionStyle}>
+                    <div style={{ fontWeight: 600, fontSize: '0.85rem', marginBottom: 4 }}>Authenticator App (TOTP)</div>
+                    {user.isTotpEnabled ? (
+                        <div>
+                            <p style={{ fontSize: '0.77rem', color: '#10b981', marginBottom: 8 }}>Active — user has configured their authenticator app.</p>
+                            <button onClick={() => setConfirm('reset-totp')} style={{ background: 'rgba(244,63,94,0.1)', color: '#f43f5e', border: '1px solid rgba(244,63,94,0.3)', borderRadius: 6, padding: '4px 12px', fontSize: 12, cursor: 'pointer' }}>Reset TOTP</button>
+                        </div>
+                    ) : totpRequiredNotSetup ? (
+                        <div>
+                            <p style={{ fontSize: '0.77rem', color: '#d97706', marginBottom: 8 }}>Required — user has not yet set it up.</p>
+                            <button onClick={() => onResetTotp(user.id)} style={{ background: 'rgba(244,63,94,0.1)', color: '#f43f5e', border: '1px solid rgba(244,63,94,0.3)', borderRadius: 6, padding: '4px 12px', fontSize: 12, cursor: 'pointer' }}>Cancel Requirement</button>
+                        </div>
+                    ) : (
+                        <div>
+                            <p style={{ fontSize: '0.77rem', color: '#94a3b8', marginBottom: 8 }}>Not enabled.</p>
+                            <button onClick={() => setConfirm('require-totp')} style={{ background: '#4361EE', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: 12, cursor: 'pointer' }}>Require TOTP</button>
+                        </div>
                     )}
                 </div>
             </div>
-        </div>
+            <div className="modal-box-footer">
+                <button className="modal-btn cancel" onClick={onClose}>Cancel</button>
+                {!user.isTotpEnabled && !totpRequiredNotSetup && (
+                    <button className="modal-btn primary" onClick={() => onSaveEmailOtp(user.id, emailEnabled, 'email')}>Save</button>
+                )}
+            </div>
+        </div></div>
     );
 }
 
@@ -1382,7 +530,6 @@ function TicketReplyModal({ ticket, adminName, onClose, onReplySent, onStatusCha
                         <h3 style={{ marginBottom: 4 }}>{ticket.ticketNumber} — {ticket.title}</h3>
                         <div style={{ fontSize: 12, color: '#94a3b8' }}>
                             Raised by <strong style={{ color: '#64748b' }}>{ticket.createdByName || 'User'}</strong>
-                            {ticket.raisedByEmail && <span> · {ticket.raisedByEmail}</span>}
                             <span> · {new Date(ticket.createdAt).toLocaleDateString()}</span>
                         </div>
                     </div>
@@ -1403,44 +550,30 @@ function TicketReplyModal({ ticket, adminName, onClose, onReplySent, onStatusCha
                 </div>
 
                 <div className="modal-box-body" style={{ maxHeight: '55vh', overflowY: 'auto' }}>
-                    {/* Original description */}
                     {ticket.description && (
                         <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 14px', marginBottom: 12, fontSize: 13, color: '#334155', whiteSpace: 'pre-wrap' }}>
                             {ticket.description}
                         </div>
                     )}
-
-                    {/* Comment thread */}
                     {comments.length === 0 ? (
-                        <div style={{ textAlign: 'center', color: '#94a3b8', padding: '16px 0', fontSize: 13 }}>No replies yet. Be the first to respond.</div>
-                    ) : (
-                        comments.map(c => {
-                            const isAdmin = c.authorName === adminName;
-                            return (
-                                <div key={c.id} style={{ display: 'flex', flexDirection: isAdmin ? 'row-reverse' : 'row', gap: 8, marginBottom: 10 }}>
-                                    <div style={{
-                                        maxWidth: '80%',
-                                        padding: '8px 12px',
-                                        borderRadius: 10,
-                                        fontSize: 13,
-                                        background: isAdmin ? 'rgba(67,97,238,0.1)' : '#f1f5f9',
-                                        border: isAdmin ? '1px solid rgba(67,97,238,0.2)' : '1px solid #e2e8f0',
-                                        color: '#0f172a',
-                                    }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexDirection: isAdmin ? 'row-reverse' : 'row' }}>
-                                            <span style={{ fontWeight: 700, fontSize: 12, color: isAdmin ? '#4361EE' : '#64748b' }}>{c.authorName}</span>
-                                            {c.isInternal && <span style={{ fontSize: 10, background: '#fef3c7', color: '#d97706', border: '1px solid #fcd34d', borderRadius: 4, padding: '0 4px', display: 'flex', alignItems: 'center', gap: 2 }}><Lock size={8} />Internal</span>}
-                                            <span style={{ fontSize: 10, color: '#94a3b8' }}>{new Date(c.createdAt).toLocaleString()}</span>
-                                        </div>
-                                        <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{c.comment}</div>
+                        <div style={{ textAlign: 'center', color: '#94a3b8', padding: '16px 0', fontSize: 13 }}>No replies yet.</div>
+                    ) : comments.map(c => {
+                        const isAdminComment = c.authorName === adminName;
+                        return (
+                            <div key={c.id} style={{ display: 'flex', flexDirection: isAdminComment ? 'row-reverse' : 'row', gap: 8, marginBottom: 10 }}>
+                                <div style={{ maxWidth: '80%', padding: '8px 12px', borderRadius: 10, fontSize: 13, background: isAdminComment ? 'rgba(67,97,238,0.1)' : '#f1f5f9', border: isAdminComment ? '1px solid rgba(67,97,238,0.2)' : '1px solid #e2e8f0', color: '#0f172a' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexDirection: isAdminComment ? 'row-reverse' : 'row' }}>
+                                        <span style={{ fontWeight: 700, fontSize: 12, color: isAdminComment ? '#4361EE' : '#64748b' }}>{c.authorName}</span>
+                                        {c.isInternal && <span style={{ fontSize: 10, background: '#fef3c7', color: '#d97706', border: '1px solid #fcd34d', borderRadius: 4, padding: '0 4px' }}><Lock size={8} /> Internal</span>}
+                                        <span style={{ fontSize: 10, color: '#94a3b8' }}>{new Date(c.createdAt).toLocaleString()}</span>
                                     </div>
+                                    <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{c.comment}</div>
                                 </div>
-                            );
-                        })
-                    )}
+                            </div>
+                        );
+                    })}
                 </div>
 
-                {/* Reply input */}
                 <div style={{ padding: '12px 20px', borderTop: '1px solid #e2e8f0' }}>
                     <textarea
                         rows={3}
@@ -1457,70 +590,12 @@ function TicketReplyModal({ ticket, adminName, onClose, onReplySent, onStatusCha
                         </label>
                         <div style={{ display: 'flex', gap: 8 }}>
                             <button className="modal-btn cancel" onClick={onClose}>Close</button>
-                            <button
-                                className="modal-btn primary"
-                                onClick={handleReply}
-                                disabled={sending || !commentText.trim()}
-                                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-                            >
+                            <button className="modal-btn primary" onClick={handleReply} disabled={sending || !commentText.trim()} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <Send size={13} />
                                 {sending ? 'Sending…' : 'Send Reply'}
                             </button>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// ─── Reset Password Modal ─────────────────────────────────────
-
-function ResetPasswordModal({ user, onSave, onClose }) {
-    const [newPassword, setNewPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-
-    const handleSubmit = () => {
-        if (!newPassword.trim()) return alert('Password is required.');
-        if (newPassword.length < 6) return alert('Password must be at least 6 characters.');
-        if (newPassword !== confirmPassword) return alert('Passwords do not match.');
-        onSave(user.id, newPassword);
-    };
-
-    return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-box" onClick={e => e.stopPropagation()}>
-                <div className="modal-box-header">
-                    <h3>Change Password — {user.displayName || user.email}</h3>
-                </div>
-                <div className="modal-box-body">
-                    <div className="mb-3">
-                        <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>New Password</label>
-                        <input
-                            type="password"
-                            className="form-control form-control-sm"
-                            value={newPassword}
-                            onChange={e => setNewPassword(e.target.value)}
-                            placeholder="Enter new password"
-                        />
-                    </div>
-
-                    <div className="mb-3">
-                        <label className="form-label fw-bold" style={{ fontSize: '0.85rem' }}>Confirm Password</label>
-                        <input
-                            type="password"
-                            className="form-control form-control-sm"
-                            value={confirmPassword}
-                            onChange={e => setConfirmPassword(e.target.value)}
-                            placeholder="Confirm new password"
-                        />
-                    </div>
-                </div>
-                <div className="modal-box-footer">
-                    <button className="modal-btn cancel" onClick={onClose}>Cancel</button>
-                    <button className="modal-btn warning" onClick={handleSubmit}>
-                        Reset Password
-                    </button>
                 </div>
             </div>
         </div>

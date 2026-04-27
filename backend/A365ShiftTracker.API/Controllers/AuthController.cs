@@ -11,7 +11,7 @@ namespace A365ShiftTracker.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [EnableRateLimiting("AuthPolicy")]
-public class AuthController : ControllerBase
+public class AuthController : BaseApiController
 {
     private readonly IAuthService _authService;
     private readonly IWebHostEnvironment _env;
@@ -22,25 +22,13 @@ public class AuthController : ControllerBase
         _env = env;
     }
 
-    [HttpPost("register")]
-    public async Task<ActionResult<ApiResponse<AuthResponse>>> Register(RegisterRequest request)
-    {
-        var result = await _authService.RegisterAsync(request);
-        SetAuthCookie(result.Token);
-        result.Token = string.Empty;
-        return Ok(ApiResponse<AuthResponse>.Ok(result, "Registration successful."));
-    }
-
     [HttpPost("login")]
     public async Task<ActionResult<ApiResponse<LoginResponse>>> Login(LoginRequest request)
     {
         var result = await _authService.LoginAsync(request);
 
         if (result.Requires2FA)
-        {
-            // Return partial token in body — no auth cookie set yet
             return Ok(ApiResponse<LoginResponse>.Ok(result, "2FA required."));
-        }
 
         SetAuthCookie(result.Token);
         result.Token = string.Empty;
@@ -70,6 +58,15 @@ public class AuthController : ControllerBase
         SetAuthCookie(result.Token);
         result.Token = string.Empty;
         return Ok(ApiResponse<LoginResponse>.Ok(result, "Login successful."));
+    }
+
+    [HttpPost("reset-first-password")]
+    [Authorize]
+    [DisableRateLimiting]
+    public async Task<ActionResult<ApiResponse<bool>>> ResetFirstPassword(ResetFirstPasswordRequest request)
+    {
+        await _authService.ResetFirstPasswordAsync(GetCurrentUserId(), request.NewPassword);
+        return Ok(ApiResponse<bool>.Ok(true, "Password updated. Please log in again."));
     }
 
     [HttpGet("totp/setup")]
@@ -140,7 +137,6 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<ApiResponse<bool>>> ForgotPassword(ForgotPasswordRequest request)
     {
         await _authService.RequestPasswordResetAsync(request.Email);
-        // Always return success to prevent account enumeration
         return Ok(ApiResponse<bool>.Ok(true, "If an account with that email exists, a reset link has been sent."));
     }
 
@@ -162,14 +158,5 @@ public class AuthController : ControllerBase
             Expires = DateTimeOffset.UtcNow.AddHours(8),
             Path = "/"
         });
-    }
-
-    private int GetCurrentUserId()
-    {
-        var sub = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-               ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (!int.TryParse(sub, out var uid))
-            throw new UnauthorizedAccessException("Not authenticated.");
-        return uid;
     }
 }

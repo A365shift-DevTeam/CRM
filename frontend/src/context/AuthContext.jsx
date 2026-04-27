@@ -1,24 +1,18 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { apiClient, setToken, clearToken, getStoredUser, setStoredUser } from '../services/apiClient';
+import { apiClient, clearToken, getStoredUser, setStoredUser } from '../services/apiClient';
 
 const AuthContext = createContext();
 
-export const useAuth = () => {
-    return useContext(AuthContext);
-}
+export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }) {
     const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Restore user profile from localStorage on mount.
-    // The actual session validity is enforced by the httpOnly cookie + JWT on the server.
     useEffect(() => {
         const stored = getStoredUser();
-        if (stored) {
-            setCurrentUser(stored);
-        }
+        if (stored) setCurrentUser(stored);
         setLoading(false);
     }, []);
 
@@ -27,30 +21,21 @@ export function AuthProvider({ children }) {
             id: data.id,
             email: data.email,
             displayName: data.displayName,
-            role: data.role,
+            role: data.role,                         // SUPER_ADMIN | ORG_ADMIN | MANAGER | EMPLOYEE
             permissions: data.permissions || [],
             isTotpEnabled: data.isTotpEnabled || false,
             twoFactorRequired: data.twoFactorRequired || false,
             twoFactorMethod: data.twoFactorMethod || 'email',
             totpSetupRequired: data.totpSetupRequired || false,
             orgId: data.orgId || null,
-            plan: data.plan || 'Free',
-            planExpiresAt: data.planExpiresAt || null,
+            orgStatus: data.orgStatus || null,       // TRIAL | ACTIVE | SUSPENDED
+            isFirstLogin: data.isFirstLogin || false,
         };
-    }
-
-    async function signup(email, password, displayName) {
-        const data = await apiClient.post('/auth/register', { email, password, displayName });
-        const user = buildUserProfile(data);
-        setStoredUser(user);
-        setCurrentUser(user);
-        return user;
     }
 
     async function login(email, password) {
         const data = await apiClient.post('/auth/login', { email, password });
 
-        // 2FA required — return the challenge info, don't set user yet
         if (data.requires2FA) {
             return { requires2FA: true, method: data.twoFactorMethod, partialToken: data.partialToken };
         }
@@ -67,6 +52,13 @@ export function AuthProvider({ children }) {
         setCurrentUser(user);
     }
 
+    async function resetFirstPassword(newPassword) {
+        await apiClient.post('/auth/reset-first-password', { newPassword });
+        const updated = { ...currentUser, isFirstLogin: false };
+        setStoredUser(updated);
+        setCurrentUser(updated);
+    }
+
     function updateCurrentUser(patch) {
         setCurrentUser(prev => {
             const updated = { ...prev, ...patch };
@@ -77,25 +69,38 @@ export function AuthProvider({ children }) {
 
     async function logout() {
         try {
-            // Ask the server to delete the httpOnly cookie
             await apiClient.post('/auth/logout', {});
         } catch {
-            // Ignore errors — clear local state regardless
+            // ignore
         }
         clearToken();
         setCurrentUser(null);
     }
 
+    // Role helpers
+    function isSuperAdmin() { return currentUser?.role === 'SUPER_ADMIN'; }
+    function isOrgAdmin() { return currentUser?.role === 'ORG_ADMIN'; }
+    function isManager() { return currentUser?.role === 'MANAGER'; }
+    function isEmployee() { return currentUser?.role === 'EMPLOYEE'; }
+
+    function isOrgAdminOrAbove() {
+        return ['SUPER_ADMIN', 'ORG_ADMIN'].includes(currentUser?.role);
+    }
+
+    function isManagerOrAbove() {
+        return ['SUPER_ADMIN', 'ORG_ADMIN', 'MANAGER'].includes(currentUser?.role);
+    }
+
     // Permission helpers
     function hasPermission(code) {
         if (!currentUser) return false;
-        if (currentUser.role === 'Admin') return true;
+        if (isSuperAdmin() || isOrgAdmin()) return true;
         return currentUser.permissions?.includes(code) || false;
     }
 
     function hasAnyPermission(codes) {
         if (!currentUser) return false;
-        if (currentUser.role === 'Admin') return true;
+        if (isSuperAdmin() || isOrgAdmin()) return true;
         return codes.some(code => currentUser.permissions?.includes(code));
     }
 
@@ -103,24 +108,26 @@ export function AuthProvider({ children }) {
         return currentUser?.role === roleName;
     }
 
-    function isAdmin() {
-        return currentUser?.role === 'Admin';
-    }
-
-    // Session expiry is now managed by the httpOnly cookie TTL on the server.
-    // A 401 from any API call will redirect to /login via apiClient.js.
+    // Keep legacy isAdmin() for compatibility — maps to OrgAdmin or above
+    function isAdmin() { return isOrgAdminOrAbove(); }
 
     const value = {
         currentUser,
-        signup,
         login,
         completeLogin,
+        resetFirstPassword,
         updateCurrentUser,
         logout,
         hasPermission,
         hasAnyPermission,
         hasRole,
-        isAdmin
+        isAdmin,
+        isSuperAdmin,
+        isOrgAdmin,
+        isManager,
+        isEmployee,
+        isOrgAdminOrAbove,
+        isManagerOrAbove,
     };
 
     return (

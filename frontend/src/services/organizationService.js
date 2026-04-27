@@ -1,15 +1,32 @@
 import { apiClient } from './apiClient';
 
+// Org admin endpoints (within user's own org)
 export const organizationService = {
-    create: async (data) => apiClient.post('/organizations', data),
+    getProfile: () => apiClient.get('/org/profile'),
 
-    getMine: async () => apiClient.get('/organizations/mine'),
+    getSalesSettings: () => apiClient.get('/org/sales-settings'),
+    upsertSalesSettings: (settings) => apiClient.put('/org/sales-settings', settings),
 
-    join: async (slug) => apiClient.post('/organizations/join', { slug }),
+    getUsers: () => apiClient.get('/org/users'),
+    createUser: (data) => apiClient.post('/org/users', data),
+    updateUser: (userId, data) => apiClient.patch(`/org/users/${userId}`, data),
+    deactivateUser: (userId) => apiClient.delete(`/org/users/${userId}`),
 
-    getSalesSettings: async (orgId) =>
-        apiClient.get(`/organizations/${orgId}/sales-settings`),
+    getRolePermissions: (role) => apiClient.get(`/org/role-permissions/${role}`),
+    setRolePermissions: (role, permissionCodes) =>
+        apiClient.put(`/org/role-permissions/${role}`, { permissionCodes }),
+};
 
-    upsertSalesSettings: async (orgId, settings) =>
-        apiClient.put(`/organizations/${orgId}/sales-settings`, settings),
+// Super admin endpoints (platform-level)
+export const superAdminService = {
+    getOrganizations: () => apiClient.get('/super-admin/organizations'),
+    createOrganization: (data) => apiClient.post('/super-admin/organizations', data),
+    updateOrgStatus: (orgId, status) =>
+        apiClient.patch(`/super-admin/organizations/${orgId}/status`, { status }),
+
+    getOrgUsers: (orgId) => apiClient.get(`/super-admin/organizations/${orgId}/users`),
+    createOrgAdmin: (orgId, data) =>
+        apiClient.post(`/super-admin/organizations/${orgId}/users`, data),
+    removeUser: (orgId, userId) =>
+        apiClient.delete(`/super-admin/organizations/${orgId}/users/${userId}`),
 };

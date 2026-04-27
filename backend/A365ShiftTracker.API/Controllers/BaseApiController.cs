@@ -29,6 +29,14 @@ public abstract class BaseApiController : ControllerBase
         return claim != null && int.TryParse(claim.Value, out var orgId) ? orgId : null;
     }
 
-    protected string GetCurrentPlan()
-        => User.FindFirst("plan")?.Value ?? "Free";
+    protected int GetRequiredOrgId()
+    {
+        var orgId = GetCurrentOrgId();
+        if (!orgId.HasValue)
+            throw new UnauthorizedAccessException("No organization context.");
+        return orgId.Value;
+    }
+
+    protected string GetCurrentRole()
+        => User.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
 }

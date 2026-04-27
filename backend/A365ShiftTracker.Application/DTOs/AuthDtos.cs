@@ -87,20 +87,26 @@ public class VerifyEmailOtpEnableRequest
     public string Code { get; set; } = string.Empty;
 }
 
+public class ResetFirstPasswordRequest
+{
+    [Required]
+    [StringLength(128, MinimumLength = 8)]
+    public string NewPassword { get; set; } = string.Empty;
+}
+
 public class AuthResponse
 {
     public int Id { get; set; }
     public string Email { get; set; } = string.Empty;
     public string? DisplayName { get; set; }
     public string Token { get; set; } = string.Empty;
-    public string Role { get; set; } = string.Empty;
+    public string Role { get; set; } = string.Empty; // SUPER_ADMIN | ORG_ADMIN | MANAGER | EMPLOYEE
     public List<string> Permissions { get; set; } = new();
     public bool IsTotpEnabled { get; set; } = false;
     public bool TwoFactorRequired { get; set; } = false;
     public string TwoFactorMethod { get; set; } = "email";
     public int? OrgId { get; set; }
-    public string Plan { get; set; } = "Free";
-    public DateTime? PlanExpiresAt { get; set; }
+    public bool IsFirstLogin { get; set; } = false;
 }
 
 public class LoginResponse
@@ -110,7 +116,7 @@ public class LoginResponse
     public string? Email { get; set; }
     public string? DisplayName { get; set; }
     public string Token { get; set; } = string.Empty;
-    public string? Role { get; set; }
+    public string? Role { get; set; } // SUPER_ADMIN | ORG_ADMIN | MANAGER | EMPLOYEE
     public List<string> Permissions { get; set; } = new();
     public bool IsTotpEnabled { get; set; } = false;
     public bool TwoFactorRequired { get; set; } = false;
@@ -120,13 +126,13 @@ public class LoginResponse
     public bool Requires2FA { get; set; } = false;
     public string PartialToken { get; set; } = string.Empty;
 
-    // TOTP required by admin but user hasn't set it up yet — full login granted, prompt setup
+    // TOTP required but not configured yet
     public bool TotpSetupRequired { get; set; } = false;
 
-    // Plan & org
+    // Org context
     public int? OrgId { get; set; }
-    public string Plan { get; set; } = "Free";
-    public DateTime? PlanExpiresAt { get; set; }
+    public bool IsFirstLogin { get; set; } = false;
+    public string? OrgStatus { get; set; } // TRIAL | ACTIVE | SUSPENDED
 }
 
 public class TotpSetupResponse

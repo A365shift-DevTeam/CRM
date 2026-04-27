@@ -8,6 +8,7 @@ using A365ShiftTracker.Infrastructure.Data;
 using A365ShiftTracker.Infrastructure.Helpers;
 using A365ShiftTracker.Infrastructure.Repositories;
 using A365ShiftTracker.Infrastructure.Services;
+using TenantContext = A365ShiftTracker.Infrastructure.Services.TenantContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,16 +27,22 @@ public static class DependencyInjection
         services.AddSingleton(auditChannel.Writer);
         services.AddHostedService<AuditBackgroundService>();
 
+        // Tell Npgsql to accept DateTimeKind.Unspecified and treat it as UTC.
+        // This matches the existing NormalizeDateTimeKinds() behaviour in AppDbContext
+        // and prevents errors when JSON-deserialized dates arrive without timezone info.
+        AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
         // Database — pooled context reduces per-request allocation significantly
         services.AddDbContextPool<AppDbContext>((sp, options) =>
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"),
                 npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(3))
             .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
 
-        // Current user service
+        // Current user and tenant context
         services.AddHttpContextAccessor();
         services.AddMemoryCache();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<ITenantContext, TenantContext>();
 
         // Dapper (singleton — connection string doesn't change, connections are created per-use)
         services.AddSingleton<IDapperContext, DapperContext>();
@@ -46,6 +53,8 @@ public static class DependencyInjection
 
         // Services
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<ISuperAdminService, SuperAdminService>();
+        services.AddScoped<IOrgUserService, OrgUserService>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IOrganizationService, OrganizationService>();
         services.AddScoped<ITaskService, TaskService>();

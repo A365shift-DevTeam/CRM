@@ -2,7 +2,7 @@ using A365ShiftTracker.Domain.Common;
 
 namespace A365ShiftTracker.Domain.Entities;
 
-public class OrgSalesSettings : BaseEntity
+public class OrgSalesSettings : BaseEntity, IOrgScoped
 {
     public int OrgId { get; set; }
     public Organization Organization { get; set; } = null!;

@@ -2,9 +2,10 @@ using A365ShiftTracker.Domain.Common;
 
 namespace A365ShiftTracker.Domain.Entities;
 
-public class Expense : AuditableEntity, IOwnedByUser
+public class Expense : AuditableEntity, IOwnedByUser, IOrgScoped
 {
     public int UserId { get; set; }
+    public int OrgId { get; set; }
     public DateTime Date { get; set; }
     public string? Category { get; set; }
     public decimal Amount { get; set; }

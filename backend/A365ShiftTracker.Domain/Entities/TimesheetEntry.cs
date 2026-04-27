@@ -2,9 +2,10 @@ using A365ShiftTracker.Domain.Common;
 
 namespace A365ShiftTracker.Domain.Entities;
 
-public class TimesheetEntry : AuditableEntity, IOwnedByUser
+public class TimesheetEntry : AuditableEntity, IOwnedByUser, IOrgScoped
 {
     public int UserId { get; set; }
+    public int OrgId { get; set; }
     public string? Task { get; set; }
     public DateTime? StartDatetime { get; set; }
     public DateTime? EndDatetime { get; set; }

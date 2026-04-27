@@ -30,66 +30,13 @@ public class AuthService : IAuthService
         _logger = logger;
     }
 
-    // ── Register ────────────────────────────────────────────
-
-    public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
-    {
-        var exists = await _uow.Users.Query().AnyAsync(u => u.Email == request.Email);
-        if (exists)
-            throw new InvalidOperationException("Email already registered.");
-
-        await using var tx = await _uow.BeginTransactionAsync();
-        try
-        {
-            var user = new Domain.Entities.User
-            {
-                Email = request.Email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                DisplayName = request.DisplayName
-            };
-
-            await _uow.Users.AddAsync(user);
-            await _uow.SaveChangesAsync(); // generates user.Id
-
-            var defaultRole = await _uow.Roles.Query().FirstOrDefaultAsync(r => r.Name == "User");
-            if (defaultRole != null)
-            {
-                await _uow.UserRoles.AddAsync(new Domain.Entities.UserRole
-                {
-                    UserId = user.Id,
-                    RoleId = defaultRole.Id
-                });
-                await _uow.SaveChangesAsync();
-            }
-
-            await tx.CommitAsync();
-
-            var (roleName, permissions) = await GetUserRoleAndPermissionsAsync(user.Id);
-            return new AuthResponse
-            {
-                Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
-                Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions, user.DisplayName, user.OrgId, user.Plan),
-                Role = roleName, Permissions = permissions,
-                IsTotpEnabled = user.IsTotpEnabled,
-                TwoFactorRequired = user.TwoFactorRequired,
-                TwoFactorMethod = user.TwoFactorMethod,
-                OrgId = user.OrgId,
-                Plan = user.Plan ?? "Free",
-                PlanExpiresAt = user.PlanExpiresAt
-            };
-        }
-        catch
-        {
-            await tx.RollbackAsync();
-            throw;
-        }
-    }
-
     // ── Login ───────────────────────────────────────────────
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
     {
-        var user = await _uow.Users.Query().FirstOrDefaultAsync(u => u.Email == request.Email)
+        var user = await _uow.Users.Query()
+            .Include(u => u.Organization)
+            .FirstOrDefaultAsync(u => u.Email == request.Email)
             ?? throw new UnauthorizedAccessException("Invalid credentials.");
 
         if (!user.IsActive)
@@ -98,30 +45,33 @@ public class AuthService : IAuthService
         if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             throw new UnauthorizedAccessException("Invalid credentials.");
 
+        // Org status check (non-SUPER_ADMIN)
+        if (user.Role != "SUPER_ADMIN" && user.Organization != null &&
+            user.Organization.Status == "SUSPENDED")
+            throw new UnauthorizedAccessException("Your organization has been suspended. Contact support.");
+
         user.LastLoginAt = DateTime.UtcNow;
         await _uow.Users.UpdateAsync(user);
         await _uow.SaveChangesAsync();
 
-        // 2FA required — issue partial token
-        // Check both the admin-controlled flag and user-enabled TOTP
+        // 2FA required
         if (user.TwoFactorRequired || user.IsTotpEnabled)
         {
-            // TOTP is required by admin but user hasn't configured it yet — let them in, prompt setup
             if (user.TwoFactorMethod == "totp" && !user.IsTotpEnabled)
             {
-                var (rn, perms) = await GetUserRoleAndPermissionsAsync(user.Id);
+                var permissions = await GetPermissionsAsync(user);
                 return new LoginResponse
                 {
                     Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
-                    Token = GenerateJwtToken(user.Id, user.Email, rn, perms, user.DisplayName, user.OrgId, user.Plan),
-                    Role = rn, Permissions = perms,
+                    Token = GenerateJwtToken(user, permissions),
+                    Role = user.Role, Permissions = permissions,
                     IsTotpEnabled = false,
                     TwoFactorRequired = user.TwoFactorRequired,
                     TwoFactorMethod = user.TwoFactorMethod,
                     TotpSetupRequired = true,
                     OrgId = user.OrgId,
-                    Plan = user.Plan ?? "Free",
-                    PlanExpiresAt = user.PlanExpiresAt
+                    IsFirstLogin = user.IsFirstLogin,
+                    OrgStatus = user.Organization?.Status
                 };
             }
 
@@ -135,21 +85,36 @@ public class AuthService : IAuthService
             };
         }
 
-        // No 2FA — issue full token
-        var (roleName, permissions) = await GetUserRoleAndPermissionsAsync(user.Id);
+        var perms = await GetPermissionsAsync(user);
         return new LoginResponse
         {
             Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
-            Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions, user.DisplayName, user.OrgId, user.Plan),
-            Role = roleName, Permissions = permissions,
+            Token = GenerateJwtToken(user, perms),
+            Role = user.Role, Permissions = perms,
             Requires2FA = false,
             IsTotpEnabled = user.IsTotpEnabled,
             TwoFactorRequired = user.TwoFactorRequired,
             TwoFactorMethod = user.TwoFactorMethod,
             OrgId = user.OrgId,
-            Plan = user.Plan ?? "Free",
-            PlanExpiresAt = user.PlanExpiresAt
+            IsFirstLogin = user.IsFirstLogin,
+            OrgStatus = user.Organization?.Status
         };
+    }
+
+    // ── First-login password reset ──────────────────────────
+
+    public async Task ResetFirstPasswordAsync(int userId, string newPassword)
+    {
+        var user = await _uow.Users.GetByIdAsync(userId)
+            ?? throw new KeyNotFoundException("User not found.");
+
+        if (!user.IsFirstLogin)
+            throw new InvalidOperationException("Password has already been reset.");
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        user.IsFirstLogin = false;
+        await _uow.Users.UpdateAsync(user);
+        await _uow.SaveChangesAsync();
     }
 
     // ── Email OTP ────────────────────────────────────────────
@@ -175,7 +140,9 @@ public class AuthService : IAuthService
         if (attempts >= 5)
             throw new InvalidOperationException("Too many attempts. Please log in again.");
 
-        var user = await _uow.Users.GetByIdAsync(userId)
+        var user = await _uow.Users.Query()
+            .Include(u => u.Organization)
+            .FirstOrDefaultAsync(u => u.Id == userId)
             ?? throw new UnauthorizedAccessException("User not found.");
 
         if (user.OtpCode is null || user.OtpExpiry is null || user.OtpExpiry < DateTime.UtcNow)
@@ -187,24 +154,23 @@ public class AuthService : IAuthService
             throw new InvalidOperationException("Invalid code. Please try again.");
         }
 
-        // Clear OTP
         user.OtpCode = null;
         user.OtpExpiry = null;
         await _uow.Users.UpdateAsync(user);
         await _uow.SaveChangesAsync();
 
-        var (roleName, permissions) = await GetUserRoleAndPermissionsAsync(user.Id);
+        var perms = await GetPermissionsAsync(user);
         return new LoginResponse
         {
             Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
-            Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions, user.DisplayName, user.OrgId, user.Plan),
-            Role = roleName, Permissions = permissions,
+            Token = GenerateJwtToken(user, perms),
+            Role = user.Role, Permissions = perms,
             IsTotpEnabled = user.IsTotpEnabled,
             TwoFactorRequired = user.TwoFactorRequired,
             TwoFactorMethod = user.TwoFactorMethod,
             OrgId = user.OrgId,
-            Plan = user.Plan ?? "Free",
-            PlanExpiresAt = user.PlanExpiresAt
+            IsFirstLogin = user.IsFirstLogin,
+            OrgStatus = user.Organization?.Status
         };
     }
 
@@ -216,7 +182,9 @@ public class AuthService : IAuthService
         if (attempts >= 5)
             throw new InvalidOperationException("Too many attempts. Please log in again.");
 
-        var user = await _uow.Users.GetByIdAsync(userId)
+        var user = await _uow.Users.Query()
+            .Include(u => u.Organization)
+            .FirstOrDefaultAsync(u => u.Id == userId)
             ?? throw new UnauthorizedAccessException("User not found.");
 
         if (!user.IsTotpEnabled || user.TotpSecret is null)
@@ -224,25 +192,24 @@ public class AuthService : IAuthService
 
         var secretBytes = Base32Encoding.ToBytes(user.TotpSecret);
         var totp = new Totp(secretBytes);
-        // Allow ±1 time step (±30 seconds) to handle minor clock drift
         if (!totp.VerifyTotp(request.Code, out _, new VerificationWindow(previous: 1, future: 1)))
         {
             IncrementAttempts(request.PartialToken, user.Id);
             throw new InvalidOperationException("Invalid authenticator code. Please try again.");
         }
 
-        var (roleName, permissions) = await GetUserRoleAndPermissionsAsync(user.Id);
+        var perms = await GetPermissionsAsync(user);
         return new LoginResponse
         {
             Id = user.Id, Email = user.Email, DisplayName = user.DisplayName,
-            Token = GenerateJwtToken(user.Id, user.Email, roleName, permissions, user.DisplayName, user.OrgId, user.Plan),
-            Role = roleName, Permissions = permissions,
+            Token = GenerateJwtToken(user, perms),
+            Role = user.Role, Permissions = perms,
             IsTotpEnabled = user.IsTotpEnabled,
             TwoFactorRequired = user.TwoFactorRequired,
             TwoFactorMethod = user.TwoFactorMethod,
             OrgId = user.OrgId,
-            Plan = user.Plan ?? "Free",
-            PlanExpiresAt = user.PlanExpiresAt
+            IsFirstLogin = user.IsFirstLogin,
+            OrgStatus = user.Organization?.Status
         };
     }
 
@@ -256,8 +223,6 @@ public class AuthService : IAuthService
 
         var secretBytes = KeyGeneration.GenerateRandomKey(20);
         var secret = Base32Encoding.ToString(secretBytes);
-
-        // Store tentatively — only committed on verify-setup
         user.TotpSecret = secret;
         await _uow.Users.UpdateAsync(user);
         await _uow.SaveChangesAsync();
@@ -265,7 +230,6 @@ public class AuthService : IAuthService
         var issuer = Uri.EscapeDataString("A365 CRM");
         var account = Uri.EscapeDataString(user.Email);
         var qrUri = $"otpauth://totp/{issuer}:{account}?secret={secret}&issuer={issuer}&algorithm=SHA1&digits=6&period=30";
-
         return new TotpSetupResponse { QrCodeUri = qrUri, Secret = secret };
     }
 
@@ -301,8 +265,6 @@ public class AuthService : IAuthService
         await _uow.Users.UpdateAsync(user);
         await _uow.SaveChangesAsync();
     }
-
-    // ── Email OTP Self-Enrollment ────────────────────────────
 
     public async Task SendEmailOtpEnableAsync(int userId)
     {
@@ -353,8 +315,6 @@ public class AuthService : IAuthService
         await _uow.SaveChangesAsync();
     }
 
-    // ── Admin TOTP Management ────────────────────────────────
-
     public async Task AdminResetUserTotpAsync(int userId)
     {
         var user = await _uow.Users.Query().FirstOrDefaultAsync(u => u.Id == userId)
@@ -372,13 +332,11 @@ public class AuthService : IAuthService
 
     public async Task RequestPasswordResetAsync(string email)
     {
-        // Use a generic response to avoid account enumeration
         var user = await _uow.Users.Query().FirstOrDefaultAsync(u => u.Email == email);
         if (user == null) return;
 
         var token = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
         var encodedToken = Uri.EscapeDataString(token);
-
         user.ResetToken = token;
         user.ResetTokenExpiry = DateTime.UtcNow.AddMinutes(30);
         await _uow.Users.UpdateAsync(user);
@@ -402,28 +360,27 @@ public class AuthService : IAuthService
         await _uow.SaveChangesAsync();
     }
 
-    // ── Token Helpers ────────────────────────────────────────
+    // ── Token helpers ────────────────────────────────────────
 
     public string GenerateJwtToken(int userId, string email)
-        => GenerateJwtToken(userId, email, "User", new List<string>(), null, null, null);
+        => GenerateJwtToken(new Domain.Entities.User { Id = userId, Email = email, Role = "EMPLOYEE" }, new List<string>());
 
-    public string GenerateJwtToken(int userId, string email, string role, List<string> permissions, string? displayName = null, int? orgId = null, string? plan = null)
+    public string GenerateJwtToken(Domain.Entities.User user, List<string> permissions)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
         var claims = new List<Claim>
         {
-            new(JwtRegisteredClaimNames.Sub, userId.ToString()),
-            new(JwtRegisteredClaimNames.Email, email),
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.Email, user.Email),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(ClaimTypes.Role, role),
-            new(ClaimTypes.Name, displayName ?? email)
+            new(ClaimTypes.Role, user.Role),
+            new(ClaimTypes.Name, user.DisplayName ?? user.Email),
+            new("is_first_login", user.IsFirstLogin.ToString().ToLower())
         };
         foreach (var perm in permissions)
             claims.Add(new Claim("permission", perm));
-        if (orgId.HasValue)
-            claims.Add(new Claim("org_id", orgId.Value.ToString()));
-        if (!string.IsNullOrEmpty(plan))
-            claims.Add(new Claim("plan", plan));
+        if (user.OrgId.HasValue)
+            claims.Add(new Claim("org_id", user.OrgId.Value.ToString()));
 
         var token = new JwtSecurityToken(
             issuer: _config["Jwt:Issuer"],
@@ -465,26 +422,21 @@ public class AuthService : IAuthService
         {
             var principal = handler.ValidateToken(partialToken, new TokenValidationParameters
             {
-                ValidateIssuer = true,
-                ValidateAudience = true,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
-                ValidIssuer = _config["Jwt:Issuer"],
-                ValidAudience = _config["Jwt:Audience"],
+                ValidateIssuer = true, ValidateAudience = true,
+                ValidateLifetime = true, ValidateIssuerSigningKey = true,
+                ValidIssuer = _config["Jwt:Issuer"], ValidAudience = _config["Jwt:Audience"],
                 IssuerSigningKey = key
             }, out _);
 
-            var pending = principal.FindFirst("2fa_pending")?.Value;
-            if (pending != "true")
+            if (principal.FindFirst("2fa_pending")?.Value != "true")
                 throw new UnauthorizedAccessException("Invalid partial token.");
 
-            var subValue = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
-                ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value 
-                ?? "0";
-            var userId = int.Parse(subValue);
+            var sub = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                   ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0";
+            var userId = int.Parse(sub);
             var jti = principal.FindFirst(JwtRegisteredClaimNames.Jti)?.Value ?? string.Empty;
-            var jtiAttempts = _cache.TryGetValue($"2fa_attempts:{jti}", out int jtiStored) ? jtiStored : 0;
-            var userAttempts = _cache.TryGetValue($"2fa_attempts:user:{userId}", out int userStored) ? userStored : 0;
+            var jtiAttempts = _cache.TryGetValue($"2fa_attempts:{jti}", out int j) ? j : 0;
+            var userAttempts = _cache.TryGetValue($"2fa_attempts:user:{userId}", out int u) ? u : 0;
             return (userId, Math.Max(jtiAttempts, userAttempts));
         }
         catch (SecurityTokenException)
@@ -495,7 +447,6 @@ public class AuthService : IAuthService
 
     private void IncrementAttempts(string partialToken, int userId)
     {
-        // Track per JTI (covers current partial token) and per user (covers re-login with fresh JTI).
         try
         {
             var handler = new JwtSecurityTokenHandler();
@@ -503,51 +454,41 @@ public class AuthService : IAuthService
             var jti = jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Jti)?.Value;
             if (jti is not null)
             {
-                var jtiCount = _cache.TryGetValue($"2fa_attempts:{jti}", out int jtiStored) ? jtiStored : 0;
+                var jtiCount = _cache.TryGetValue($"2fa_attempts:{jti}", out int j) ? j : 0;
                 _cache.Set($"2fa_attempts:{jti}", jtiCount + 1, TimeSpan.FromMinutes(6));
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to parse partial token for 2FA attempt tracking for userId={UserId}", userId);
+            _logger.LogWarning(ex, "Failed to parse partial token for 2FA tracking userId={UserId}", userId);
         }
 
         var userKey = $"2fa_attempts:user:{userId}";
-        var userCount = _cache.TryGetValue(userKey, out int userStored) ? userStored : 0;
+        var userCount = _cache.TryGetValue(userKey, out int uc) ? uc : 0;
         _cache.Set(userKey, userCount + 1, TimeSpan.FromMinutes(5));
     }
 
-    // ── Permission Caching ───────────────────────────────────
+    // ── Permission resolution ────────────────────────────────
 
-    private async Task<(string roleName, List<string> permissions)> GetUserRoleAndPermissionsAsync(int userId)
+    private async Task<List<string>> GetPermissionsAsync(Domain.Entities.User user)
     {
-        var cacheKey = $"permissions:{userId}";
-        if (_cache.TryGetValue(cacheKey, out (string role, List<string> perms) cached))
+        // SUPER_ADMIN and ORG_ADMIN have all permissions (not stored in DB)
+        if (user.Role == "SUPER_ADMIN" || user.Role == "ORG_ADMIN")
+            return await _uow.Permissions.Query().Select(p => p.Code).ToListAsync();
+
+        if (!user.OrgId.HasValue)
+            return new List<string>();
+
+        var cacheKey = $"org_perms:{user.OrgId}:{user.Role}";
+        if (_cache.TryGetValue(cacheKey, out List<string>? cached) && cached != null)
             return cached;
 
-        var userRoles = await _uow.UserRoles.Query()
-            .Where(ur => ur.UserId == userId)
-            .Include(ur => ur.Role)
-            .ThenInclude(r => r.RolePermissions)
-            .ThenInclude(rp => rp.Permission)
+        var perms = await _uow.OrgRolePermissions.Query()
+            .Where(p => p.OrgId == user.OrgId && p.Role == user.Role)
+            .Select(p => p.PermissionCode)
             .ToListAsync();
 
-        if (!userRoles.Any())
-            return ("User", new List<string>());
-
-        var roleOrder = new[] { "Admin", "Manager", "User" };
-        var primaryRole = userRoles
-            .OrderBy(ur => Array.IndexOf(roleOrder, ur.Role.Name) is var idx && idx < 0 ? 999 : idx)
-            .First().Role;
-
-        var permissions = userRoles
-            .SelectMany(ur => ur.Role.RolePermissions)
-            .Select(rp => rp.Permission.Code)
-            .Distinct()
-            .ToList();
-
-        var result = (primaryRole.Name, permissions);
-        _cache.Set(cacheKey, result, TimeSpan.FromMinutes(5));
-        return result;
+        _cache.Set(cacheKey, perms, TimeSpan.FromMinutes(5));
+        return perms;
     }
 }

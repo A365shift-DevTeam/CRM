@@ -77,6 +77,10 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_deleted");
 
+                    b.Property<int>("OrgId")
+                        .HasColumnType("integer")
+                        .HasColumnName("org_id");
+
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("timestamp");
@@ -98,6 +102,8 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("OrgId");
 
                     b.HasIndex("UserId");
 
@@ -623,6 +629,10 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("order");
 
+                    b.Property<int>("OrgId")
+                        .HasColumnType("integer")
+                        .HasColumnName("org_id");
+
                     b.Property<bool>("Required")
                         .HasColumnType("boolean")
                         .HasColumnName("required");
@@ -650,7 +660,7 @@ namespace A365ShiftTracker.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ColId")
+                    b.HasIndex("OrgId", "ColId")
                         .IsUnique();
 
                     b.ToTable("contact_columns", (string)null);
@@ -798,6 +808,10 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("name");
 
+                    b.Property<int>("OrgId")
+                        .HasColumnType("integer")
+                        .HasColumnName("org_id");
+
                     b.Property<string>("Subject")
                         .IsRequired()
                         .HasColumnType("text")
@@ -824,6 +838,8 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .HasColumnName("variables");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("OrgId");
 
                     b.HasIndex("UserId");
 
@@ -922,6 +938,10 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_deleted");
 
+                    b.Property<int>("OrgId")
+                        .HasColumnType("integer")
+                        .HasColumnName("org_id");
+
                     b.Property<string>("ProjectDepartment")
                         .HasColumnType("text")
                         .HasColumnName("project_department");
@@ -952,6 +972,8 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("OrgId");
 
                     b.HasIndex("UserId");
 
@@ -1022,6 +1044,10 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_deleted");
 
+                    b.Property<int>("OrgId")
+                        .HasColumnType("integer")
+                        .HasColumnName("org_id");
+
                     b.Property<string>("ProjectDepartment")
                         .HasColumnType("text")
                         .HasColumnName("project_department");
@@ -1056,6 +1082,8 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("OrgId");
 
                     b.HasIndex("UserId");
 
@@ -1197,6 +1225,8 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .IsUnique();
 
                     b.HasIndex("MilestoneId");
+
+                    b.HasIndex("OrgId");
 
                     b.HasIndex("ProjectFinanceId");
 
@@ -1463,6 +1493,8 @@ namespace A365ShiftTracker.Infrastructure.Migrations
 
                     b.HasIndex("ExpiryDate");
 
+                    b.HasIndex("OrgId");
+
                     b.HasIndex("Status");
 
                     b.HasIndex("Type");
@@ -1634,6 +1666,8 @@ namespace A365ShiftTracker.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("OrgId");
+
                     b.HasIndex("UserId");
 
                     b.HasIndex("EntityType", "EntityId");
@@ -1695,6 +1729,10 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("message");
 
+                    b.Property<int>("OrgId")
+                        .HasColumnType("integer")
+                        .HasColumnName("org_id");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("text")
@@ -1723,11 +1761,44 @@ namespace A365ShiftTracker.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("OrgId");
+
                     b.HasIndex("UserId");
 
                     b.HasIndex("UserId", "IsRead");
 
                     b.ToTable("notifications", (string)null);
+                });
+
+            modelBuilder.Entity("A365ShiftTracker.Domain.Entities.OrgRolePermission", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("OrgId")
+                        .HasColumnType("integer")
+                        .HasColumnName("org_id");
+
+                    b.Property<string>("PermissionCode")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("permission_code");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("role");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrgId", "Role", "PermissionCode")
+                        .IsUnique();
+
+                    b.ToTable("org_role_permissions", (string)null);
                 });
 
             modelBuilder.Entity("A365ShiftTracker.Domain.Entities.OrgSalesSettings", b =>
@@ -1812,6 +1883,19 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("slug");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("SuspendedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("suspended_at");
+
+                    b.Property<DateTime?>("TrialEndsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("trial_ends_at");
 
                     b.HasKey("Id");
 
@@ -2636,1007 +2720,6 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                     b.ToTable("project_finances", (string)null);
                 });
 
-            modelBuilder.Entity("A365ShiftTracker.Domain.Entities.Role", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<bool>("IsSystem")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_system");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
-                    b.ToTable("roles", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CreatedAt = new DateTime(2026, 4, 24, 10, 47, 17, 981, DateTimeKind.Utc).AddTicks(230),
-                            Description = "Full access to all features",
-                            IsSystem = true,
-                            Name = "Admin"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CreatedAt = new DateTime(2026, 4, 24, 10, 47, 17, 981, DateTimeKind.Utc).AddTicks(1104),
-                            Description = "Can manage teams and view reports",
-                            IsSystem = true,
-                            Name = "Manager"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            CreatedAt = new DateTime(2026, 4, 24, 10, 47, 17, 981, DateTimeKind.Utc).AddTicks(1107),
-                            Description = "Standard user with limited access",
-                            IsSystem = true,
-                            Name = "User"
-                        });
-                });
-
-            modelBuilder.Entity("A365ShiftTracker.Domain.Entities.RolePermission", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("PermissionId")
-                        .HasColumnType("integer")
-                        .HasColumnName("permission_id");
-
-                    b.Property<int>("RoleId")
-                        .HasColumnType("integer")
-                        .HasColumnName("role_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PermissionId");
-
-                    b.HasIndex("RoleId", "PermissionId")
-                        .IsUnique();
-
-                    b.ToTable("role_permissions", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            PermissionId = 1,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 2,
-                            PermissionId = 2,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 3,
-                            PermissionId = 3,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 4,
-                            PermissionId = 4,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 5,
-                            PermissionId = 5,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 6,
-                            PermissionId = 6,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 7,
-                            PermissionId = 7,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 8,
-                            PermissionId = 8,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 9,
-                            PermissionId = 9,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 10,
-                            PermissionId = 10,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 11,
-                            PermissionId = 11,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 12,
-                            PermissionId = 12,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 13,
-                            PermissionId = 13,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 14,
-                            PermissionId = 14,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 15,
-                            PermissionId = 15,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 16,
-                            PermissionId = 16,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 17,
-                            PermissionId = 17,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 18,
-                            PermissionId = 18,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 19,
-                            PermissionId = 19,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 20,
-                            PermissionId = 20,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 21,
-                            PermissionId = 21,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 22,
-                            PermissionId = 22,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 23,
-                            PermissionId = 23,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 24,
-                            PermissionId = 24,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 25,
-                            PermissionId = 25,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 26,
-                            PermissionId = 26,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 27,
-                            PermissionId = 27,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 28,
-                            PermissionId = 28,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 29,
-                            PermissionId = 29,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 30,
-                            PermissionId = 30,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 31,
-                            PermissionId = 31,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 32,
-                            PermissionId = 32,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 33,
-                            PermissionId = 33,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 34,
-                            PermissionId = 34,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 35,
-                            PermissionId = 35,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 36,
-                            PermissionId = 36,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 37,
-                            PermissionId = 37,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 38,
-                            PermissionId = 38,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 39,
-                            PermissionId = 39,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 40,
-                            PermissionId = 40,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 41,
-                            PermissionId = 41,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 42,
-                            PermissionId = 42,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 43,
-                            PermissionId = 43,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 44,
-                            PermissionId = 44,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 45,
-                            PermissionId = 45,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 46,
-                            PermissionId = 46,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 47,
-                            PermissionId = 47,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 48,
-                            PermissionId = 48,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 49,
-                            PermissionId = 49,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 50,
-                            PermissionId = 50,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 51,
-                            PermissionId = 51,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 52,
-                            PermissionId = 52,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 53,
-                            PermissionId = 53,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 54,
-                            PermissionId = 54,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 55,
-                            PermissionId = 55,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 56,
-                            PermissionId = 56,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 57,
-                            PermissionId = 57,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 58,
-                            PermissionId = 58,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 59,
-                            PermissionId = 59,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 60,
-                            PermissionId = 60,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 61,
-                            PermissionId = 61,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 62,
-                            PermissionId = 62,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 63,
-                            PermissionId = 63,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 64,
-                            PermissionId = 64,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 65,
-                            PermissionId = 65,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 66,
-                            PermissionId = 66,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 67,
-                            PermissionId = 67,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 68,
-                            PermissionId = 68,
-                            RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 69,
-                            PermissionId = 1,
-                            RoleId = 3
-                        },
-                        new
-                        {
-                            Id = 70,
-                            PermissionId = 5,
-                            RoleId = 3
-                        },
-                        new
-                        {
-                            Id = 71,
-                            PermissionId = 9,
-                            RoleId = 3
-                        },
-                        new
-                        {
-                            Id = 72,
-                            PermissionId = 13,
-                            RoleId = 3
-                        },
-                        new
-                        {
-                            Id = 73,
-                            PermissionId = 17,
-                            RoleId = 3
-                        },
-                        new
-                        {
-                            Id = 74,
-                            PermissionId = 21,
-                            RoleId = 3
-                        },
-                        new
-                        {
-                            Id = 75,
-                            PermissionId = 25,
-                            RoleId = 3
-                        },
-                        new
-                        {
-                            Id = 76,
-                            PermissionId = 29,
-                            RoleId = 3
-                        },
-                        new
-                        {
-                            Id = 77,
-                            PermissionId = 37,
-                            RoleId = 3
-                        },
-                        new
-                        {
-                            Id = 78,
-                            PermissionId = 41,
-                            RoleId = 3
-                        },
-                        new
-                        {
-                            Id = 79,
-                            PermissionId = 45,
-                            RoleId = 3
-                        },
-                        new
-                        {
-                            Id = 80,
-                            PermissionId = 49,
-                            RoleId = 3
-                        },
-                        new
-                        {
-                            Id = 81,
-                            PermissionId = 53,
-                            RoleId = 3
-                        },
-                        new
-                        {
-                            Id = 82,
-                            PermissionId = 57,
-                            RoleId = 3
-                        },
-                        new
-                        {
-                            Id = 83,
-                            PermissionId = 61,
-                            RoleId = 3
-                        },
-                        new
-                        {
-                            Id = 84,
-                            PermissionId = 65,
-                            RoleId = 3
-                        },
-                        new
-                        {
-                            Id = 85,
-                            PermissionId = 22,
-                            RoleId = 3
-                        },
-                        new
-                        {
-                            Id = 86,
-                            PermissionId = 23,
-                            RoleId = 3
-                        },
-                        new
-                        {
-                            Id = 87,
-                            PermissionId = 14,
-                            RoleId = 3
-                        },
-                        new
-                        {
-                            Id = 88,
-                            PermissionId = 15,
-                            RoleId = 3
-                        },
-                        new
-                        {
-                            Id = 89,
-                            PermissionId = 1,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 90,
-                            PermissionId = 2,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 91,
-                            PermissionId = 3,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 92,
-                            PermissionId = 4,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 93,
-                            PermissionId = 5,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 94,
-                            PermissionId = 6,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 95,
-                            PermissionId = 7,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 96,
-                            PermissionId = 8,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 97,
-                            PermissionId = 9,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 98,
-                            PermissionId = 10,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 99,
-                            PermissionId = 11,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 100,
-                            PermissionId = 12,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 101,
-                            PermissionId = 13,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 102,
-                            PermissionId = 14,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 103,
-                            PermissionId = 15,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 104,
-                            PermissionId = 16,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 105,
-                            PermissionId = 17,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 106,
-                            PermissionId = 18,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 107,
-                            PermissionId = 19,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 108,
-                            PermissionId = 20,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 109,
-                            PermissionId = 21,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 110,
-                            PermissionId = 22,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 111,
-                            PermissionId = 23,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 112,
-                            PermissionId = 24,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 113,
-                            PermissionId = 25,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 114,
-                            PermissionId = 26,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 115,
-                            PermissionId = 27,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 116,
-                            PermissionId = 28,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 117,
-                            PermissionId = 29,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 118,
-                            PermissionId = 30,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 119,
-                            PermissionId = 31,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 120,
-                            PermissionId = 32,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 121,
-                            PermissionId = 37,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 122,
-                            PermissionId = 38,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 123,
-                            PermissionId = 39,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 124,
-                            PermissionId = 40,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 125,
-                            PermissionId = 41,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 126,
-                            PermissionId = 42,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 127,
-                            PermissionId = 43,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 128,
-                            PermissionId = 44,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 129,
-                            PermissionId = 45,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 130,
-                            PermissionId = 46,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 131,
-                            PermissionId = 47,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 132,
-                            PermissionId = 48,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 133,
-                            PermissionId = 49,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 134,
-                            PermissionId = 50,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 135,
-                            PermissionId = 51,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 136,
-                            PermissionId = 52,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 137,
-                            PermissionId = 53,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 138,
-                            PermissionId = 54,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 139,
-                            PermissionId = 55,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 140,
-                            PermissionId = 56,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 141,
-                            PermissionId = 57,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 142,
-                            PermissionId = 58,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 143,
-                            PermissionId = 59,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 144,
-                            PermissionId = 60,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 145,
-                            PermissionId = 61,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 146,
-                            PermissionId = 62,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 147,
-                            PermissionId = 63,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 148,
-                            PermissionId = 64,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 149,
-                            PermissionId = 65,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 150,
-                            PermissionId = 66,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 151,
-                            PermissionId = 67,
-                            RoleId = 2
-                        },
-                        new
-                        {
-                            Id = 152,
-                            PermissionId = 68,
-                            RoleId = 2
-                        });
-                });
-
             modelBuilder.Entity("A365ShiftTracker.Domain.Entities.SavedFilter", b =>
                 {
                     b.Property<int>("Id")
@@ -3689,6 +2772,10 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("name");
 
+                    b.Property<int>("OrgId")
+                        .HasColumnType("integer")
+                        .HasColumnName("org_id");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -3706,6 +2793,8 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("OrgId");
 
                     b.HasIndex("UserId");
 
@@ -3862,6 +2951,8 @@ namespace A365ShiftTracker.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("OrgId");
+
                     b.HasIndex("UserId");
 
                     b.ToTable("tags", (string)null);
@@ -3922,6 +3013,10 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("order");
 
+                    b.Property<int>("OrgId")
+                        .HasColumnType("integer")
+                        .HasColumnName("org_id");
+
                     b.Property<bool>("Required")
                         .HasColumnType("boolean")
                         .HasColumnName("required");
@@ -3949,7 +3044,7 @@ namespace A365ShiftTracker.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ColId")
+                    b.HasIndex("OrgId", "ColId")
                         .IsUnique();
 
                     b.ToTable("task_columns", (string)null);
@@ -3996,6 +3091,10 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_deleted");
 
+                    b.Property<int>("OrgId")
+                        .HasColumnType("integer")
+                        .HasColumnName("org_id");
+
                     b.Property<string>("Priority")
                         .IsRequired()
                         .HasColumnType("text")
@@ -4032,6 +3131,8 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .HasColumnName("values");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("OrgId");
 
                     b.HasIndex("UserId");
 
@@ -4182,6 +3283,8 @@ namespace A365ShiftTracker.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("OrgId");
+
                     b.HasIndex("Priority");
 
                     b.HasIndex("Status");
@@ -4291,6 +3394,10 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("order");
 
+                    b.Property<int>("OrgId")
+                        .HasColumnType("integer")
+                        .HasColumnName("org_id");
+
                     b.Property<bool>("Required")
                         .HasColumnType("boolean")
                         .HasColumnName("required");
@@ -4318,7 +3425,7 @@ namespace A365ShiftTracker.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ColId")
+                    b.HasIndex("OrgId", "ColId")
                         .IsUnique();
 
                     b.ToTable("timesheet_columns", (string)null);
@@ -4377,6 +3484,10 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("notes");
 
+                    b.Property<int>("OrgId")
+                        .HasColumnType("integer")
+                        .HasColumnName("org_id");
+
                     b.Property<string>("Person")
                         .HasColumnType("text")
                         .HasColumnName("person");
@@ -4415,6 +3526,8 @@ namespace A365ShiftTracker.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("OrgId");
+
                     b.HasIndex("UserId");
 
                     b.ToTable("timesheet_entries", (string)null);
@@ -4446,6 +3559,10 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
 
+                    b.Property<bool>("IsFirstLogin")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_first_login");
+
                     b.Property<bool>("IsTotpEnabled")
                         .HasColumnType("boolean")
                         .HasColumnName("is_totp_enabled");
@@ -4471,22 +3588,6 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
 
-                    b.Property<string>("Plan")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasDefaultValue("Free")
-                        .HasColumnName("plan");
-
-                    b.Property<DateTime?>("PlanExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("plan_expires_at");
-
-                    b.Property<DateTime?>("PlanPurchasedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("plan_purchased_at");
-
                     b.Property<string>("ResetToken")
                         .HasColumnType("text")
                         .HasColumnName("reset_token");
@@ -4494,6 +3595,14 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                     b.Property<DateTime?>("ResetTokenExpiry")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("reset_token_expiry");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("EMPLOYEE")
+                        .HasColumnName("role");
 
                     b.Property<string>("TotpSecret")
                         .HasColumnType("text")
@@ -4516,37 +3625,22 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                     b.HasIndex("OrgId");
 
                     b.ToTable("users", (string)null);
-                });
 
-            modelBuilder.Entity("A365ShiftTracker.Domain.Entities.UserRole", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("AssignedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("assigned_at");
-
-                    b.Property<int>("RoleId")
-                        .HasColumnType("integer")
-                        .HasColumnName("role_id");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RoleId");
-
-                    b.HasIndex("UserId", "RoleId")
-                        .IsUnique();
-
-                    b.ToTable("user_roles", (string)null);
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayName = "Super Admin",
+                            Email = "superadmin@platform.com",
+                            IsActive = true,
+                            IsFirstLogin = false,
+                            IsTotpEnabled = false,
+                            PasswordHash = "$2a$11$A6WDAzHrcOZteKMZQk9Ch.2lyNSKmJi0IFC61MgVb9612wtgGbmN2",
+                            Role = "SUPER_ADMIN",
+                            TwoFactorMethod = "email",
+                            TwoFactorRequired = false
+                        });
                 });
 
             modelBuilder.Entity("A365ShiftTracker.Domain.Entities.VendorEmail", b =>
@@ -4670,6 +3764,17 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                     b.Navigation("ProjectFinance");
                 });
 
+            modelBuilder.Entity("A365ShiftTracker.Domain.Entities.OrgRolePermission", b =>
+                {
+                    b.HasOne("A365ShiftTracker.Domain.Entities.Organization", "Organization")
+                        .WithMany("RolePermissions")
+                        .HasForeignKey("OrgId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
+                });
+
             modelBuilder.Entity("A365ShiftTracker.Domain.Entities.OrgSalesSettings", b =>
                 {
                     b.HasOne("A365ShiftTracker.Domain.Entities.Organization", "Organization")
@@ -4679,25 +3784,6 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Organization");
-                });
-
-            modelBuilder.Entity("A365ShiftTracker.Domain.Entities.RolePermission", b =>
-                {
-                    b.HasOne("A365ShiftTracker.Domain.Entities.Permission", "Permission")
-                        .WithMany("RolePermissions")
-                        .HasForeignKey("PermissionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("A365ShiftTracker.Domain.Entities.Role", "Role")
-                        .WithMany("RolePermissions")
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Permission");
-
-                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("A365ShiftTracker.Domain.Entities.Stakeholder", b =>
@@ -4732,25 +3818,6 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                     b.Navigation("Organization");
                 });
 
-            modelBuilder.Entity("A365ShiftTracker.Domain.Entities.UserRole", b =>
-                {
-                    b.HasOne("A365ShiftTracker.Domain.Entities.Role", "Role")
-                        .WithMany("UserRoles")
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("A365ShiftTracker.Domain.Entities.User", "User")
-                        .WithMany("UserRoles")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Role");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("A365ShiftTracker.Domain.Entities.VendorEmail", b =>
                 {
                     b.HasOne("A365ShiftTracker.Domain.Entities.Contact", "Vendor")
@@ -4783,12 +3850,9 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                 {
                     b.Navigation("Members");
 
-                    b.Navigation("SalesSettings");
-                });
-
-            modelBuilder.Entity("A365ShiftTracker.Domain.Entities.Permission", b =>
-                {
                     b.Navigation("RolePermissions");
+
+                    b.Navigation("SalesSettings");
                 });
 
             modelBuilder.Entity("A365ShiftTracker.Domain.Entities.ProjectFinance", b =>
@@ -4800,21 +3864,9 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                     b.Navigation("Stakeholders");
                 });
 
-            modelBuilder.Entity("A365ShiftTracker.Domain.Entities.Role", b =>
-                {
-                    b.Navigation("RolePermissions");
-
-                    b.Navigation("UserRoles");
-                });
-
             modelBuilder.Entity("A365ShiftTracker.Domain.Entities.Ticket", b =>
                 {
                     b.Navigation("Comments");
-                });
-
-            modelBuilder.Entity("A365ShiftTracker.Domain.Entities.User", b =>
-                {
-                    b.Navigation("UserRoles");
                 });
 #pragma warning restore 612, 618
         }

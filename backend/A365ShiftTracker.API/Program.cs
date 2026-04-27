@@ -72,10 +72,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
-    options.AddPolicy("ManagerOrAdmin", policy => policy.RequireRole("Admin", "Manager"));
+    // Role hierarchy policies
+    options.AddPolicy("SuperAdminOnly", policy =>
+        policy.RequireRole("SUPER_ADMIN"));
 
-    // Module-level policies
+    options.AddPolicy("OrgAdminOrAbove", policy =>
+        policy.RequireRole("SUPER_ADMIN", "ORG_ADMIN"));
+
+    options.AddPolicy("ManagerOrAbove", policy =>
+        policy.RequireRole("SUPER_ADMIN", "ORG_ADMIN", "MANAGER"));
+
+    options.AddPolicy("Authenticated", policy =>
+        policy.RequireRole("SUPER_ADMIN", "ORG_ADMIN", "MANAGER", "EMPLOYEE"));
+
+    // Module-level permission policies (checked via permission claim or elevated roles)
     var modules = new[] { "Dashboard", "Sales", "Contacts", "Timesheet", "Finance", "TodoList", "Invoice", "AIAgents", "Admin", "ActivityLog", "Notifications", "Calendar", "Notes", "Tags", "EmailTemplates", "Documents", "Reports" };
     var actions = new[] { "View", "Create", "Edit", "Delete" };
     foreach (var module in modules)
@@ -85,7 +95,8 @@ builder.Services.AddAuthorization(options =>
             var code = $"{module.ToLower()}.{action.ToLower()}";
             options.AddPolicy($"Permission:{code}", policy =>
                 policy.RequireAssertion(ctx =>
-                    ctx.User.IsInRole("Admin") ||
+                    ctx.User.IsInRole("SUPER_ADMIN") ||
+                    ctx.User.IsInRole("ORG_ADMIN") ||
                     ctx.User.HasClaim("permission", code)));
         }
     }
@@ -189,9 +200,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowFrontend");
-app.UseStaticFiles(); // Serve uploaded files from wwwroot
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<TenantMiddleware>();
+app.UseMiddleware<FirstLoginMiddleware>();
 app.UseOutputCache();
 app.MapControllers();
 

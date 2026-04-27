@@ -5,7 +5,7 @@ namespace A365ShiftTracker.Application.Interfaces;
 public interface IAuthService
 {
     Task<LoginResponse> LoginAsync(LoginRequest request);
-    Task<AuthResponse> RegisterAsync(RegisterRequest request);
+    Task ResetFirstPasswordAsync(int userId, string newPassword);
     string GenerateJwtToken(int userId, string email);
     Task RequestPasswordResetAsync(string email);
     Task ResetPasswordAsync(string token, string newPassword);

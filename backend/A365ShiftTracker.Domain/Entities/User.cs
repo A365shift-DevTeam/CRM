@@ -10,15 +10,19 @@ public class User : BaseEntity
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? LastLoginAt { get; set; }
     public bool IsActive { get; set; } = true;
+    public bool IsFirstLogin { get; set; } = true;
     public string? ResetToken { get; set; }
     public DateTime? ResetTokenExpiry { get; set; }
 
+    // Role: SUPER_ADMIN | ORG_ADMIN | MANAGER | EMPLOYEE
+    public string Role { get; set; } = "EMPLOYEE";
+
     // Email OTP 2FA
-    public string? OtpCode { get; set; }          // BCrypt-hashed 6-digit code
+    public string? OtpCode { get; set; }
     public DateTime? OtpExpiry { get; set; }
 
     // TOTP Authenticator App
-    public string? TotpSecret { get; set; }        // Base32 secret (stored encrypted via EF converter)
+    public string? TotpSecret { get; set; }
     public bool IsTotpEnabled { get; set; } = false;
 
     // Admin 2FA control
@@ -27,12 +31,4 @@ public class User : BaseEntity
 
     public int? OrgId { get; set; }
     public Organization? Organization { get; set; }
-
-    // Plan / billing
-    public string Plan { get; set; } = "Free";
-    public DateTime? PlanPurchasedAt { get; set; }
-    public DateTime? PlanExpiresAt { get; set; }
-
-    // Navigation
-    public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 }
