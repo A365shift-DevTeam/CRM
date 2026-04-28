@@ -76,7 +76,9 @@
       "Bash(gh pr *)",
       "Bash(rm E:/Arul/CRM/CRM/backend/A365ShiftTracker.Domain/Entities/Role.cs)",
       "Bash(rm E:/Arul/CRM/CRM/backend/A365ShiftTracker.Domain/Entities/UserRole.cs)",
-      "Bash(rm E:/Arul/CRM/CRM/backend/A365ShiftTracker.Domain/Entities/RolePermission.cs)"
+      "Bash(rm E:/Arul/CRM/CRM/backend/A365ShiftTracker.Domain/Entities/RolePermission.cs)",
+      "Bash(node --input-type=module --eval ' *)",
+      "PowerShell(psql *)"
     ]
   }
 }

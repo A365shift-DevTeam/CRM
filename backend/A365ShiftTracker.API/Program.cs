@@ -188,6 +188,16 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+// ─── Startup Schema Patches ────────────────────────────────
+// Idempotent DDL — safe to run on every start.
+// Handles columns added outside the normal EF migration flow.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.ExecuteSqlRawAsync(
+        "ALTER TABLE organizations ADD COLUMN IF NOT EXISTS user_limit integer NULL;");
+}
+
 // ─── Middleware Pipeline ───────────────────────────────────
 app.UseResponseCompression(); // must be first
 app.UseMiddleware<ExceptionMiddleware>();

@@ -29,7 +29,8 @@ public class SuperAdminService : ISuperAdminService
             Slug = request.Slug,
             Status = "TRIAL",
             TrialEndsAt = ToUtc(request.TrialEndsAt) ?? DateTime.UtcNow.AddDays(14),
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            UserLimit = request.UserLimit
         };
 
         await _uow.Organizations.AddAsync(org);
@@ -64,6 +65,24 @@ public class SuperAdminService : ISuperAdminService
         else
             org.SuspendedAt = null;
 
+        await _uow.Organizations.UpdateAsync(org);
+        await _uow.SaveChangesAsync();
+
+        return MapOrg(org, org.Members.Count);
+    }
+
+    public async Task<OrganizationDto> SetUserLimitAsync(int orgId, int userLimit)
+    {
+        var org = await _uow.Organizations.Query()
+            .Include(o => o.Members)
+            .FirstOrDefaultAsync(o => o.Id == orgId)
+            ?? throw new KeyNotFoundException($"Organization {orgId} not found.");
+
+        if (userLimit < org.Members.Count)
+            throw new InvalidOperationException(
+                $"Cannot set limit to {userLimit} — organization already has {org.Members.Count} users.");
+
+        org.UserLimit = userLimit;
         await _uow.Organizations.UpdateAsync(org);
         await _uow.SaveChangesAsync();
 
@@ -109,16 +128,59 @@ public class SuperAdminService : ISuperAdminService
         return users.Select(MapUser).ToList();
     }
 
-    public async Task RemoveUserFromOrgAsync(int orgId, int userId)
+    public async Task<UserDto> UpdateOrgUserAsync(int orgId, int userId, UpdateUserRequest request)
     {
         var user = await _uow.Users.Query()
             .FirstOrDefaultAsync(u => u.Id == userId && u.OrgId == orgId)
             ?? throw new KeyNotFoundException("User not found in this organization.");
 
-        if (user.Role == "ORG_ADMIN")
-            throw new InvalidOperationException("Cannot remove the Org Admin directly. Update the role first.");
+        if (user.Role == "SUPER_ADMIN")
+            throw new InvalidOperationException("Cannot modify a Super Admin account.");
+
+        if (request.DisplayName != null)
+            user.DisplayName = request.DisplayName.Trim();
+
+        if (request.Role != null)
+        {
+            var validRoles = new[] { "ORG_ADMIN", "MANAGER", "EMPLOYEE" };
+            if (!validRoles.Contains(request.Role))
+                throw new ArgumentException("Role must be ORG_ADMIN, MANAGER, or EMPLOYEE.");
+            user.Role = request.Role;
+        }
+
+        if (request.IsActive.HasValue)
+            user.IsActive = request.IsActive.Value;
+
+        await _uow.Users.UpdateAsync(user);
+        await _uow.SaveChangesAsync();
+
+        return MapUser(user);
+    }
+
+    public async Task<UserDto> ToggleUserActiveAsync(int orgId, int userId, bool isActive)
+    {
+        var user = await _uow.Users.Query()
+            .FirstOrDefaultAsync(u => u.Id == userId && u.OrgId == orgId)
+            ?? throw new KeyNotFoundException("User not found in this organization.");
+
+        user.IsActive = isActive;
+        await _uow.Users.UpdateAsync(user);
+        await _uow.SaveChangesAsync();
+
+        return MapUser(user);
+    }
+
+    public async Task DeleteOrgUserAsync(int orgId, int userId)
+    {
+        var user = await _uow.Users.Query()
+            .FirstOrDefaultAsync(u => u.Id == userId && u.OrgId == orgId)
+            ?? throw new KeyNotFoundException("User not found in this organization.");
+
+        if (user.Role == "SUPER_ADMIN")
+            throw new InvalidOperationException("Cannot delete a Super Admin account.");
 
         user.IsActive = false;
+        user.OrgId = null;
         await _uow.Users.UpdateAsync(user);
         await _uow.SaveChangesAsync();
     }
@@ -132,7 +194,8 @@ public class SuperAdminService : ISuperAdminService
         CreatedAt = o.CreatedAt,
         TrialEndsAt = o.TrialEndsAt,
         SuspendedAt = o.SuspendedAt,
-        UserCount = userCount
+        UserCount = userCount,
+        UserLimit = o.UserLimit
     };
 
     private static UserDto MapUser(User u) => new()

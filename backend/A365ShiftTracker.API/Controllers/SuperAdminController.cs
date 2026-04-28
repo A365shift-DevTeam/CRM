@@ -36,6 +36,13 @@ public class SuperAdminController : BaseApiController
         return Ok(ApiResponse<OrganizationDto>.Ok(result, "Status updated."));
     }
 
+    [HttpPatch("organizations/{orgId:int}/user-limit")]
+    public async Task<ActionResult<ApiResponse<OrganizationDto>>> SetUserLimit(int orgId, SetUserLimitRequest request)
+    {
+        var result = await _service.SetUserLimitAsync(orgId, request.UserLimit);
+        return Ok(ApiResponse<OrganizationDto>.Ok(result, "User limit updated."));
+    }
+
     [HttpGet("organizations/{orgId:int}/users")]
     public async Task<ActionResult<ApiResponse<List<UserDto>>>> GetOrgUsers(int orgId)
     {
@@ -50,10 +57,24 @@ public class SuperAdminController : BaseApiController
         return Ok(ApiResponse<UserDto>.Ok(result, "Organization admin created. Welcome email sent."));
     }
 
-    [HttpDelete("organizations/{orgId:int}/users/{userId:int}")]
-    public async Task<ActionResult<ApiResponse<bool>>> RemoveUser(int orgId, int userId)
+    [HttpPatch("organizations/{orgId:int}/users/{userId:int}")]
+    public async Task<ActionResult<ApiResponse<UserDto>>> UpdateOrgUser(int orgId, int userId, UpdateUserRequest request)
     {
-        await _service.RemoveUserFromOrgAsync(orgId, userId);
+        var result = await _service.UpdateOrgUserAsync(orgId, userId, request);
+        return Ok(ApiResponse<UserDto>.Ok(result, "User updated."));
+    }
+
+    [HttpPatch("organizations/{orgId:int}/users/{userId:int}/status")]
+    public async Task<ActionResult<ApiResponse<UserDto>>> ToggleUserStatus(int orgId, int userId, ToggleUserStatusRequest request)
+    {
+        var result = await _service.ToggleUserActiveAsync(orgId, userId, request.IsActive);
+        return Ok(ApiResponse<UserDto>.Ok(result, request.IsActive ? "User activated." : "User deactivated."));
+    }
+
+    [HttpDelete("organizations/{orgId:int}/users/{userId:int}")]
+    public async Task<ActionResult<ApiResponse<bool>>> DeleteOrgUser(int orgId, int userId)
+    {
+        await _service.DeleteOrgUserAsync(orgId, userId);
         return Ok(ApiResponse<bool>.Ok(true, "User removed from organization."));
     }
 }

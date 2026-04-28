@@ -1897,6 +1897,10 @@ namespace A365ShiftTracker.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("trial_ends_at");
 
+                    b.Property<int?>("UserLimit")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_limit");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Slug")

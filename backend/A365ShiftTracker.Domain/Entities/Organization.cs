@@ -10,6 +10,7 @@ public class Organization : BaseEntity
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? TrialEndsAt { get; set; }
     public DateTime? SuspendedAt { get; set; }
+    public int? UserLimit { get; set; } // null = unlimited
 
     public ICollection<User> Members { get; set; } = new List<User>();
     public OrgSalesSettings? SalesSettings { get; set; }

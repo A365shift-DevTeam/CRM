@@ -2,6 +2,7 @@ using System.Text.Json;
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
 using A365ShiftTracker.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace A365ShiftTracker.Application.Services;
 
@@ -13,8 +14,10 @@ public class OrganizationService : IOrganizationService
 
     public async Task<OrganizationDto?> GetCurrentOrgAsync(int orgId)
     {
-        var org = await _uow.Organizations.GetByIdAsync(orgId);
-        return org is null ? null : MapToDto(org, 0);
+        var org = await _uow.Organizations.Query()
+            .Include(o => o.Members)
+            .FirstOrDefaultAsync(o => o.Id == orgId);
+        return org is null ? null : MapToDto(org, org.Members.Count);
     }
 
     public async Task<OrgSalesSettingsDto> GetSalesSettingsAsync(int orgId)
@@ -79,6 +82,6 @@ public class OrganizationService : IOrganizationService
         Id = o.Id, Name = o.Name, Slug = o.Slug,
         Status = o.Status, CreatedAt = o.CreatedAt,
         TrialEndsAt = o.TrialEndsAt, SuspendedAt = o.SuspendedAt,
-        UserCount = userCount
+        UserCount = userCount, UserLimit = o.UserLimit
     };
 }

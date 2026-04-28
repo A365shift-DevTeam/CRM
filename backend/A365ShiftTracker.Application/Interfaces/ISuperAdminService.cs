@@ -7,7 +7,10 @@ public interface ISuperAdminService
     Task<OrganizationDto> CreateOrganizationAsync(CreateOrganizationRequest request);
     Task<List<OrganizationDto>> GetAllOrganizationsAsync();
     Task<OrganizationDto> UpdateOrganizationStatusAsync(int orgId, string status);
+    Task<OrganizationDto> SetUserLimitAsync(int orgId, int userLimit);
     Task<UserDto> CreateOrgAdminAsync(int orgId, CreateUserRequest request);
     Task<List<UserDto>> GetOrgUsersAsync(int orgId);
-    Task RemoveUserFromOrgAsync(int orgId, int userId);
+    Task<UserDto> UpdateOrgUserAsync(int orgId, int userId, UpdateUserRequest request);
+    Task<UserDto> ToggleUserActiveAsync(int orgId, int userId, bool isActive);
+    Task DeleteOrgUserAsync(int orgId, int userId);
 }

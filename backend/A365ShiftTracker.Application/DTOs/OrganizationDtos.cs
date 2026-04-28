@@ -12,6 +12,7 @@ public class OrganizationDto
     public DateTime? TrialEndsAt { get; set; }
     public DateTime? SuspendedAt { get; set; }
     public int UserCount { get; set; }
+    public int? UserLimit { get; set; } // null = unlimited
 }
 
 public class CreateOrganizationRequest
@@ -25,12 +26,28 @@ public class CreateOrganizationRequest
     public string Slug { get; set; } = string.Empty;
 
     public DateTime? TrialEndsAt { get; set; }
+
+    [Range(1, int.MaxValue)]
+    public int? UserLimit { get; set; }
 }
 
 public class UpdateOrgStatusRequest
 {
     [Required]
     public string Status { get; set; } = string.Empty; // TRIAL | ACTIVE | SUSPENDED
+}
+
+public class SetUserLimitRequest
+{
+    [Required]
+    [Range(1, int.MaxValue, ErrorMessage = "User limit must be at least 1.")]
+    public int UserLimit { get; set; }
+}
+
+public class ToggleUserStatusRequest
+{
+    [Required]
+    public bool IsActive { get; set; }
 }
 
 public class UserDto

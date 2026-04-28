@@ -31,8 +31,15 @@ public class OrgUserService : IOrgUserService
         if (!validRoles.Contains(request.Role))
             throw new ArgumentException("ORG_ADMIN can only create MANAGER or EMPLOYEE users.");
 
-        var org = await _uow.Organizations.GetByIdAsync(orgId)
+        var org = await _uow.Organizations.Query()
+            .Include(o => o.Members)
+            .FirstOrDefaultAsync(o => o.Id == orgId)
             ?? throw new KeyNotFoundException($"Organization {orgId} not found.");
+
+        if (org.UserLimit.HasValue && org.Members.Count >= org.UserLimit.Value)
+            throw new InvalidOperationException(
+                $"User limit reached. Your organization is capped at {org.UserLimit.Value} users. " +
+                "Contact your Super Admin to increase the limit.");
 
         var exists = await _uow.Users.Query().AnyAsync(u => u.Email == request.Email);
         if (exists)
