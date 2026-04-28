@@ -15,6 +15,10 @@ export const organizationService = {
     getRolePermissions: (role) => apiClient.get(`/org/role-permissions/${role}`),
     setRolePermissions: (role, permissionCodes) =>
         apiClient.put(`/org/role-permissions/${role}`, { permissionCodes }),
+
+    getRoles: () => apiClient.get('/org/roles'),
+    createRole: (name, permissionCodes) => apiClient.post('/org/roles', { name, permissionCodes }),
+    deleteRole: (roleName) => apiClient.delete(`/org/roles/${encodeURIComponent(roleName)}`),
 };
 
 // Super admin endpoints (platform-level)
@@ -37,9 +41,22 @@ export const superAdminService = {
     deleteOrgUser: (orgId, userId) =>
         apiClient.delete(`/super-admin/organizations/${orgId}/users/${userId}`),
 
-    getSupportTickets: () => apiClient.get('/super-admin/support-tickets'),
-    updateSupportTicket: (ticketId, data) =>
-        apiClient.patch(`/super-admin/support-tickets/${ticketId}`, data),
-    replySupportTicket: (ticketId, message) =>
-        apiClient.post(`/super-admin/support-tickets/${ticketId}/reply`, { message }),
+    getAuditLogs: (params) => {
+        const q = new URLSearchParams();
+        if (params.orgId)      q.set('orgId', params.orgId);
+        if (params.userId)     q.set('userId', params.userId);
+        if (params.entityName) q.set('entityName', params.entityName);
+        if (params.startDate)  q.set('startDate', params.startDate);
+        if (params.endDate)    q.set('endDate', params.endDate);
+        q.set('page', params.page || 1);
+        q.set('pageSize', params.pageSize || 50);
+        return apiClient.get(`/super-admin/audit-logs?${q.toString()}`);
+    },
+
+    getSupportTickets: (page = 1, pageSize = 50) =>
+        apiClient.get(`/super-admin/support-tickets?page=${page}&pageSize=${pageSize}`),
+    updateSupportTicket: (ticketId, status) =>
+        apiClient.patch(`/super-admin/support-tickets/${ticketId}`, { status }),
+    replySupportTicket: (ticketId, message, authorName) =>
+        apiClient.post(`/super-admin/support-tickets/${ticketId}/reply`, { comment: message, authorName, isInternal: false }),
 };

@@ -134,9 +134,11 @@ public class TicketService : ITicketService
                    t.assigned_to_user_id, t.assigned_to_name, t.due_date, t.resolved_at, t.closed_at,
                    t.is_ai_generated, t.ai_source, t.ai_confidence, t.ai_raw_input,
                    t.created_at, t.updated_at, t.created_by_name,
-                   u.email AS raised_by_email
+                   u.email AS raised_by_email,
+                   o.name  AS org_name
             FROM tickets t
-            LEFT JOIN users u ON u.id = t.user_id
+            LEFT JOIN users         u ON u.id = t.user_id
+            LEFT JOIN organizations o ON o.id = u.org_id
             WHERE t.is_deleted = FALSE
             ORDER BY t.created_at DESC
             LIMIT @PageSize OFFSET @Offset
@@ -167,9 +169,11 @@ public class TicketService : ITicketService
                    t.assigned_to_user_id, t.assigned_to_name, t.due_date, t.resolved_at, t.closed_at,
                    t.is_ai_generated, t.ai_source, t.ai_confidence, t.ai_raw_input,
                    t.created_at, t.updated_at, t.created_by_name,
-                   u.email AS raised_by_email
+                   u.email AS raised_by_email,
+                   o.name  AS org_name
             FROM tickets t
-            LEFT JOIN users u ON u.id = t.user_id
+            LEFT JOIN users         u ON u.id = t.user_id
+            LEFT JOIN organizations o ON o.id = u.org_id
             WHERE t.id = @TicketId AND t.is_deleted = FALSE
             """;
         const string commentsSql = """

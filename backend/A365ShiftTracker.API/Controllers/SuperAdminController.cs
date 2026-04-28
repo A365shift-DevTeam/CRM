@@ -1,6 +1,7 @@
 using A365ShiftTracker.Application.Common;
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
+using A365ShiftTracker.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,8 +13,13 @@ namespace A365ShiftTracker.API.Controllers;
 public class SuperAdminController : BaseApiController
 {
     private readonly ISuperAdminService _service;
+    private readonly ITicketService _tickets;
 
-    public SuperAdminController(ISuperAdminService service) => _service = service;
+    public SuperAdminController(ISuperAdminService service, ITicketService tickets)
+    {
+        _service = service;
+        _tickets = tickets;
+    }
 
     [HttpGet("organizations")]
     public async Task<ActionResult<ApiResponse<List<OrganizationDto>>>> GetAllOrganizations()
@@ -76,5 +82,48 @@ public class SuperAdminController : BaseApiController
     {
         await _service.DeleteOrgUserAsync(orgId, userId);
         return Ok(ApiResponse<bool>.Ok(true, "User removed from organization."));
+    }
+
+    // ── Support Tickets (CXO → SuperAdmin) ──────────────────────
+
+    [HttpGet("support-tickets")]
+    public async Task<ActionResult<ApiResponse<PagedResult<TicketDto>>>> GetSupportTickets(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
+    {
+        var result = await _tickets.GetAllForAdminAsync(page, pageSize);
+        return Ok(ApiResponse<PagedResult<TicketDto>>.Ok(result));
+    }
+
+    [HttpPatch("support-tickets/{id:int}")]
+    public async Task<ActionResult<ApiResponse<TicketDto>>> UpdateSupportTicket(int id,
+        [FromBody] AdminSetStatusRequest request)
+    {
+        var result = await _tickets.AdminSetStatusAsync(id, request.Status);
+        if (result == null) return NotFound(ApiResponse<object>.Fail("Ticket not found."));
+        return Ok(ApiResponse<TicketDto>.Ok(result, "Status updated."));
+    }
+
+    [HttpPost("support-tickets/{id:int}/reply")]
+    public async Task<ActionResult<ApiResponse<TicketCommentDto>>> ReplySupportTicket(int id,
+        [FromBody] CreateTicketCommentRequest request)
+    {
+        var result = await _tickets.AdminReplyAsync(id, request, GetCurrentUserId());
+        return Ok(ApiResponse<TicketCommentDto>.Ok(result, "Reply sent."));
+    }
+
+    // ── Audit Logs ───────────────────────────────────────────────
+
+    [HttpGet("audit-logs")]
+    public async Task<ActionResult<ApiResponse<SuperAdminAuditLogPageDto>>> GetAuditLogs(
+        [FromQuery] int? orgId,
+        [FromQuery] int? userId,
+        [FromQuery] string? entityName,
+        [FromQuery] DateTime? startDate,
+        [FromQuery] DateTime? endDate,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50)
+    {
+        var result = await _service.GetAuditLogsAsync(orgId, userId, entityName, startDate, endDate, page, pageSize);
+        return Ok(ApiResponse<SuperAdminAuditLogPageDto>.Ok(result));
     }
 }

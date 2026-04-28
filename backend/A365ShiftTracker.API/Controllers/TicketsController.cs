@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace A365ShiftTracker.API.Controllers;
 
-[Authorize]
+[Authorize(Policy = "OrgAdminOrAbove")]
 [ApiController]
 [Route("api/tickets")]
 public class TicketsController : BaseApiController

@@ -91,12 +91,23 @@ public class SuperAdminService : ISuperAdminService
 
     public async Task<UserDto> CreateOrgAdminAsync(int orgId, CreateUserRequest request)
     {
-        var org = await _uow.Organizations.GetByIdAsync(orgId)
+        var org = await _uow.Organizations.Query()
+            .Include(o => o.Members)
+            .FirstOrDefaultAsync(o => o.Id == orgId)
             ?? throw new KeyNotFoundException($"Organization {orgId} not found.");
+
+        if (org.UserLimit.HasValue && org.Members.Count >= org.UserLimit.Value)
+            throw new InvalidOperationException(
+                $"User limit reached. This organization is capped at {org.UserLimit.Value} users.");
 
         var exists = await _uow.Users.Query().AnyAsync(u => u.Email == request.Email);
         if (exists)
             throw new InvalidOperationException("Email already registered.");
+
+        var role = string.IsNullOrWhiteSpace(request.Role) ? "ORG_ADMIN" : request.Role.Trim().ToUpperInvariant();
+        var validRoles = new[] { "ORG_ADMIN", "MANAGER", "EMPLOYEE" };
+        if (!validRoles.Contains(role))
+            throw new ArgumentException("Role must be ORG_ADMIN, MANAGER, or EMPLOYEE.");
 
         var tempPassword = GenerateTempPassword();
         var user = new User
@@ -104,7 +115,7 @@ public class SuperAdminService : ISuperAdminService
             Email = request.Email,
             DisplayName = request.DisplayName,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(tempPassword),
-            Role = "ORG_ADMIN",
+            Role = role,
             OrgId = orgId,
             IsFirstLogin = true,
             IsActive = true,
@@ -183,6 +194,79 @@ public class SuperAdminService : ISuperAdminService
         user.OrgId = null;
         await _uow.Users.UpdateAsync(user);
         await _uow.SaveChangesAsync();
+    }
+
+    public async Task<SuperAdminAuditLogPageDto> GetAuditLogsAsync(
+        int? orgId, int? userId, string? entityName,
+        DateTime? startDate, DateTime? endDate,
+        int page, int pageSize)
+    {
+        // Build lookups: userId→orgId and orgId→orgName (SuperAdmin bypasses global filters)
+        var userOrgMap = await _uow.Users.Query()
+            .Where(u => u.OrgId != null)
+            .Select(u => new { u.Id, u.OrgId })
+            .ToListAsync();
+
+        var orgNameById = await _uow.Organizations.Query()
+            .Select(o => new { o.Id, o.Name })
+            .ToDictionaryAsync(o => o.Id, o => o.Name);
+
+        // Filter users by org if orgId supplied
+        var eligibleUserIds = orgId.HasValue
+            ? userOrgMap.Where(u => u.OrgId == orgId).Select(u => u.Id).ToHashSet()
+            : null;
+
+        var query = _uow.AuditLogs.Query().AsQueryable();
+
+        if (eligibleUserIds != null)
+            query = query.Where(a => eligibleUserIds.Contains(a.ChangedByUserId));
+
+        if (userId.HasValue)
+            query = query.Where(a => a.ChangedByUserId == userId.Value);
+
+        if (!string.IsNullOrWhiteSpace(entityName))
+            query = query.Where(a => a.EntityName == entityName);
+
+        if (startDate.HasValue)
+            query = query.Where(a => a.ChangedAt >= startDate.Value);
+
+        if (endDate.HasValue)
+            query = query.Where(a => a.ChangedAt <= endDate.Value.AddDays(1));
+
+        var total = await query.CountAsync();
+
+        var items = await query
+            .OrderByDescending(a => a.ChangedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var userOrgLookup = userOrgMap.ToDictionary(u => u.Id);
+
+        var dtos = items.Select(a =>
+        {
+            userOrgLookup.TryGetValue(a.ChangedByUserId, out var uo);
+            var resolvedOrgId = uo?.OrgId;
+            var resolvedOrgName = resolvedOrgId.HasValue && orgNameById.TryGetValue(resolvedOrgId.Value, out var n) ? n : null;
+            return new SuperAdminAuditLogDto
+            {
+                Id = a.Id,
+                EntityName = a.EntityName,
+                EntityId = a.EntityId,
+                FieldName = a.FieldName,
+                OldValue = a.OldValue,
+                NewValue = a.NewValue,
+                Action = a.Action,
+                ChangedByUserId = a.ChangedByUserId,
+                ChangedByName = a.ChangedByName,
+                ChangedAt = a.ChangedAt,
+                IpAddress = a.IpAddress,
+                OrgId = resolvedOrgId,
+                OrgName = resolvedOrgName,
+            };
+        }).ToList();
+
+        return new SuperAdminAuditLogPageDto { Items = dtos, Total = total, Page = page, PageSize = pageSize };
     }
 
     private static OrganizationDto MapOrg(Organization o, int userCount) => new()

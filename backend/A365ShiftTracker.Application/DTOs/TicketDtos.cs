@@ -27,6 +27,7 @@ public class TicketDto
     public DateTime UpdatedAt { get; set; }
     public string? CreatedByName { get; set; }
     public string? RaisedByEmail { get; set; }
+    public string? OrgName { get; set; }
     public List<TicketCommentDto> Comments { get; set; } = new();
 }
 

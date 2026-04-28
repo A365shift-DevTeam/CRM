@@ -107,7 +107,7 @@ function App() {
             <Route path="projects" element={<PrivateRoute permission="timesheet.view"><Projects /></PrivateRoute>} />
             <Route path="hr" element={<PrivateRoute permission="dashboard.view"><PlaceholderPage title="HR" /></PrivateRoute>} />
             <Route path="legal" element={<PrivateRoute permission="invoice.view"><Legal /></PrivateRoute>} />
-            <Route path="tickets" element={<PrivateRoute permission="notifications.view"><Tickets /></PrivateRoute>} />
+            <Route path="tickets" element={<PrivateRoute requiredRole="ORG_ADMIN"><Tickets /></PrivateRoute>} />
             <Route path="documents" element={<PrivateRoute permission="documents.view"><Documents /></PrivateRoute>} />
             <Route path="calendar" element={<PrivateRoute permission="calendar.view"><Calendar /></PrivateRoute>} />
             <Route path="reports" element={<PrivateRoute permission="reports.view"><Reports /></PrivateRoute>} />

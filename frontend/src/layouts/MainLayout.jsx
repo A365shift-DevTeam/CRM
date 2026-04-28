@@ -108,7 +108,7 @@ export default function MainLayout() {
         { path: '/legal',     icon: <FaScaleBalanced size={14} />,   label: 'Legal',        permission: 'invoice.view' },
         { path: '/documents', icon: <FaFolderOpen size={14} />,   label: 'Documents',    permission: 'documents.view' },
         { path: '/calendar',  icon: <FaCalendarDays size={14} />,         label: 'Calendar',     permission: 'calendar.view' },
-        { path: '/tickets',   icon: <FaTicket size={14} />,     label: 'Tickets',      permission: 'notifications.view' },
+        { path: '/tickets',   icon: <FaTicket size={14} />,     label: 'Tickets',      permission: 'notifications.view', orgAdminOnly: true },
       ],
     },
     {
@@ -321,7 +321,10 @@ export default function MainLayout() {
 
           {/* Nav Items (Flat List) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {navCategories.flatMap(cat => cat.items).filter(i => hasPermission(i.permission)).map((item) => {
+            {navCategories.flatMap(cat => cat.items).filter(i =>
+              hasPermission(i.permission) &&
+              (!i.orgAdminOnly || currentUser?.role === 'ORG_ADMIN' || currentUser?.role === 'SUPER_ADMIN')
+            ).map((item) => {
               const isActive = location.pathname.startsWith(item.path);
               return (
                 <Link

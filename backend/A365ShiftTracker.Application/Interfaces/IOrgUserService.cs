@@ -10,4 +10,8 @@ public interface IOrgUserService
     Task DeactivateUserAsync(int orgId, int userId);
     Task<List<string>> GetRolePermissionsAsync(int orgId, string role);
     Task SetRolePermissionsAsync(int orgId, string role, List<string> permissionCodes);
+
+    Task<List<OrgRoleDto>> GetAllRolesAsync(int orgId);
+    Task<OrgRoleDto> CreateOrUpdateRoleAsync(int orgId, string roleName, List<string> permissionCodes);
+    Task DeleteCustomRoleAsync(int orgId, string roleName);
 }

@@ -11,11 +11,18 @@ public class IncomeService : IIncomeService
 
     public IncomeService(IUnitOfWork uow) => _uow = uow;
 
-    public async Task<PagedResult<IncomeDto>> GetAllAsync(int userId, int page, int pageSize)
+    public async Task<PagedResult<IncomeDto>> GetAllAsync(int userId, bool isOrgAdmin, int page, int pageSize)
     {
-        var paged = await _uow.Incomes.GetPagedAsync(
-            i => i.UserId == userId, page, pageSize,
-            q => q.OrderByDescending(i => i.Date));
+        // ORG_ADMIN sees all org incomes (org-scoped by EF global filter).
+        // Other roles see only their own entries.
+        var paged = isOrgAdmin
+            ? await _uow.Incomes.GetPagedAsync(
+                _ => true, page, pageSize,
+                q => q.OrderByDescending(i => i.Date))
+            : await _uow.Incomes.GetPagedAsync(
+                i => i.UserId == userId, page, pageSize,
+                q => q.OrderByDescending(i => i.Date));
+
         return new PagedResult<IncomeDto>
         {
             Items = paged.Items.Select(MapToDto),
@@ -45,12 +52,12 @@ public class IncomeService : IIncomeService
         return MapToDto(entity);
     }
 
-    public async Task<IncomeDto> UpdateAsync(int id, UpdateIncomeRequest request, int userId)
+    public async Task<IncomeDto> UpdateAsync(int id, UpdateIncomeRequest request, int userId, bool isOrgAdmin)
     {
         var entity = await _uow.Incomes.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Income {id} not found.");
 
-        if (entity.UserId != userId)
+        if (!isOrgAdmin && entity.UserId != userId)
             throw new UnauthorizedAccessException("You do not have access to this income.");
 
         entity.Date = request.Date;
@@ -69,12 +76,12 @@ public class IncomeService : IIncomeService
         return MapToDto(entity);
     }
 
-    public async Task DeleteAsync(int id, int userId)
+    public async Task DeleteAsync(int id, int userId, bool isOrgAdmin)
     {
         var entity = await _uow.Incomes.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Income {id} not found.");
 
-        if (entity.UserId != userId)
+        if (!isOrgAdmin && entity.UserId != userId)
             throw new UnauthorizedAccessException("You do not have access to this income.");
 
         await _uow.Incomes.DeleteAsync(entity);

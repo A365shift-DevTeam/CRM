@@ -27,9 +27,9 @@ public class OrgUserService : IOrgUserService
 
     public async Task<UserDto> CreateUserAsync(int orgId, CreateUserRequest request)
     {
-        var validRoles = new[] { "MANAGER", "EMPLOYEE" };
-        if (!validRoles.Contains(request.Role))
-            throw new ArgumentException("ORG_ADMIN can only create MANAGER or EMPLOYEE users.");
+        // Built-in elevated roles cannot be created by CXO
+        if (request.Role is "SUPER_ADMIN" or "ORG_ADMIN")
+            throw new ArgumentException("Cannot create a user with this role. Use the Super Admin portal.");
 
         var org = await _uow.Organizations.Query()
             .Include(o => o.Members)
@@ -80,9 +80,8 @@ public class OrgUserService : IOrgUserService
 
         if (request.Role != null)
         {
-            var validRoles = new[] { "MANAGER", "EMPLOYEE" };
-            if (!validRoles.Contains(request.Role))
-                throw new ArgumentException("Role must be MANAGER or EMPLOYEE.");
+            if (request.Role is "SUPER_ADMIN" or "ORG_ADMIN")
+                throw new ArgumentException("Cannot assign this role.");
             user.Role = request.Role;
         }
 
@@ -141,6 +140,77 @@ public class OrgUserService : IOrgUserService
                 PermissionCode = code
             });
         }
+
+        await _uow.SaveChangesAsync();
+    }
+
+    private static readonly HashSet<string> BuiltInRoles =
+        new(StringComparer.OrdinalIgnoreCase) { "SUPER_ADMIN", "ORG_ADMIN", "MANAGER", "EMPLOYEE" };
+
+    public async Task<List<OrgRoleDto>> GetAllRolesAsync(int orgId)
+    {
+        // Get all custom role permission entries for this org
+        var existing = await _uow.OrgRolePermissions.Query()
+            .Where(p => p.OrgId == orgId)
+            .GroupBy(p => p.Role)
+            .Select(g => new { Role = g.Key, Codes = g.Select(p => p.PermissionCode).ToList() })
+            .ToListAsync();
+
+        var result = new List<OrgRoleDto>();
+
+        // Built-in roles (permissions configured separately)
+        foreach (var r in new[] { "ORG_ADMIN", "MANAGER", "EMPLOYEE" })
+        {
+            var codes = existing.FirstOrDefault(e => e.Role == r)?.Codes ?? new List<string>();
+            result.Add(new OrgRoleDto { Name = r, IsBuiltIn = true, PermissionCodes = codes });
+        }
+
+        // Custom roles
+        foreach (var e in existing.Where(e => !BuiltInRoles.Contains(e.Role)))
+            result.Add(new OrgRoleDto { Name = e.Role, IsBuiltIn = false, PermissionCodes = e.Codes });
+
+        return result;
+    }
+
+    public async Task<OrgRoleDto> CreateOrUpdateRoleAsync(int orgId, string roleName, List<string> permissionCodes)
+    {
+        if (BuiltInRoles.Contains(roleName))
+            throw new InvalidOperationException($"'{roleName}' is a built-in role and cannot be created as custom.");
+
+        // Remove existing permissions for this custom role
+        var existing = await _uow.OrgRolePermissions.Query()
+            .Where(p => p.OrgId == orgId && p.Role == roleName)
+            .ToListAsync();
+        foreach (var e in existing) await _uow.OrgRolePermissions.DeleteAsync(e);
+
+        // Add new permissions
+        foreach (var code in permissionCodes.Distinct())
+            await _uow.OrgRolePermissions.AddAsync(new OrgRolePermission
+            {
+                OrgId = orgId, Role = roleName, PermissionCode = code
+            });
+
+        await _uow.SaveChangesAsync();
+
+        return new OrgRoleDto { Name = roleName, IsBuiltIn = false, PermissionCodes = permissionCodes.Distinct().ToList() };
+    }
+
+    public async Task DeleteCustomRoleAsync(int orgId, string roleName)
+    {
+        if (BuiltInRoles.Contains(roleName))
+            throw new InvalidOperationException("Built-in roles cannot be deleted.");
+
+        // Unassign users from this role
+        var usersWithRole = await _uow.Users.Query()
+            .Where(u => u.OrgId == orgId && u.Role == roleName)
+            .ToListAsync();
+        foreach (var u in usersWithRole) { u.Role = "EMPLOYEE"; await _uow.Users.UpdateAsync(u); }
+
+        // Remove permission entries
+        var perms = await _uow.OrgRolePermissions.Query()
+            .Where(p => p.OrgId == orgId && p.Role == roleName)
+            .ToListAsync();
+        foreach (var p in perms) await _uow.OrgRolePermissions.DeleteAsync(p);
 
         await _uow.SaveChangesAsync();
     }

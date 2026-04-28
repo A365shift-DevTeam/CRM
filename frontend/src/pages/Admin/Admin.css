@@ -117,6 +117,13 @@
     gap: 10px;
 }
 
+.admin-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
 .admin-tabs {
     display: flex;
     gap: 4px;
@@ -189,6 +196,28 @@
     box-shadow: 0 4px 14px rgba(67, 97, 238, 0.35);
 }
 
+.admin-secondary-btn {
+    background: #FFFFFF;
+    border: 1px solid #D7E1F0;
+    color: #52637A;
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.18s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-family, 'DM Sans', sans-serif);
+}
+
+.admin-secondary-btn:hover {
+    color: var(--accent-primary, #4361EE);
+    border-color: rgba(67, 97, 238, 0.35);
+    background: rgba(67, 97, 238, 0.05);
+}
+
 /* --- Table Card --- */
 .admin-card {
     background: #FFFFFF;
@@ -251,14 +280,73 @@
     background: #FAFCFF;
 }
 
-/* --- Action Icons (matching Contacts/ListView pattern) --- */
+/* --- Action Buttons (labeled pill — matches SuperAdmin design) --- */
 .admin-actions {
     display: flex;
-    gap: 12px;
+    gap: 5px;
     align-items: center;
-    justify-content: center;
+    flex-wrap: wrap;
 }
 
+.admin-pill-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    border-radius: 7px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.14s ease;
+    font-family: var(--font-family, 'DM Sans', sans-serif);
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.admin-pill-btn.edit {
+    background: rgba(67, 97, 238, 0.08);
+    color: #4361EE;
+    border-color: rgba(67, 97, 238, 0.2);
+}
+.admin-pill-btn.edit:hover { background: rgba(67, 97, 238, 0.16); }
+
+.admin-pill-btn.shield {
+    background: rgba(245, 158, 11, 0.09);
+    color: #D97706;
+    border-color: rgba(245, 158, 11, 0.22);
+}
+.admin-pill-btn.shield:hover { background: rgba(245, 158, 11, 0.18); }
+
+.admin-pill-btn.deactivate {
+    background: rgba(245, 158, 11, 0.08);
+    color: #D97706;
+    border-color: rgba(245, 158, 11, 0.22);
+}
+.admin-pill-btn.deactivate:hover { background: rgba(245, 158, 11, 0.16); }
+
+.admin-pill-btn.activate {
+    background: rgba(16, 185, 129, 0.08);
+    color: #059669;
+    border-color: rgba(16, 185, 129, 0.2);
+}
+.admin-pill-btn.activate:hover { background: rgba(16, 185, 129, 0.16); }
+
+.admin-pill-btn.remove {
+    background: rgba(244, 63, 94, 0.08);
+    color: #E11D48;
+    border-color: rgba(244, 63, 94, 0.2);
+}
+.admin-pill-btn.remove:hover { background: rgba(244, 63, 94, 0.16); }
+
+.admin-pill-btn.disabled,
+.admin-pill-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Keep old icon classes for any remaining uses */
 .admin-action-icon {
     cursor: pointer;
     transition: all 0.2s ease;
@@ -269,30 +357,23 @@
     width: 32px;
     height: 32px;
     border-radius: 8px;
+    border: none;
+    background: transparent;
 }
-
-.admin-action-icon:hover {
-    opacity: 1;
-    background: rgba(0, 0, 0, 0.04);
-}
-
 .admin-action-icon.edit { color: #3b82f6; }
-.admin-action-icon.edit:hover { background: rgba(59, 130, 246, 0.08); }
-
 .admin-action-icon.toggle { color: #10b981; }
-.admin-action-icon.toggle:hover { background: rgba(16, 185, 129, 0.08); }
-.admin-action-icon.toggle.inactive { color: #94a3b8; }
-
 .admin-action-icon.password { color: #f59e0b; }
-.admin-action-icon.password:hover { background: rgba(245, 158, 11, 0.08); }
-
 .admin-action-icon.delete { color: #ef4444; }
-.admin-action-icon.delete:hover { background: rgba(239, 68, 68, 0.08); }
+.admin-action-icon.disabled { opacity: 0.25; cursor: not-allowed; pointer-events: none; }
 
-.admin-action-icon.disabled {
-    opacity: 0.25;
-    cursor: not-allowed;
-    pointer-events: none;
+.admin-permission-footer {
+    border-top: 1px solid #E1E8F4;
+    padding: 14px 18px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+    background: #FAFBFE;
 }
 
 /* --- Badges --- */
@@ -433,6 +514,10 @@
 .modal-box-header {
     padding: 20px 24px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
 }
 
 .modal-box-header h3 {
@@ -440,6 +525,32 @@
     color: var(--text-primary);
     margin: 0;
     font-size: 1.1rem;
+}
+
+.modal-box-header p {
+    margin: 4px 0 0;
+    color: #94A3B8;
+    font-size: 0.82rem;
+}
+
+.admin-modal-close {
+    border: none;
+    background: #F1F5F9;
+    color: #64748B;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.admin-modal-close:hover {
+    background: #E2E8F0;
+    color: #0F172A;
 }
 
 .modal-box-body {
@@ -487,6 +598,153 @@
 .modal-btn.primary:hover {
     background: #059669;
     transform: translateY(-1px);
+}
+
+.modal-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.modal-btn svg {
+    margin-right: 5px;
+}
+
+.admin-field {
+    display: block;
+    margin-bottom: 16px;
+}
+
+.admin-field span {
+    display: block;
+    color: #374151;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.admin-field input,
+.admin-field select {
+    width: 100%;
+    border: 1.5px solid #E1E8F4;
+    background: #F8FAFC;
+    border-radius: 10px;
+    color: #0F172A;
+    font-family: var(--font-family, 'DM Sans', sans-serif);
+    font-size: 14px;
+    outline: none;
+    padding: 10px 13px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.admin-field input:focus,
+.admin-field select:focus {
+    border-color: #4361EE;
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.14);
+    background: #FFFFFF;
+}
+
+.admin-status-picker {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.admin-status-picker button {
+    border: 1.5px solid #E1E8F4;
+    background: #F8FAFC;
+    border-radius: 10px;
+    color: #94A3B8;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-weight: 700;
+    min-height: 40px;
+}
+
+.admin-status-picker button.active {
+    border-color: rgba(16, 185, 129, 0.35);
+    background: rgba(16, 185, 129, 0.08);
+    color: #059669;
+}
+
+.admin-status-picker button.inactive {
+    border-color: rgba(244, 63, 94, 0.35);
+    background: rgba(244, 63, 94, 0.08);
+    color: #E11D48;
+}
+
+.admin-form-error {
+    background: rgba(244, 63, 94, 0.08);
+    border: 1px solid rgba(244, 63, 94, 0.2);
+    border-radius: 10px;
+    color: #E11D48;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    padding: 10px 12px;
+}
+
+.admin-info-note {
+    background: rgba(67, 97, 238, 0.06);
+    border: 1px solid rgba(67, 97, 238, 0.15);
+    border-radius: 10px;
+    color: #4361EE;
+    font-size: 12px;
+    line-height: 1.5;
+    padding: 10px 12px;
+}
+
+.admin-role-modal {
+    max-width: 760px;
+}
+
+.admin-permission-group {
+    border: 1px solid #E1E8F4;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+    background: #FAFCFF;
+}
+
+.admin-permission-group-title {
+    color: #0F172A;
+    font-size: 13px;
+    font-weight: 800;
+    margin-bottom: 10px;
+}
+
+.admin-permission-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.admin-permission-chip {
+    align-items: center;
+    background: #FFFFFF;
+    border: 1px solid #E1E8F4;
+    border-radius: 8px;
+    color: #64748B;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 12.5px;
+    font-weight: 700;
+    gap: 6px;
+    padding: 6px 10px;
+}
+
+.admin-permission-chip.selected {
+    background: rgba(67, 97, 238, 0.08);
+    border-color: rgba(67, 97, 238, 0.3);
+    color: #4361EE;
+}
+
+.admin-permission-chip input {
+    accent-color: #4361EE;
 }
 
 .modal-btn.warning {

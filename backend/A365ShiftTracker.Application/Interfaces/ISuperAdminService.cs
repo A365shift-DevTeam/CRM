@@ -13,4 +13,9 @@ public interface ISuperAdminService
     Task<UserDto> UpdateOrgUserAsync(int orgId, int userId, UpdateUserRequest request);
     Task<UserDto> ToggleUserActiveAsync(int orgId, int userId, bool isActive);
     Task DeleteOrgUserAsync(int orgId, int userId);
+
+    Task<SuperAdminAuditLogPageDto> GetAuditLogsAsync(
+        int? orgId, int? userId, string? entityName,
+        DateTime? startDate, DateTime? endDate,
+        int page, int pageSize);
 }

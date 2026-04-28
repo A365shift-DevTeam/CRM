@@ -37,6 +37,21 @@ public class UpdateOrgStatusRequest
     public string Status { get; set; } = string.Empty; // TRIAL | ACTIVE | SUSPENDED
 }
 
+public class OrgRoleDto
+{
+    public string Name { get; set; } = string.Empty;
+    public bool IsBuiltIn { get; set; }
+    public List<string> PermissionCodes { get; set; } = new();
+}
+
+public class CreateRoleRequest
+{
+    [Required]
+    [StringLength(50)]
+    public string Name { get; set; } = string.Empty;
+    public List<string> PermissionCodes { get; set; } = new();
+}
+
 public class SetUserLimitRequest
 {
     [Required]

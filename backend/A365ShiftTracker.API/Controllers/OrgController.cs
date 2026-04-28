@@ -62,6 +62,27 @@ public class OrgController : BaseApiController
         return Ok(ApiResponse<bool>.Ok(true, "Permissions updated."));
     }
 
+    [HttpGet("roles")]
+    public async Task<ActionResult<ApiResponse<List<OrgRoleDto>>>> GetAllRoles()
+    {
+        var result = await _service.GetAllRolesAsync(GetRequiredOrgId());
+        return Ok(ApiResponse<List<OrgRoleDto>>.Ok(result));
+    }
+
+    [HttpPost("roles")]
+    public async Task<ActionResult<ApiResponse<OrgRoleDto>>> CreateRole(CreateRoleRequest request)
+    {
+        var result = await _service.CreateOrUpdateRoleAsync(GetRequiredOrgId(), request.Name.Trim(), request.PermissionCodes);
+        return Ok(ApiResponse<OrgRoleDto>.Ok(result, "Role created."));
+    }
+
+    [HttpDelete("roles/{roleName}")]
+    public async Task<ActionResult<ApiResponse<bool>>> DeleteRole(string roleName)
+    {
+        await _service.DeleteCustomRoleAsync(GetRequiredOrgId(), roleName);
+        return Ok(ApiResponse<bool>.Ok(true, "Role deleted."));
+    }
+
     [HttpGet("sales-settings")]
     [Authorize(Policy = "Authenticated")]
     public async Task<ActionResult<ApiResponse<OrgSalesSettingsDto>>> GetSalesSettings()

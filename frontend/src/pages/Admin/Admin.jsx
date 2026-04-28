@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FaShieldHalved, FaShield, FaUsers, FaKey, FaToggleOn, FaToggleOff, FaMobileScreen, FaTicket, FaReply } from 'react-icons/fa6';
-import { Send, Lock } from 'lucide-react';
+import { Send, Lock, UserPlus, Pencil, UserCheck, Ban, Save, X, Trash2, Plus, ShieldCheck } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 import { organizationService } from '../../services/organizationService';
 import { useAuth } from '../../context/AuthContext';
@@ -34,6 +34,12 @@ export default function Admin() {
     const [replyTicket, setReplyTicket] = useState(null);
 
     const [modal2FA, setModal2FA] = useState(null); // user object
+    const [showCreateUser, setShowCreateUser] = useState(false);
+    const [editingUser, setEditingUser] = useState(null);
+    const [rolePermissionsModal, setRolePermissionsModal] = useState(null);
+    const [busyUserId, setBusyUserId] = useState(null);
+    const [orgRoles, setOrgRoles] = useState([]);
+    const [showCreateRole, setShowCreateRole] = useState(false);
     const ticketsLoadedRef = useRef(false);
 
     const loadTickets = useCallback(async (page = 1) => {
@@ -50,30 +56,32 @@ export default function Admin() {
         }
     }, [toast]);
 
-    useEffect(() => { loadData(); }, []);
-    useEffect(() => {
-        if (activeTab === 'tickets' && !ticketsLoadedRef.current) {
-            ticketsLoadedRef.current = true;
-            loadTickets(1);
-        }
-    }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            const [u, p] = await Promise.all([
+            const [u, p, r] = await Promise.all([
                 adminService.getUsers(),
                 adminService.getPermissions(),
+                organizationService.getRoles(),
             ]);
             setUsers(u ?? []);
             setPermissions(p ?? []);
+            setOrgRoles(r ?? []);
         } catch (err) {
             toast.error('Failed to load admin data');
             console.error(err);
         } finally {
             setLoading(false);
         }
-    };
+    }, [toast]);
+
+    useEffect(() => { loadData(); }, [loadData]);
+    useEffect(() => {
+        if (activeTab === 'tickets' && !ticketsLoadedRef.current) {
+            ticketsLoadedRef.current = true;
+            loadTickets(1);
+        }
+    }, [activeTab, loadTickets]);
 
     const handleSave2FA = async (userId, enabled, method) => {
         try {
@@ -117,13 +125,58 @@ export default function Admin() {
     const handleDeactivateUser = async (user) => {
         if (user.id === currentUser.id) return toast.warning("You cannot deactivate yourself.");
         if (!window.confirm(`Deactivate "${user.displayName || user.email}"?`)) return;
+        setBusyUserId(user.id);
         try {
             await organizationService.deactivateUser(user.id);
             setUsers(prev => prev.map(u => u.id === user.id ? { ...u, isActive: false } : u));
             toast.success('User deactivated');
         } catch (err) {
             toast.error(err.message || 'Failed to deactivate user');
+        } finally {
+            setBusyUserId(null);
         }
+    };
+
+    const handleActivateUser = async (user) => {
+        setBusyUserId(user.id);
+        try {
+            const updated = await organizationService.updateUser(user.id, { isActive: true });
+            setUsers(prev => prev.map(u => u.id === user.id ? { ...u, ...updated } : u));
+            toast.success('User activated');
+        } catch (err) {
+            toast.error(err.message || 'Failed to activate user');
+        } finally {
+            setBusyUserId(null);
+        }
+    };
+
+    const handleDeleteUser = async (user) => {
+        if (user.id === currentUser.id) return toast.warning("You cannot remove yourself.");
+        if (!window.confirm(`Remove "${user.displayName || user.email}" from the organization? This cannot be undone.`)) return;
+        setBusyUserId(user.id);
+        try {
+            await organizationService.deactivateUser(user.id);
+            setUsers(prev => prev.filter(u => u.id !== user.id));
+            toast.success('User removed');
+        } catch (err) {
+            toast.error(err.message || 'Failed to remove user');
+        } finally {
+            setBusyUserId(null);
+        }
+    };
+
+    const handleCreateUser = async (payload) => {
+        const created = await organizationService.createUser(payload);
+        setUsers(prev => [...prev, created]);
+        toast.success('User created. Welcome email sent.');
+        setShowCreateUser(false);
+    };
+
+    const handleUpdateUser = async (userId, payload) => {
+        const updated = await organizationService.updateUser(userId, payload);
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updated } : u));
+        toast.success('User updated');
+        setEditingUser(null);
     };
 
     if (loading) {
@@ -157,9 +210,34 @@ export default function Admin() {
                     <button className={`admin-tab ${activeTab === 'permissions' ? 'active' : ''}`} onClick={() => setActiveTab('permissions')}>
                         <FaKey size={14} /> Permissions <span className="tab-count">{permissions.length}</span>
                     </button>
+                    <button className={`admin-tab ${activeTab === 'roles' ? 'active' : ''}`} onClick={() => setActiveTab('roles')}>
+                        <ShieldCheck size={14} /> Roles <span className="tab-count">{orgRoles.length}</span>
+                    </button>
                     <button className={`admin-tab ${activeTab === 'tickets' ? 'active' : ''}`} onClick={() => setActiveTab('tickets')}>
                         <FaTicket size={14} /> Support Tickets {ticketTotal > 0 && <span className="tab-count">{ticketTotal}</span>}
                     </button>
+                </div>
+                <div className="admin-toolbar-actions">
+                    {activeTab === 'users' && (
+                        <button className="admin-add-btn" onClick={() => setShowCreateUser(true)}>
+                            <UserPlus size={14} /> Add User
+                        </button>
+                    )}
+                    {activeTab === 'roles' && (
+                        <button className="admin-add-btn" onClick={() => setShowCreateRole(true)}>
+                            <Plus size={14} /> Create Role
+                        </button>
+                    )}
+                    {activeTab === 'permissions' && (
+                        <>
+                            <button className="admin-secondary-btn" onClick={() => setRolePermissionsModal('MANAGER')}>
+                                <FaKey size={13} /> Manager Role
+                            </button>
+                            <button className="admin-secondary-btn" onClick={() => setRolePermissionsModal('EMPLOYEE')}>
+                                <FaKey size={13} /> Employee Role
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -225,6 +303,7 @@ export default function Admin() {
                                         </td>
                                         <td>
                                             <div className="admin-actions">
+                                                {/* 2FA */}
                                                 <div
                                                     className="admin-action-icon password"
                                                     title="Manage 2FA"
@@ -233,13 +312,50 @@ export default function Admin() {
                                                 >
                                                     <FaShield size={14} />
                                                 </div>
-                                                {user.isActive && user.role !== 'ORG_ADMIN' && user.id !== currentUser?.id && (
+
+                                                {/* Edit — all except SUPER_ADMIN */}
+                                                {user.role !== 'SUPER_ADMIN' && (
                                                     <div
-                                                        className="admin-action-icon delete"
-                                                        title="Deactivate"
-                                                        onClick={() => handleDeactivateUser(user)}
+                                                        className={`admin-action-icon edit${busyUserId === user.id ? ' disabled' : ''}`}
+                                                        title="Edit user"
+                                                        onClick={() => setEditingUser(user)}
                                                     >
-                                                        <FaToggleOn size={18} />
+                                                        <Pencil size={14} />
+                                                    </div>
+                                                )}
+
+                                                {/* Deactivate / Activate — all except SUPER_ADMIN and self */}
+                                                {user.role !== 'SUPER_ADMIN' && user.id !== currentUser?.id && (
+                                                    user.isActive ? (
+                                                        <div
+                                                            className={`admin-action-icon delete${busyUserId === user.id ? ' disabled' : ''}`}
+                                                            title="Deactivate"
+                                                            onClick={() => handleDeactivateUser(user)}
+                                                        >
+                                                            <Ban size={14} />
+                                                        </div>
+                                                    ) : (
+                                                        <div
+                                                            className={`admin-action-icon toggle${busyUserId === user.id ? ' disabled' : ''}`}
+                                                            title="Activate"
+                                                            onClick={() => handleActivateUser(user)}
+                                                        >
+                                                            <UserCheck size={14} />
+                                                        </div>
+                                                    )
+                                                )}
+
+                                                {/* Remove — all except SUPER_ADMIN and self */}
+                                                {user.role !== 'SUPER_ADMIN' && user.id !== currentUser?.id && (
+                                                    <div
+                                                        className={`admin-action-icon delete${busyUserId === user.id ? ' disabled' : ''}`}
+                                                        title="Remove from org"
+                                                        onClick={() => handleDeleteUser(user)}
+                                                        style={{ color: '#94a3b8' }}
+                                                        onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                                                        onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
+                                                    >
+                                                        <Trash2 size={14} />
                                                     </div>
                                                 )}
                                             </div>
@@ -247,6 +363,74 @@ export default function Admin() {
                                     </tr>
                                 );
                             })}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+
+            {/* Roles Tab */}
+            {activeTab === 'roles' && (
+                <div className="admin-card">
+                    <table className="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Role Name</th>
+                                <th>Type</th>
+                                <th>Permissions</th>
+                                <th style={{ textAlign: 'center' }}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {orgRoles.length === 0 ? (
+                                <tr><td colSpan={4} className="text-center py-4 text-muted">No roles yet. Create your first custom role.</td></tr>
+                            ) : orgRoles.map(role => (
+                                <tr key={role.name}>
+                                    <td style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 14 }}>
+                                        {role.name}
+                                    </td>
+                                    <td>
+                                        <span style={{
+                                            display: 'inline-block', padding: '2px 9px', borderRadius: 999, fontSize: 11, fontWeight: 700,
+                                            background: role.isBuiltIn ? 'rgba(139,92,246,0.10)' : 'rgba(67,97,238,0.10)',
+                                            color: role.isBuiltIn ? '#7C3AED' : '#4361EE',
+                                        }}>
+                                            {role.isBuiltIn ? 'Built-in' : 'Custom'}
+                                        </span>
+                                    </td>
+                                    <td style={{ fontSize: 12, color: '#64748b' }}>
+                                        {role.permissionCodes.length === 0
+                                            ? <span style={{ color: '#CBD5E1' }}>No permissions assigned</span>
+                                            : `${role.permissionCodes.length} permission${role.permissionCodes.length !== 1 ? 's' : ''}`}
+                                    </td>
+                                    <td>
+                                        <div className="admin-actions">
+                                            <div
+                                                className="admin-action-icon edit"
+                                                title="Edit permissions"
+                                                onClick={() => setRolePermissionsModal(role.name)}
+                                            >
+                                                <Pencil size={14} />
+                                            </div>
+                                            {!role.isBuiltIn && (
+                                                <div
+                                                    className="admin-action-icon delete"
+                                                    title="Delete role"
+                                                    onClick={async () => {
+                                                        if (!window.confirm(`Delete role "${role.name}"? Users with this role will be downgraded to Employee.`)) return;
+                                                        try {
+                                                            await organizationService.deleteRole(role.name);
+                                                            setOrgRoles(prev => prev.filter(r => r.name !== role.name));
+                                                            toast.success(`Role "${role.name}" deleted`);
+                                                        } catch (e) { toast.error(e.message || 'Failed to delete role'); }
+                                                    }}
+                                                >
+                                                    <Trash2 size={14} />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
                 </div>
@@ -277,6 +461,14 @@ export default function Admin() {
                             ))}
                         </tbody>
                     </table>
+                    <div className="admin-permission-footer">
+                        <button className="admin-secondary-btn" onClick={() => setRolePermissionsModal('MANAGER')}>
+                            <FaKey size={13} /> Configure Manager Permissions
+                        </button>
+                        <button className="admin-secondary-btn" onClick={() => setRolePermissionsModal('EMPLOYEE')}>
+                            <FaKey size={13} /> Configure Employee Permissions
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -360,6 +552,44 @@ export default function Admin() {
                 />
             )}
 
+            {showCreateUser && (
+                <UserFormModal
+                    mode="create"
+                    orgRoles={orgRoles}
+                    onClose={() => setShowCreateUser(false)}
+                    onSubmit={handleCreateUser}
+                />
+            )}
+
+            {editingUser && (
+                <UserFormModal
+                    mode="edit"
+                    user={editingUser}
+                    orgRoles={orgRoles}
+                    onClose={() => setEditingUser(null)}
+                    onSubmit={(payload) => handleUpdateUser(editingUser.id, payload)}
+                />
+            )}
+
+            {showCreateRole && (
+                <CreateRoleModal
+                    permissions={permissions}
+                    onClose={() => setShowCreateRole(false)}
+                    onCreated={role => {
+                        setOrgRoles(prev => [...prev.filter(r => r.name !== role.name), role]);
+                        toast.success(`Role "${role.name}" created`);
+                    }}
+                />
+            )}
+
+            {rolePermissionsModal && (
+                <RolePermissionsModal
+                    role={rolePermissionsModal}
+                    permissions={permissions}
+                    onClose={() => setRolePermissionsModal(null)}
+                />
+            )}
+
             {/* Ticket Reply Modal */}
             {replyTicket && (
                 <TicketReplyModal
@@ -380,7 +610,295 @@ export default function Admin() {
     );
 }
 
+// ─── Create Role Modal ─────────────────────────────────────────
+
+function CreateRoleModal({ permissions, onClose, onCreated }) {
+    const toast = useToast();
+    const [name, setName] = useState('');
+    const [selected, setSelected] = useState([]);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
+
+    const grouped = permissions.reduce((acc, p) => {
+        (acc[p.module] = acc[p.module] || []).push(p);
+        return acc;
+    }, {});
+
+    const toggle = (code) => setSelected(prev =>
+        prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]
+    );
+
+    const save = async () => {
+        if (!name.trim()) { setError('Role name is required.'); return; }
+        setSaving(true); setError('');
+        try {
+            const role = await organizationService.createRole(name.trim(), selected);
+            onCreated(role);
+            onClose();
+        } catch (e) {
+            setError(e?.message || 'Failed to create role.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-box admin-role-modal" onClick={e => e.stopPropagation()}>
+                <div className="modal-box-header">
+                    <div>
+                        <h3>Create Custom Role</h3>
+                        <p>Name your role and assign permissions</p>
+                    </div>
+                    <button className="admin-modal-close" type="button" onClick={onClose}><X size={15} /></button>
+                </div>
+                <div className="modal-box-body">
+                    {error && <div className="admin-form-error">{error}</div>}
+                    <label className="admin-field">
+                        <span>Role Name</span>
+                        <input
+                            value={name}
+                            placeholder='e.g. "Sales Rep", "HR Manager"'
+                            onChange={e => setName(e.target.value)}
+                            autoFocus
+                        />
+                    </label>
+                    <div style={{ fontWeight: 700, fontSize: 12, color: '#374151', marginBottom: 10 }}>Permissions</div>
+                    {Object.entries(grouped).map(([module, modulePerms]) => (
+                        <section className="admin-permission-group" key={module}>
+                            <div className="admin-permission-group-title">{module}</div>
+                            <div className="admin-permission-grid">
+                                {modulePerms.map(perm => (
+                                    <label
+                                        className={`admin-permission-chip ${selected.includes(perm.code) ? 'selected' : ''}`}
+                                        key={perm.code}
+                                    >
+                                        <input type="checkbox" checked={selected.includes(perm.code)} onChange={() => toggle(perm.code)} />
+                                        <span>{perm.action}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </section>
+                    ))}
+                </div>
+                <div className="modal-box-footer">
+                    <button className="modal-btn cancel" type="button" onClick={onClose}>Cancel</button>
+                    <button className="modal-btn primary" type="button" onClick={save} disabled={saving}>
+                        <Plus size={14} />{saving ? 'Creating…' : 'Create Role'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ─── Manage 2FA Modal ─────────────────────────────────────────
+
+function UserFormModal({ mode, user, orgRoles = [], onSubmit, onClose }) {
+    const isEdit = mode === 'edit';
+    const [form, setForm] = useState({
+        email: user?.email || '',
+        displayName: user?.displayName || '',
+        role: user?.role || 'EMPLOYEE',
+        isActive: user?.isActive ?? true,
+    });
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!isEdit && !form.email.trim()) {
+            setError('Email address is required.');
+            return;
+        }
+
+        setSaving(true);
+        setError('');
+        try {
+            const payload = {
+                displayName: form.displayName.trim() || null,
+                role: form.role,
+            };
+            if (isEdit) payload.isActive = form.isActive;
+            else payload.email = form.email.trim();
+
+            await onSubmit(payload);
+        } catch (err) {
+            setError(err?.message || `Failed to ${isEdit ? 'update' : 'create'} user.`);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <form className="modal-box admin-user-modal" onSubmit={handleSubmit} onClick={e => e.stopPropagation()}>
+                <div className="modal-box-header">
+                    <div>
+                        <h3>{isEdit ? 'Edit User' : 'Add User'}</h3>
+                        <p>{isEdit ? 'Update role and account status' : 'Create a Manager or Employee inside this organization'}</p>
+                    </div>
+                    <button className="admin-modal-close" type="button" onClick={onClose} aria-label="Close">
+                        <X size={15} />
+                    </button>
+                </div>
+                <div className="modal-box-body">
+                    {error && <div className="admin-form-error">{error}</div>}
+
+                    {!isEdit && (
+                        <label className="admin-field">
+                            <span>Email Address</span>
+                            <input
+                                type="email"
+                                value={form.email}
+                                placeholder="user@company.com"
+                                onChange={e => setForm(prev => ({ ...prev, email: e.target.value }))}
+                                autoFocus
+                            />
+                        </label>
+                    )}
+
+                    <label className="admin-field">
+                        <span>Display Name</span>
+                        <input
+                            value={form.displayName}
+                            placeholder="Full name"
+                            onChange={e => setForm(prev => ({ ...prev, displayName: e.target.value }))}
+                            autoFocus={isEdit}
+                        />
+                    </label>
+
+                    <label className="admin-field">
+                        <span>Role</span>
+                        <select value={form.role} onChange={e => setForm(prev => ({ ...prev, role: e.target.value }))}>
+                            {isEdit && <option value="ORG_ADMIN">Org Admin (CXO)</option>}
+                            <option value="MANAGER">Manager</option>
+                            <option value="EMPLOYEE">Employee</option>
+                            {orgRoles.filter(r => !r.isBuiltIn).map(r => (
+                                <option key={r.name} value={r.name}>{r.name}</option>
+                            ))}
+                        </select>
+                    </label>
+
+                    {isEdit && (
+                        <div className="admin-status-picker">
+                            <button type="button" className={form.isActive ? 'active' : ''} onClick={() => setForm(prev => ({ ...prev, isActive: true }))}>
+                                <UserCheck size={14} /> Active
+                            </button>
+                            <button type="button" className={!form.isActive ? 'inactive' : ''} onClick={() => setForm(prev => ({ ...prev, isActive: false }))}>
+                                <Ban size={14} /> Inactive
+                            </button>
+                        </div>
+                    )}
+
+                    {!isEdit && (
+                        <div className="admin-info-note">
+                            A welcome email with a temporary password will be sent. Organization user limits still apply.
+                        </div>
+                    )}
+                </div>
+                <div className="modal-box-footer">
+                    <button className="modal-btn cancel" type="button" onClick={onClose}>Cancel</button>
+                    <button className="modal-btn primary" type="submit" disabled={saving}>
+                        {isEdit ? <Save size={14} /> : <UserPlus size={14} />}
+                        {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Create User'}
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+}
+
+function RolePermissionsModal({ role, permissions, onClose }) {
+    const toast = useToast();
+    const [selected, setSelected] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        let alive = true;
+        organizationService.getRolePermissions(role)
+            .then(codes => { if (alive) setSelected(codes || []); })
+            .catch(err => toast.error(err?.message || 'Failed to load role permissions'))
+            .finally(() => { if (alive) setLoading(false); });
+        return () => { alive = false; };
+    }, [role, toast]);
+
+    const grouped = permissions.reduce((acc, perm) => {
+        (acc[perm.module] = acc[perm.module] || []).push(perm);
+        return acc;
+    }, {});
+
+    const toggle = (code) => {
+        setSelected(prev => prev.includes(code)
+            ? prev.filter(item => item !== code)
+            : [...prev, code]);
+    };
+
+    const BUILT_IN = ['SUPER_ADMIN', 'ORG_ADMIN', 'MANAGER', 'EMPLOYEE'];
+
+    const save = async () => {
+        setSaving(true);
+        try {
+            if (BUILT_IN.includes(role)) {
+                await organizationService.setRolePermissions(role, selected);
+            } else {
+                await organizationService.createRole(role, selected);
+            }
+            toast.success(`${role} permissions updated`);
+            onClose();
+        } catch (err) {
+            toast.error(err?.message || 'Failed to save permissions');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-box admin-role-modal" onClick={e => e.stopPropagation()}>
+                <div className="modal-box-header">
+                    <div>
+                        <h3>{role} Permissions</h3>
+                        <p>Choose what this role can access inside the organization</p>
+                    </div>
+                    <button className="admin-modal-close" type="button" onClick={onClose} aria-label="Close">
+                        <X size={15} />
+                    </button>
+                </div>
+                <div className="modal-box-body">
+                    {loading ? (
+                        <div className="text-center p-4"><div className="spinner-border text-primary spinner-border-sm" /></div>
+                    ) : (
+                        Object.entries(grouped).map(([module, modulePerms]) => (
+                            <section className="admin-permission-group" key={module}>
+                                <div className="admin-permission-group-title">{module}</div>
+                                <div className="admin-permission-grid">
+                                    {modulePerms.map(perm => (
+                                        <label className={`admin-permission-chip ${selected.includes(perm.code) ? 'selected' : ''}`} key={perm.code}>
+                                            <input
+                                                type="checkbox"
+                                                checked={selected.includes(perm.code)}
+                                                onChange={() => toggle(perm.code)}
+                                            />
+                                            <span>{perm.action}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </section>
+                        ))
+                    )}
+                </div>
+                <div className="modal-box-footer">
+                    <button className="modal-btn cancel" type="button" onClick={onClose}>Cancel</button>
+                    <button className="modal-btn primary" type="button" onClick={save} disabled={saving || loading}>
+                        <Save size={14} /> {saving ? 'Saving...' : 'Save Permissions'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 function Manage2FAModal({ user, onSaveEmailOtp, onResetTotp, onRequireTotp, onClose }) {
     const emailOtpOn = user.twoFactorRequired && user.twoFactorMethod === 'email' && !user.isTotpEnabled;

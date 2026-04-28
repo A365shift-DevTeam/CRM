@@ -21,7 +21,8 @@ public class IncomesController : BaseApiController
         [FromQuery] int page = 1, [FromQuery] int pageSize = 25)
     {
         var userId = GetCurrentUserId();
-        var result = await _service.GetAllAsync(userId, page, pageSize);
+        var isAdmin = GetCurrentRole() is "ORG_ADMIN" or "SUPER_ADMIN";
+        var result = await _service.GetAllAsync(userId, isAdmin, page, pageSize);
         return Ok(ApiResponse<PagedResult<IncomeDto>>.Ok(result));
     }
 
@@ -37,7 +38,8 @@ public class IncomesController : BaseApiController
     public async Task<ActionResult<ApiResponse<IncomeDto>>> Update(int id, UpdateIncomeRequest request)
     {
         var userId = GetCurrentUserId();
-        var result = await _service.UpdateAsync(id, request, userId);
+        var isAdmin = GetCurrentRole() is "ORG_ADMIN" or "SUPER_ADMIN";
+        var result = await _service.UpdateAsync(id, request, userId, isAdmin);
         return Ok(ApiResponse<IncomeDto>.Ok(result, "Income updated."));
     }
 
@@ -45,7 +47,8 @@ public class IncomesController : BaseApiController
     public async Task<ActionResult<ApiResponse<bool>>> Delete(int id)
     {
         var userId = GetCurrentUserId();
-        await _service.DeleteAsync(id, userId);
+        var isAdmin = GetCurrentRole() is "ORG_ADMIN" or "SUPER_ADMIN";
+        await _service.DeleteAsync(id, userId, isAdmin);
         return Ok(ApiResponse<bool>.Ok(true, "Income deleted."));
     }
 }

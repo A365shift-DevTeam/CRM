@@ -9,7 +9,8 @@ import {
   Clock, Calendar, Hash, Mail, Eye, AlertCircle, CheckCircle,
   Pause, Play, Globe, Sliders, Ticket, MessageSquare, Send,
   Shield, Ban, UserCheck, ChevronDown, ArrowUpRight, Filter,
-  Inbox, CircleDot, CheckCheck, AlertTriangle, Zap, Pencil, Trash2
+  Inbox, CircleDot, CheckCheck, AlertTriangle, Zap, Pencil, Trash2,
+  Activity, ChevronLeft, SlidersHorizontal, FileText
 } from 'lucide-react';
 
 // ── Helpers ────────────────────────────────────────────────────
@@ -432,7 +433,7 @@ function OrgUsersModal({ org, onClose, onUserLimitChange }) {
 
   useEffect(() => {
     superAdminService.getOrgUsers(org.id)
-      .then(setUsers).catch(() => {}).finally(() => setLoading(false));
+      .then(setUsers).catch(() => setUsers([])).finally(() => setLoading(false));
   }, [org.id]);
 
   async function toggleActive(user) {
@@ -440,7 +441,9 @@ function OrgUsersModal({ org, onClose, onUserLimitChange }) {
     try {
       await superAdminService.toggleUserActive(org.id, user.id, !user.isActive);
       setUsers(prev => prev.map(u => u.id === user.id ? { ...u, isActive: !u.isActive } : u));
-    } catch {}
+    } catch (err) {
+      console.error('Failed to update user status', err);
+    }
     finally { setBusyId(null); }
   }
 
@@ -450,7 +453,9 @@ function OrgUsersModal({ org, onClose, onUserLimitChange }) {
     try {
       await superAdminService.deleteOrgUser(org.id, user.id);
       setUsers(prev => prev.filter(u => u.id !== user.id));
-    } catch {}
+    } catch (err) {
+      console.error('Failed to delete user', err);
+    }
     finally { setBusyId(null); }
   }
 
@@ -462,7 +467,7 @@ function OrgUsersModal({ org, onClose, onUserLimitChange }) {
       title={`${org.name} — Users`}
       subtitle={`${users.length} member${users.length !== 1 ? 's' : ''} in this organization`}
       onClose={onClose}
-      wide
+      extraWide
       footer={<button className="sa-btn-cancel" onClick={onClose}>Close</button>}
     >
       {/* Capacity bar */}
@@ -501,84 +506,77 @@ function OrgUsersModal({ org, onClose, onUserLimitChange }) {
           <p>Add a user to get started.</p>
         </div>
       ) : (
-        <table className="sa-table" style={{ width: '100%' }}>
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Last Login</th>
-              <th style={{ textAlign: 'right' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map(u => (
-              <tr key={u.id}>
-                <td>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{
-                      width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-                      background: `linear-gradient(135deg, ${orgColor(u.id)[0]}, ${orgColor(u.id)[1]})`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 11, fontWeight: 800, color: '#fff', fontFamily: 'Outfit',
-                      opacity: u.isActive ? 1 : 0.45,
-                    }}>
-                      {userInitials(u.displayName, u.email)}
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: u.isActive ? '#0F172A' : '#94A3B8' }}>
-                        {u.displayName || '—'}
-                      </div>
-                      <div style={{ fontSize: 11.5, color: '#94A3B8' }}>{u.email}</div>
-                    </div>
-                  </div>
-                </td>
-                <td><RoleBadge role={u.role} /></td>
-                <td>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: u.isActive ? '#059669' : '#E11D48' }}>
-                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor', display: 'inline-block' }} />
-                    {u.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                </td>
-                <td style={{ fontSize: 12, color: '#94A3B8' }}>{timeAgo(u.lastLoginAt)}</td>
-                <td>
-                  <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
-                    {/* Edit */}
-                    <button
-                      className="sa-action-btn primary"
-                      style={{ fontSize: 11 }}
-                      onClick={() => setEditingUser(u)}
-                      disabled={busyId === u.id}
-                      title="Edit user"
-                    >
-                      <Pencil size={11} /> Edit
-                    </button>
-                    {/* Toggle active */}
-                    <button
-                      className={`sa-action-btn ${u.isActive ? 'warning' : 'success'}`}
-                      style={{ fontSize: 11 }}
-                      onClick={() => toggleActive(u)}
-                      disabled={busyId === u.id}
-                      title={u.isActive ? 'Deactivate' : 'Activate'}
-                    >
-                      {u.isActive ? <><Ban size={11} /> Deactivate</> : <><UserCheck size={11} /> Activate</>}
-                    </button>
-                    {/* Delete */}
-                    <button
-                      className="sa-action-btn danger"
-                      style={{ fontSize: 11 }}
-                      onClick={() => deleteUser(u)}
-                      disabled={busyId === u.id}
-                      title="Remove from org"
-                    >
-                      <Trash2 size={11} /> Remove
-                    </button>
-                  </div>
-                </td>
+        <div className="sa-table-scroll">
+          <table className="sa-table sa-users-modal-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Last Login</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {users.map(u => (
+                <tr key={u.id}>
+                  <td>
+                    <div className="sa-user-cell">
+                      <div
+                        className={`sa-user-list-avatar small ${u.isActive ? '' : 'inactive'}`}
+                        style={{ background: `linear-gradient(135deg, ${orgColor(u.id)[0]}, ${orgColor(u.id)[1]})` }}
+                      >
+                        {userInitials(u.displayName, u.email)}
+                      </div>
+                      <div className="sa-user-cell-text">
+                        <div className={`sa-user-cell-name ${u.isActive ? '' : 'inactive'}`}>
+                          {u.displayName || '—'}
+                        </div>
+                        <div className="sa-user-cell-email">{u.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><RoleBadge role={u.role} /></td>
+                  <td>
+                    <span className={`sa-inline-status ${u.isActive ? 'active' : 'inactive'}`}>
+                      <span className="sa-inline-status-dot" />
+                      {u.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td className="sa-muted-cell">{timeAgo(u.lastLoginAt)}</td>
+                  <td>
+                    <div className="sa-row-actions">
+                      <button
+                        className="sa-action-btn primary compact"
+                        onClick={() => setEditingUser(u)}
+                        disabled={busyId === u.id}
+                        title="Edit user"
+                      >
+                        <Pencil size={11} /> Edit
+                      </button>
+                      <button
+                        className={`sa-action-btn compact ${u.isActive ? 'warning' : 'success'}`}
+                        onClick={() => toggleActive(u)}
+                        disabled={busyId === u.id}
+                        title={u.isActive ? 'Deactivate' : 'Activate'}
+                      >
+                        {u.isActive ? <><Ban size={11} /> Deactivate</> : <><UserCheck size={11} /> Activate</>}
+                      </button>
+                      <button
+                        className="sa-action-btn danger compact"
+                        onClick={() => deleteUser(u)}
+                        disabled={busyId === u.id}
+                        title="Remove from org"
+                      >
+                        <Trash2 size={11} /> Remove
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {showAdd && (
@@ -615,6 +613,7 @@ function OrgUsersModal({ org, onClose, onUserLimitChange }) {
 
 // ── Ticket Detail Modal ─────────────────────────────────────────
 function TicketDetailModal({ ticket, onClose, onUpdated }) {
+  const { currentUser } = useAuth();
   const [status, setStatus] = useState(ticket.status || 'Open');
   const [reply, setReply] = useState('');
   const [saving, setSaving] = useState(false);
@@ -628,7 +627,9 @@ function TicketDetailModal({ ticket, onClose, onUpdated }) {
       onUpdated({ ...ticket, status });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch {}
+    } catch (err) {
+      console.error('Failed to update support ticket', err);
+    }
     finally { setSaving(false); }
   }
 
@@ -636,9 +637,11 @@ function TicketDetailModal({ ticket, onClose, onUpdated }) {
     if (!reply.trim()) return;
     setReplying(true);
     try {
-      await superAdminService.replySupportTicket(ticket.id, reply.trim());
+      await superAdminService.replySupportTicket(ticket.id, reply.trim(), currentUser?.displayName || 'Super Admin');
       setReply('');
-    } catch {}
+    } catch (err) {
+      console.error('Failed to reply to support ticket', err);
+    }
     finally { setReplying(false); }
   }
 
@@ -647,7 +650,7 @@ function TicketDetailModal({ ticket, onClose, onUpdated }) {
   return (
     <Modal
       title={`Ticket #${ticket.ticketNumber || ticket.id}`}
-      subtitle={ticket.subject || ticket.title}
+      subtitle={ticket.title}
       onClose={onClose}
       wide
       footer={
@@ -659,8 +662,8 @@ function TicketDetailModal({ ticket, onClose, onUpdated }) {
         <div className="sa-ticket-meta-item">
           <span className="sa-ticket-meta-label">Raised by</span>
           <span className="sa-ticket-meta-val">
-            <div className="sa-mini-avatar">{userInitials(ticket.raisedBy || ticket.createdByName, ticket.createdByEmail)}</div>
-            {ticket.raisedBy || ticket.createdByName || '—'}
+            <div className="sa-mini-avatar">{userInitials(ticket.createdByName, ticket.raisedByEmail)}</div>
+            {ticket.createdByName || '—'}
           </span>
         </div>
         <div className="sa-ticket-meta-item">
@@ -749,7 +752,9 @@ function OrgCard({ org: orgProp, onRefresh, onViewUsers, onCreateCxo, onSetLimit
     try {
       await superAdminService.updateOrgStatus(org.id, status);
       onRefresh();
-    } catch {}
+    } catch (err) {
+      console.error('Failed to update organization status', err);
+    }
     finally { setUpdating(false); }
   }
 
@@ -852,9 +857,13 @@ function TicketsTab({ search }) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await superAdminService.getSupportTickets();
-      setTickets(data || []);
-    } catch {}
+      const data = await superAdminService.getSupportTickets(1, 200);
+      // API returns PagedResult: { items, totalCount, page, pageSize }
+      setTickets(data?.items ?? data ?? []);
+    } catch (err) {
+      console.error('Failed to load support tickets', err);
+      setTickets([]);
+    }
     finally { setLoading(false); }
   }, []);
 
@@ -868,7 +877,7 @@ function TicketsTab({ search }) {
   const filtered = tickets.filter(t => {
     const matchStatus = statusFilter === 'ALL' || t.status === statusFilter;
     const matchSearch = !search ||
-      (t.subject || t.title || '').toLowerCase().includes(search.toLowerCase()) ||
+      (t.title || '').toLowerCase().includes(search.toLowerCase()) ||
       (t.createdByName || '').toLowerCase().includes(search.toLowerCase()) ||
       (t.orgName || '').toLowerCase().includes(search.toLowerCase());
     return matchStatus && matchSearch;
@@ -935,67 +944,57 @@ function TicketsTab({ search }) {
             <p>CXO users raise support tickets to the Superadmin from their portal.</p>
           </div>
         ) : (
-          <table className="sa-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Subject</th>
-                <th>Raised by</th>
-                <th>Organization</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Date</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(t => (
-                <tr key={t.id} className="sa-ticket-row" onClick={() => setSelectedTicket(t)} style={{ cursor: 'pointer' }}>
-                  <td>
-                    <span style={{ fontFamily: 'monospace', fontSize: 11.5, color: '#94A3B8', fontWeight: 600 }}>
-                      #{t.ticketNumber || t.id}
-                    </span>
-                  </td>
-                  <td>
-                    <div style={{ fontWeight: 700, fontSize: 13, color: '#0F172A', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {t.subject || t.title || '—'}
-                    </div>
-                    {t.description && (
-                      <div style={{ fontSize: 11.5, color: '#94A3B8', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {t.description}
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div className="sa-mini-avatar">{userInitials(t.createdByName || t.raisedBy, t.createdByEmail)}</div>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>{t.createdByName || t.raisedBy || '—'}</div>
-                        <div style={{ fontSize: 11, color: '#94A3B8' }}>{t.createdByEmail || ''}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#475569', fontWeight: 500 }}>
-                      <Building2 size={12} color="#94A3B8" />{t.orgName || '—'}
-                    </span>
-                  </td>
-                  <td><PriorityBadge priority={t.priority || 'Medium'} /></td>
-                  <td><TicketStatusBadge status={t.status || 'Open'} /></td>
-                  <td style={{ fontSize: 12, color: '#94A3B8' }}>{timeAgo(t.createdAt)}</td>
-                  <td onClick={e => e.stopPropagation()}>
-                    <button
-                      className="sa-action-btn primary"
-                      onClick={() => setSelectedTicket(t)}
-                      style={{ fontSize: 11 }}
-                    >
-                      <Eye size={11} /> Review
-                    </button>
-                  </td>
+          <div className="sa-table-scroll">
+            <table className="sa-table sa-ticket-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Subject</th>
+                  <th>Raised by</th>
+                  <th>Organization</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th>Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map(t => (
+                  <tr key={t.id} className="sa-ticket-row" onClick={() => setSelectedTicket(t)}>
+                    <td>
+                      <span className="sa-ticket-number">#{t.ticketNumber || t.id}</span>
+                    </td>
+                    <td>
+                      <div className="sa-ticket-subject">{t.title || '—'}</div>
+                      {t.description && <div className="sa-ticket-snippet">{t.description}</div>}
+                    </td>
+                    <td>
+                      <div className="sa-user-cell">
+                        <div className="sa-mini-avatar">{userInitials(t.createdByName, t.raisedByEmail)}</div>
+                        <div className="sa-user-cell-text">
+                          <div className="sa-user-cell-name">{t.createdByName || '—'}</div>
+                          <div className="sa-user-cell-email">{t.raisedByEmail || ''}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="sa-org-cell-name">
+                        <Building2 size={12} color="#94A3B8" />{t.orgName || '—'}
+                      </span>
+                    </td>
+                    <td><PriorityBadge priority={t.priority || 'Medium'} /></td>
+                    <td><TicketStatusBadge status={t.status || 'Open'} /></td>
+                    <td className="sa-muted-cell">{timeAgo(t.createdAt)}</td>
+                    <td onClick={e => e.stopPropagation()}>
+                      <button className="sa-action-btn primary compact" onClick={() => setSelectedTicket(t)}>
+                        <Eye size={11} /> Review
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -1005,6 +1004,284 @@ function TicketsTab({ search }) {
           onClose={() => setSelectedTicket(null)}
           onUpdated={handleUpdated}
         />
+      )}
+    </div>
+  );
+}
+
+// ── Audit Log Tab ────────────────────────────────────────────────
+const ENTITY_TYPES = [
+  'Contact','Lead','Company','Invoice','Project','TaskItem','TimesheetEntry',
+  'Expense','Income','LegalAgreement','Ticket','Document','User','Organization',
+  'Note','Tag',
+];
+
+const ACTION_STYLE = {
+  Created: { bg: 'rgba(16,185,129,0.10)', color: '#059669', border: 'rgba(16,185,129,0.25)' },
+  Updated: { bg: 'rgba(67,97,238,0.10)',  color: '#4361EE', border: 'rgba(67,97,238,0.25)' },
+  Deleted: { bg: 'rgba(244,63,94,0.10)',  color: '#E11D48', border: 'rgba(244,63,94,0.25)' },
+};
+
+function todayMinus(days) {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
+function AuditLogTab({ orgs }) {
+  const [filters, setFilters] = useState({
+    orgId: '', userId: '', entityName: '', startDate: todayMinus(7), endDate: todayMinus(0),
+  });
+  const [users, setUsers] = useState([]);
+  const [logs, setLogs] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const PAGE_SIZE = 50;
+
+  // Load users for the selected org
+  useEffect(() => {
+    if (!filters.orgId) { setUsers([]); setFilters(f => ({ ...f, userId: '' })); return; }
+    superAdminService.getOrgUsers(parseInt(filters.orgId))
+      .then(setUsers).catch(() => setUsers([]));
+  }, [filters.orgId]);
+
+  const load = useCallback(async (p = 1) => {
+    setLoading(true);
+    try {
+      const res = await superAdminService.getAuditLogs({ ...filters, page: p, pageSize: PAGE_SIZE });
+      setLogs(res?.items ?? []);
+      setTotal(res?.total ?? 0);
+      setPage(p);
+    } catch {}
+    finally { setLoading(false); }
+  }, [filters]);
+
+  useEffect(() => { load(1); }, []); // initial load
+
+  function handleFilter(e) {
+    e.preventDefault();
+    load(1);
+  }
+
+  function set(key, val) { setFilters(f => ({ ...f, [key]: val })); }
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  return (
+    <div>
+      {/* Filter bar */}
+      <form onSubmit={handleFilter}>
+        <div className="sa-audit-filters">
+          {/* Organization */}
+          <div className="sa-audit-filter-group">
+            <label className="sa-audit-filter-label">Organization</label>
+            <select className="sa-audit-select" value={filters.orgId} onChange={e => set('orgId', e.target.value)}>
+              <option value="">All Organizations</option>
+              {orgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+            </select>
+          </div>
+
+          {/* User — only shown when org selected */}
+          <div className="sa-audit-filter-group">
+            <label className="sa-audit-filter-label">User</label>
+            <select className="sa-audit-select" value={filters.userId} onChange={e => set('userId', e.target.value)} disabled={!filters.orgId}>
+              <option value="">All Users</option>
+              {users.map(u => <option key={u.id} value={u.id}>{u.displayName || u.email}</option>)}
+            </select>
+          </div>
+
+          {/* Entity type */}
+          <div className="sa-audit-filter-group">
+            <label className="sa-audit-filter-label">Entity Type</label>
+            <select className="sa-audit-select" value={filters.entityName} onChange={e => set('entityName', e.target.value)}>
+              <option value="">All Types</option>
+              {ENTITY_TYPES.map(e => <option key={e} value={e}>{e}</option>)}
+            </select>
+          </div>
+
+          {/* Date range */}
+          <div className="sa-audit-filter-group">
+            <label className="sa-audit-filter-label">From</label>
+            <input className="sa-audit-date" type="date" value={filters.startDate} onChange={e => set('startDate', e.target.value)} />
+          </div>
+          <div className="sa-audit-filter-group">
+            <label className="sa-audit-filter-label">To</label>
+            <input className="sa-audit-date" type="date" value={filters.endDate} onChange={e => set('endDate', e.target.value)} />
+          </div>
+
+          <button type="submit" className="sa-btn-primary" style={{ alignSelf: 'flex-end' }}>
+            <Search size={13} /> Search
+          </button>
+          <button type="button" className="sa-btn-cancel" style={{ alignSelf: 'flex-end' }}
+            onClick={() => { setFilters({ orgId: '', userId: '', entityName: '', startDate: todayMinus(7), endDate: todayMinus(0) }); }}>
+            <X size={13} /> Reset
+          </button>
+        </div>
+      </form>
+
+      {/* Summary */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+        <span style={{ fontSize: 13, color: '#94A3B8', fontWeight: 500 }}>
+          {loading ? 'Loading…' : `${total.toLocaleString()} event${total !== 1 ? 's' : ''} found`}
+        </span>
+        {total > 0 && (
+          <span style={{ fontSize: 12, color: '#94A3B8' }}>
+            Page {page} of {totalPages}
+          </span>
+        )}
+      </div>
+
+      {/* Table */}
+      <div className="sa-card">
+        {loading ? (
+          <div className="sa-spinner"><div className="sa-spinner-ring" /></div>
+        ) : logs.length === 0 ? (
+          <div className="sa-empty">
+            <div className="sa-empty-icon" style={{ fontSize: 36 }}><Activity size={36} color="#CBD5E1" /></div>
+            <h4>No audit events found</h4>
+            <p>Try adjusting your filters or date range.</p>
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table className="sa-table" style={{ minWidth: 900 }}>
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>User</th>
+                  <th>Organization</th>
+                  <th>Action</th>
+                  <th>Entity</th>
+                  <th>Field</th>
+                  <th>Change</th>
+                  <th>IP</th>
+                </tr>
+              </thead>
+              <tbody>
+                {logs.map(log => {
+                  const as = ACTION_STYLE[log.action] || ACTION_STYLE.Updated;
+                  const hasChange = log.oldValue || log.newValue;
+                  return (
+                    <tr key={log.id}>
+                      {/* Timestamp */}
+                      <td style={{ whiteSpace: 'nowrap', fontSize: 12 }}>
+                        <div style={{ fontWeight: 600, color: '#0F172A', fontSize: 12.5 }}>
+                          {new Date(log.changedAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </div>
+                        <div style={{ color: '#94A3B8', fontSize: 11 }}>
+                          {new Date(log.changedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        </div>
+                      </td>
+
+                      {/* User */}
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{
+                            width: 26, height: 26, borderRadius: 7, flexShrink: 0,
+                            background: `linear-gradient(135deg, ${orgColor(log.changedByUserId)[0]}, ${orgColor(log.changedByUserId)[1]})`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 10, fontWeight: 800, color: '#fff', fontFamily: 'Outfit',
+                          }}>
+                            {userInitials(log.changedByName, '')}
+                          </div>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>
+                            {log.changedByName || `User #${log.changedByUserId}`}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Org */}
+                      <td style={{ fontSize: 12.5, color: '#475569', fontWeight: 500 }}>
+                        {log.orgName ? (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Building2 size={11} color="#94A3B8" />{log.orgName}
+                          </span>
+                        ) : <span style={{ color: '#CBD5E1' }}>—</span>}
+                      </td>
+
+                      {/* Action badge */}
+                      <td>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 4,
+                          padding: '3px 9px', borderRadius: 999,
+                          fontSize: 11, fontWeight: 700,
+                          background: as.bg, color: as.color,
+                          border: `1px solid ${as.border}`,
+                        }}>
+                          {log.action}
+                        </span>
+                      </td>
+
+                      {/* Entity */}
+                      <td>
+                        <div style={{ fontSize: 12.5, fontWeight: 600, color: '#0F172A' }}>{log.entityName}</div>
+                        <div style={{ fontSize: 11, color: '#94A3B8', fontFamily: 'monospace' }}>#{log.entityId}</div>
+                      </td>
+
+                      {/* Field */}
+                      <td style={{ fontSize: 12.5, color: '#475569', fontWeight: 500 }}>
+                        {log.fieldName === '_record' ? (
+                          <span style={{ fontStyle: 'italic', color: '#94A3B8' }}>record</span>
+                        ) : log.fieldName}
+                      </td>
+
+                      {/* Change old → new */}
+                      <td style={{ maxWidth: 220 }}>
+                        {hasChange ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, flexWrap: 'wrap' }}>
+                            {log.oldValue && (
+                              <span style={{ background: 'rgba(244,63,94,0.07)', border: '1px solid rgba(244,63,94,0.18)', borderRadius: 5, padding: '1px 6px', color: '#E11D48', fontFamily: 'monospace', fontSize: 11, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={log.oldValue}>
+                                {log.oldValue}
+                              </span>
+                            )}
+                            {log.oldValue && log.newValue && (
+                              <span style={{ color: '#94A3B8', fontSize: 11 }}>→</span>
+                            )}
+                            {log.newValue && (
+                              <span style={{ background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.18)', borderRadius: 5, padding: '1px 6px', color: '#059669', fontFamily: 'monospace', fontSize: 11, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={log.newValue}>
+                                {log.newValue}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span style={{ color: '#CBD5E1', fontSize: 12 }}>—</span>
+                        )}
+                      </td>
+
+                      {/* IP */}
+                      <td style={{ fontSize: 11, color: '#94A3B8', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+                        {log.ipAddress || '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 16 }}>
+          <button
+            className="sa-btn-cancel"
+            style={{ padding: '7px 14px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}
+            onClick={() => load(page - 1)} disabled={page === 1}
+          >
+            <ChevronLeft size={13} /> Prev
+          </button>
+          <span style={{ fontSize: 13, color: '#64748B', fontWeight: 600, minWidth: 80, textAlign: 'center' }}>
+            {page} / {totalPages}
+          </span>
+          <button
+            className="sa-btn-cancel"
+            style={{ padding: '7px 14px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}
+            onClick={() => load(page + 1)} disabled={page >= totalPages}
+          >
+            Next <ChevronRight size={13} />
+          </button>
+        </div>
       )}
     </div>
   );
@@ -1025,6 +1302,8 @@ export default function SuperAdminDashboard() {
   const [viewUsersOrg, setViewUsersOrg]   = useState(null);
   const [createCxoOrg, setCreateCxoOrg]   = useState(null);
   const [setLimitOrg, setSetLimitOrg]     = useState(null);
+  const [editingAllUser, setEditingAllUser] = useState(null);
+  const [allUsersBusyId, setAllUsersBusyId] = useState(null);
 
   const loadOrgs = useCallback(async () => {
     setLoading(true); setError('');
@@ -1042,14 +1321,73 @@ export default function SuperAdminDashboard() {
     if (orgs.length === 0) return;
     try {
       const results = await Promise.allSettled(
-        orgs.map(o => superAdminService.getOrgUsers(o.id).then(users => users.map(u => ({ ...u, orgName: o.name }))))
+        orgs.map(o => superAdminService.getOrgUsers(o.id).then(users => users.map(u => ({
+          ...u,
+          orgId: u.orgId || o.id,
+          orgName: o.name,
+          orgUserLimit: o.userLimit,
+        }))))
       );
       setAllUsers(results.flatMap(r => r.status === 'fulfilled' ? r.value : []));
-    } catch {}
+    } catch (err) {
+      console.error('Failed to load organization users', err);
+      setAllUsers([]);
+    }
   }, [orgs]);
 
   useEffect(() => { loadOrgs(); }, [loadOrgs]);
   useEffect(() => { if (tab === 'users') loadAllUsers(); }, [tab, loadAllUsers]);
+
+  async function handleAllUserToggle(user) {
+    if (!user.orgId) {
+      setError('This user is not attached to an organization.');
+      return;
+    }
+    setAllUsersBusyId(user.id);
+    setError('');
+    try {
+      const updated = await superAdminService.toggleUserActive(user.orgId, user.id, !user.isActive);
+      const merged = { ...user, ...updated, orgId: updated.orgId || user.orgId, orgName: user.orgName, orgUserLimit: user.orgUserLimit };
+      setAllUsers(prev => prev.map(u => u.id === user.id ? merged : u));
+    } catch (err) {
+      setError(err?.message || 'Failed to update user status.');
+    } finally {
+      setAllUsersBusyId(null);
+    }
+  }
+
+  async function handleAllUserDelete(user) {
+    if (!user.orgId) {
+      setError('This user is not attached to an organization.');
+      return;
+    }
+    if (!window.confirm(`Remove "${user.displayName || user.email}" from ${user.orgName}? This cannot be undone.`)) return;
+    setAllUsersBusyId(user.id);
+    setError('');
+    try {
+      await superAdminService.deleteOrgUser(user.orgId, user.id);
+      setAllUsers(prev => prev.filter(u => u.id !== user.id));
+      setOrgs(prev => prev.map(o => o.id === user.orgId ? { ...o, userCount: Math.max(0, (o.userCount || 0) - 1) } : o));
+    } catch (err) {
+      setError(err?.message || 'Failed to remove user.');
+    } finally {
+      setAllUsersBusyId(null);
+    }
+  }
+
+  function handleAllUserSaved(updated) {
+    setAllUsers(prev => prev.map(u => {
+      if (u.id !== updated.id) return u;
+      return {
+        ...u,
+        ...updated,
+        orgId: updated.orgId || u.orgId,
+        orgName: u.orgName,
+        orgUserLimit: u.orgUserLimit,
+      };
+    }));
+    setEditingAllUser(null);
+  }
 
   const stats = {
     total:     orgs.length,
@@ -1079,6 +1417,7 @@ export default function SuperAdminDashboard() {
     orgs: 'Organizations',
     users: 'All Users',
     tickets: 'Support Tickets',
+    audit: 'Audit Log',
   };
 
   return (
@@ -1117,6 +1456,10 @@ export default function SuperAdminDashboard() {
             <button className={`sa-nav-item ${tab === 'tickets' ? 'active' : ''}`} onClick={() => setTab('tickets')}>
               <span className="sa-nav-item-icon"><Ticket size={15} /></span>
               Support Tickets
+            </button>
+            <button className={`sa-nav-item ${tab === 'audit' ? 'active' : ''}`} onClick={() => setTab('audit')}>
+              <span className="sa-nav-item-icon"><Activity size={15} /></span>
+              Audit Log
             </button>
           </div>
 
@@ -1167,35 +1510,55 @@ export default function SuperAdminDashboard() {
                 ? `${stats.active} active · ${stats.trial} trial · ${stats.suspended} suspended`
                 : tab === 'users'
                   ? `${allUsers.length} users across ${orgs.length} organizations`
-                  : 'Review and respond to tickets raised by CXO users'}
+                  : tab === 'tickets'
+                    ? 'Review and respond to tickets raised by CXO users'
+                    : 'Every action taken by every user across all organizations'}
             </p>
           </div>
 
-          <div className="sa-search-wrap" style={{ width: 220 }}>
-            <Search size={13} className="sa-search-icon" />
-            <input
-              className="sa-input sa-search"
-              placeholder={tab === 'orgs' ? 'Search orgs…' : tab === 'users' ? 'Search users…' : 'Search tickets…'}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{ fontSize: 13, padding: '7px 12px 7px 34px' }}
-            />
+          <div className="sa-mobile-tabs" role="tablist" aria-label="Super admin sections">
+            {[
+              { key: 'orgs', label: 'Orgs', icon: <Building2 size={14} /> },
+              { key: 'users', label: 'Users', icon: <Users size={14} /> },
+              { key: 'tickets', label: 'Tickets', icon: <Ticket size={14} /> },
+            ].map(item => (
+              <button
+                key={item.key}
+                type="button"
+                className={`sa-mobile-tab ${tab === item.key ? 'active' : ''}`}
+                onClick={() => setTab(item.key)}
+              >
+                {item.icon}
+                {item.label}
+              </button>
+            ))}
           </div>
 
-          {tab === 'orgs' && (
-            <button className="sa-btn-primary" onClick={() => setShowCreateOrg(true)}>
-              <Plus size={14} /> New Organization
+          <div className="sa-topbar-actions">
+            <div className="sa-search-wrap">
+              <Search size={13} className="sa-search-icon" />
+              <input
+                className="sa-input sa-search"
+                placeholder={tab === 'orgs' ? 'Search orgs…' : tab === 'users' ? 'Search users…' : 'Search tickets…'}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
+
+            {tab === 'orgs' && (
+              <button className="sa-btn-primary" onClick={() => setShowCreateOrg(true)}>
+                <Plus size={14} /> New Organization
+              </button>
+            )}
+            <button
+              className="sa-icon-btn"
+              onClick={tab === 'users' ? loadAllUsers : loadOrgs}
+              title="Refresh"
+              aria-label="Refresh"
+            >
+              <RefreshCw size={14} />
             </button>
-          )}
-          <button
-            onClick={loadOrgs}
-            style={{ background: 'transparent', border: '1.5px solid #E1E8F4', borderRadius: 9, padding: '7px 9px', cursor: 'pointer', color: '#94A3B8', display: 'flex', alignItems: 'center', transition: 'all 0.14s' }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#4361EE'; e.currentTarget.style.borderColor = 'rgba(67,97,238,0.3)'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.borderColor = '#E1E8F4'; }}
-            title="Refresh"
-          >
-            <RefreshCw size={14} />
-          </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -1286,70 +1649,100 @@ export default function SuperAdminDashboard() {
                   <p>Create organizations and add users to see them here.</p>
                 </div>
               ) : (
-                <table className="sa-table">
-                  <thead>
-                    <tr>
-                      <th>User</th>
-                      <th>Organization</th>
-                      <th>Role</th>
-                      <th>Status</th>
-                      <th>First Login</th>
-                      <th>Last Login</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredUsers.map(u => {
-                      const colors = orgColor(u.id);
-                      return (
-                        <tr key={u.id}>
-                          <td>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                              <div style={{
-                                width: 32, height: 32, borderRadius: 9, flexShrink: 0,
-                                background: `linear-gradient(135deg, ${colors[0]}, ${colors[1]})`,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: 11, fontWeight: 800, color: '#fff', fontFamily: 'Outfit',
-                                opacity: u.isActive ? 1 : 0.5,
-                              }}>
-                                {userInitials(u.displayName, u.email)}
-                              </div>
-                              <div>
-                                <div style={{ fontWeight: 700, fontSize: 13.5, color: u.isActive ? '#0F172A' : '#94A3B8' }}>
-                                  {u.displayName || '—'}
+                <div className="sa-table-scroll">
+                  <table className="sa-table">
+                    <thead>
+                      <tr>
+                        <th>User</th>
+                        <th>Organization</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>First Login</th>
+                        <th>Last Login</th>
+                        <th style={{ textAlign: 'right' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredUsers.map(u => {
+                        const colors = orgColor(u.id);
+                        return (
+                          <tr key={u.id}>
+                            <td>
+                              <div className="sa-user-cell">
+                                <div
+                                  className={`sa-user-list-avatar ${u.isActive ? '' : 'inactive'}`}
+                                  style={{ background: `linear-gradient(135deg, ${colors[0]}, ${colors[1]})` }}
+                                >
+                                  {userInitials(u.displayName, u.email)}
                                 </div>
-                                <div style={{ fontSize: 11.5, color: '#94A3B8' }}>{u.email}</div>
+                                <div className="sa-user-cell-text">
+                                  <div className={`sa-user-cell-name ${u.isActive ? '' : 'inactive'}`}>
+                                    {u.displayName || '—'}
+                                  </div>
+                                  <div className="sa-user-cell-email">{u.email}</div>
+                                </div>
                               </div>
-                            </div>
-                          </td>
-                          <td><span style={{ fontSize: 13, color: '#475569', fontWeight: 500 }}>{u.orgName}</span></td>
-                          <td><RoleBadge role={u.role} /></td>
-                          <td>
-                            <span style={{
-                              display: 'inline-flex', alignItems: 'center', gap: 5,
-                              fontSize: 12, fontWeight: 600,
-                              color: u.isActive ? '#059669' : '#E11D48',
-                            }}>
-                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', display: 'inline-block' }} />
-                              {u.isActive ? 'Active' : 'Inactive'}
-                            </span>
-                          </td>
-                          <td>
-                            {u.isFirstLogin
-                              ? <span style={{ fontSize: 11.5, fontWeight: 600, color: '#D97706', display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={11} />Pending</span>
-                              : <span style={{ color: '#059669', display: 'flex', alignItems: 'center', gap: 4 }}><CheckCircle size={13} /><span style={{ fontSize: 11.5, color: '#64748B' }}>Done</span></span>}
-                          </td>
-                          <td style={{ fontSize: 12, color: '#94A3B8' }}>{timeAgo(u.lastLoginAt)}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                            </td>
+                            <td><span className="sa-org-cell-name">{u.orgName}</span></td>
+                            <td><RoleBadge role={u.role} /></td>
+                            <td>
+                              <span className={`sa-inline-status ${u.isActive ? 'active' : 'inactive'}`}>
+                                <span className="sa-inline-status-dot" />
+                                {u.isActive ? 'Active' : 'Inactive'}
+                              </span>
+                            </td>
+                            <td>
+                              {u.isFirstLogin
+                                ? <span className="sa-login-state pending"><Clock size={11} />Pending</span>
+                                : <span className="sa-login-state done"><CheckCircle size={13} /><span>Done</span></span>}
+                            </td>
+                            <td className="sa-muted-cell">{timeAgo(u.lastLoginAt)}</td>
+                            <td>
+                              <div className="sa-row-actions">
+                                <button
+                                  className="sa-action-btn primary compact icon-only"
+                                  onClick={() => setEditingAllUser(u)}
+                                  disabled={allUsersBusyId === u.id}
+                                  title="Edit user"
+                                  aria-label="Edit user"
+                                >
+                                  <Pencil size={13} />
+                                </button>
+                                <button
+                                  className={`sa-action-btn compact icon-only ${u.isActive ? 'warning' : 'success'}`}
+                                  onClick={() => handleAllUserToggle(u)}
+                                  disabled={allUsersBusyId === u.id}
+                                  title={u.isActive ? 'Deactivate' : 'Activate'}
+                                  aria-label={u.isActive ? 'Deactivate user' : 'Activate user'}
+                                >
+                                  {u.isActive ? <Ban size={13} /> : <UserCheck size={13} />}
+                                </button>
+                                <button
+                                  className="sa-action-btn danger compact icon-only"
+                                  onClick={() => handleAllUserDelete(u)}
+                                  disabled={allUsersBusyId === u.id}
+                                  title="Remove from organization"
+                                  aria-label="Remove from organization"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           )}
 
           {/* ── Tickets tab ── */}
           {tab === 'tickets' && <TicketsTab search={search} />}
+
+          {/* ── Audit Log tab ── */}
+          {tab === 'audit' && <AuditLogTab orgs={orgs} />}
         </div>
       </div>
 
@@ -1383,6 +1776,14 @@ export default function SuperAdminDashboard() {
           onSaved={newLimit => {
             setOrgs(prev => prev.map(o => o.id === setLimitOrg.id ? { ...o, userLimit: newLimit } : o));
           }}
+        />
+      )}
+      {editingAllUser && (
+        <EditUserModal
+          orgId={editingAllUser.orgId}
+          user={editingAllUser}
+          onClose={() => setEditingAllUser(null)}
+          onSaved={handleAllUserSaved}
         />
       )}
     </div>

@@ -14,3 +14,17 @@ public class AuditLogDto
     public DateTime ChangedAt { get; set; }
     public string? IpAddress { get; set; }
 }
+
+public class SuperAdminAuditLogDto : AuditLogDto
+{
+    public string? OrgName { get; set; }
+    public int? OrgId { get; set; }
+}
+
+public class SuperAdminAuditLogPageDto
+{
+    public List<SuperAdminAuditLogDto> Items { get; set; } = new();
+    public int Total { get; set; }
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+}
