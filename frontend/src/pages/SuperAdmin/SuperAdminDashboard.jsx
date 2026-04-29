@@ -4,7 +4,7 @@ import { superAdminService } from '../../services/organizationService';
 import './SuperAdminDashboard.css';
 
 import {
-  Building2, Users, ShieldCheck, LogOut, Plus, RefreshCw,
+  Building2, Users, ShieldCheck, Power, Plus, RefreshCw,
   Search, X, ChevronRight, UserPlus, ToggleLeft, ToggleRight,
   Clock, Calendar, Hash, Mail, Eye, AlertCircle, CheckCircle,
   Pause, Play, Globe, Sliders, Ticket, MessageSquare, Send,
@@ -1484,18 +1484,7 @@ export default function SuperAdminDashboard() {
           </div>
         </nav>
 
-        <div className="sa-sidebar-footer">
-          <div className="sa-user-card">
-            <div className="sa-user-avatar">{initials}</div>
-            <div className="sa-user-info">
-              <div className="sa-user-name">{currentUser?.displayName || currentUser?.email}</div>
-              <div className="sa-user-role">Super Admin</div>
-            </div>
-            <button className="sa-logout-btn" onClick={logout} title="Sign out">
-              <LogOut size={15} />
-            </button>
-          </div>
-        </div>
+
       </aside>
 
       {/* ── Main ─────────────────────────────────── */}
@@ -1557,6 +1546,20 @@ export default function SuperAdminDashboard() {
               aria-label="Refresh"
             >
               <RefreshCw size={14} />
+            </button>
+
+            <div className="sa-topbar-divider" />
+
+            <div className="sa-topbar-profile">
+              <div className="sa-topbar-avatar">{initials}</div>
+              <div className="sa-topbar-user-info">
+                <div className="sa-topbar-user-name">{currentUser?.displayName || currentUser?.email}</div>
+                <div className="sa-topbar-user-role">Super Admin</div>
+              </div>
+            </div>
+
+            <button className="sa-topbar-power-btn" onClick={logout} title="Sign out">
+              <Power size={16} />
             </button>
           </div>
         </div>
