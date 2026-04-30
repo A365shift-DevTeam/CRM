@@ -78,7 +78,18 @@
       "Bash(rm E:/Arul/CRM/CRM/backend/A365ShiftTracker.Domain/Entities/UserRole.cs)",
       "Bash(rm E:/Arul/CRM/CRM/backend/A365ShiftTracker.Domain/Entities/RolePermission.cs)",
       "Bash(node --input-type=module --eval ' *)",
-      "PowerShell(psql *)"
+      "PowerShell(psql *)",
+      "Bash(grep -v \"//.*organizationService\")",
+      "Bash(grep -rn \"``\" \"D:/client/CRM_A365shift_tracker/backend/A365ShiftTracker.Application/Services/\")",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_fill_form",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_evaluate",
+      "mcp__playwright__browser_console_messages",
+      "mcp__playwright__browser_type",
+      "Bash(grep -v \"^--$\")"
     ]
   }
 }

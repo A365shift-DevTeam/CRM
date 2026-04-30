@@ -623,7 +623,7 @@ function TicketDetailModal({ ticket, onClose, onUpdated }) {
   async function saveStatus() {
     setSaving(true);
     try {
-      await superAdminService.updateSupportTicket(ticket.id, { status });
+      await superAdminService.updateSupportTicket(ticket.id, status);
       onUpdated({ ...ticket, status });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -1153,14 +1153,22 @@ function AuditLogTab({ orgs }) {
                   <th>Action</th>
                   <th>Entity</th>
                   <th>Field</th>
-                  <th>Change</th>
+                  <th>Description</th>
                   <th>IP</th>
                 </tr>
               </thead>
               <tbody>
                 {logs.map(log => {
                   const as = ACTION_STYLE[log.action] || ACTION_STYLE.Updated;
-                  const hasChange = log.oldValue || log.newValue;
+                  // Build a description for old rows that don't have one yet
+                  const description = log.description || (() => {
+                    if (log.fieldName === '_record') return `${log.entityName} was ${log.action.toLowerCase()}`;
+                    const label = log.fieldName || 'Field';
+                    if (log.oldValue && log.newValue) return `${label} was changed`;
+                    if (log.newValue) return `${label} was set`;
+                    if (log.oldValue) return `${label} was cleared`;
+                    return `${label} was updated`;
+                  })();
                   return (
                     <tr key={log.id}>
                       {/* Timestamp */}
@@ -1225,27 +1233,9 @@ function AuditLogTab({ orgs }) {
                         ) : log.fieldName}
                       </td>
 
-                      {/* Change old → new */}
-                      <td style={{ maxWidth: 220 }}>
-                        {hasChange ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, flexWrap: 'wrap' }}>
-                            {log.oldValue && (
-                              <span style={{ background: 'rgba(244,63,94,0.07)', border: '1px solid rgba(244,63,94,0.18)', borderRadius: 5, padding: '1px 6px', color: '#E11D48', fontFamily: 'monospace', fontSize: 11, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={log.oldValue}>
-                                {log.oldValue}
-                              </span>
-                            )}
-                            {log.oldValue && log.newValue && (
-                              <span style={{ color: '#94A3B8', fontSize: 11 }}>→</span>
-                            )}
-                            {log.newValue && (
-                              <span style={{ background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.18)', borderRadius: 5, padding: '1px 6px', color: '#059669', fontFamily: 'monospace', fontSize: 11, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={log.newValue}>
-                                {log.newValue}
-                              </span>
-                            )}
-                          </div>
-                        ) : (
-                          <span style={{ color: '#CBD5E1', fontSize: 12 }}>—</span>
-                        )}
+                      {/* Description */}
+                      <td style={{ maxWidth: 260, fontSize: 12.5, color: '#334155' }}>
+                        {description}
                       </td>
 
                       {/* IP */}

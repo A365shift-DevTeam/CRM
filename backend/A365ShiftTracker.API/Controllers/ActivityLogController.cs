@@ -1,4 +1,4 @@
-using A365ShiftTracker.Application.Common;
+﻿using A365ShiftTracker.Application.Common;
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
 using A365ShiftTracker.Domain.Common;
@@ -20,24 +20,37 @@ public class ActivityLogController : BaseApiController
     public async Task<ActionResult<ApiResponse<PagedResult<ActivityLogDto>>>> GetAll(
         [FromQuery] int page = 1, [FromQuery] int pageSize = 25)
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.GetAllAsync(userId, page, pageSize);
-        return Ok(ApiResponse<PagedResult<ActivityLogDto>>.Ok(result));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var result = await _service.GetAllAsync(userId, page, pageSize);
+            return Ok(ApiResponse<PagedResult<ActivityLogDto>>.Ok(result));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpGet("recent")]
     public async Task<ActionResult<ApiResponse<IEnumerable<ActivityLogDto>>>> GetRecent([FromQuery] int count = 20)
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.GetRecentAsync(userId, count);
-        return Ok(ApiResponse<IEnumerable<ActivityLogDto>>.Ok(result));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var result = await _service.GetRecentAsync(userId, count);
+            return Ok(ApiResponse<IEnumerable<ActivityLogDto>>.Ok(result));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpGet("entity/{entityType}/{entityId}")]
     public async Task<ActionResult<ApiResponse<IEnumerable<ActivityLogDto>>>> GetByEntity(string entityType, int entityId)
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.GetByEntityAsync(entityType, entityId, userId);
-        return Ok(ApiResponse<IEnumerable<ActivityLogDto>>.Ok(result));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var result = await _service.GetByEntityAsync(entityType, entityId, userId);
+            return Ok(ApiResponse<IEnumerable<ActivityLogDto>>.Ok(result));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 }
+

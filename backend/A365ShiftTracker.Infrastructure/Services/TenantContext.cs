@@ -9,7 +9,7 @@ public class TenantContext : ITenantContext
 {
     public int UserId { get; }
     public int? OrgId { get; }
-    public string Role { get; }
+    public string Role { get; } = string.Empty;
     public bool IsSuperAdmin => Role == "SUPER_ADMIN";
 
     public TenantContext(IHttpContextAccessor httpContextAccessor)

@@ -1,4 +1,4 @@
-using A365ShiftTracker.Application.Common;
+﻿using A365ShiftTracker.Application.Common;
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
 using A365ShiftTracker.Domain.Common;
@@ -20,48 +20,75 @@ public class NotificationsController : BaseApiController
     public async Task<ActionResult<ApiResponse<PagedResult<NotificationDto>>>> GetAll(
         [FromQuery] int page = 1, [FromQuery] int pageSize = 25)
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.GetAllAsync(userId, page, pageSize);
-        return Ok(ApiResponse<PagedResult<NotificationDto>>.Ok(result));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var result = await _service.GetAllAsync(userId, page, pageSize);
+            return Ok(ApiResponse<PagedResult<NotificationDto>>.Ok(result));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpGet("unread-count")]
     public async Task<ActionResult<ApiResponse<int>>> GetUnreadCount()
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.GetUnreadCountAsync(userId);
-        return Ok(ApiResponse<int>.Ok(result));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var result = await _service.GetUnreadCountAsync(userId);
+            return Ok(ApiResponse<int>.Ok(result));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPut("{id}/read")]
     public async Task<ActionResult<ApiResponse<bool>>> MarkAsRead(int id)
     {
-        var userId = GetCurrentUserId();
-        await _service.MarkAsReadAsync(id, userId);
-        return Ok(ApiResponse<bool>.Ok(true, "Marked as read."));
+        try
+        {
+            var userId = GetCurrentUserId();
+            await _service.MarkAsReadAsync(id, userId);
+            return Ok(ApiResponse<bool>.Ok(true, "Marked as read."));
+        }
+        catch (KeyNotFoundException ex) { return NotFoundResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPut("read-all")]
     public async Task<ActionResult<ApiResponse<bool>>> MarkAllAsRead()
     {
-        var userId = GetCurrentUserId();
-        await _service.MarkAllAsReadAsync(userId);
-        return Ok(ApiResponse<bool>.Ok(true, "All marked as read."));
+        try
+        {
+            var userId = GetCurrentUserId();
+            await _service.MarkAllAsReadAsync(userId);
+            return Ok(ApiResponse<bool>.Ok(true, "All marked as read."));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpDelete("{id}")]
     public async Task<ActionResult<ApiResponse<bool>>> Delete(int id)
     {
-        var userId = GetCurrentUserId();
-        await _service.DeleteAsync(id, userId);
-        return Ok(ApiResponse<bool>.Ok(true, "Notification deleted."));
+        try
+        {
+            var userId = GetCurrentUserId();
+            await _service.DeleteAsync(id, userId);
+            return Ok(ApiResponse<bool>.Ok(true, "Notification deleted."));
+        }
+        catch (KeyNotFoundException ex) { return NotFoundResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpGet("alerts")]
     public async Task<ActionResult<ApiResponse<IEnumerable<AlertDto>>>> GetAlerts()
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.GenerateAlertsAsync(userId);
-        return Ok(ApiResponse<IEnumerable<AlertDto>>.Ok(result));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var result = await _service.GenerateAlertsAsync(userId);
+            return Ok(ApiResponse<IEnumerable<AlertDto>>.Ok(result));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 }
+

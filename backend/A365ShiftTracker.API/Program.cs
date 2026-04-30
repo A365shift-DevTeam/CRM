@@ -1,4 +1,5 @@
 using System.Text;
+using A365ShiftTracker.API.Logging;
 using A365ShiftTracker.API.Middleware;
 using A365ShiftTracker.Infrastructure;
 using A365ShiftTracker.Infrastructure.Data;
@@ -12,6 +13,11 @@ using System.IO.Compression;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ─── File Error Logger (writes to wwwroot/logs/) ──────────
+builder.Logging.AddProvider(new FileLoggerProvider(
+    Path.Combine(builder.Environment.WebRootPath
+        ?? Path.Combine(builder.Environment.ContentRootPath, "wwwroot"), "logs")));
 
 // ─── Startup secret validation ─────────────────────────────
 var jwtKey = builder.Configuration["Jwt:Key"];
@@ -196,6 +202,67 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.ExecuteSqlRawAsync(
         "ALTER TABLE organizations ADD COLUMN IF NOT EXISTS user_limit integer NULL;");
+    // Add description column to audit_logs (idempotent — skipped if already exists)
+    await db.Database.ExecuteSqlRawAsync(
+        "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS description text;");
+    // Drop stale single-column unique constraints that block multi-org seeding.
+    // The migration renamed these to composite (org_id, col_id) indexes, but the
+    // original PostgreSQL-generated constraint names were different and survived.
+    await db.Database.ExecuteSqlRawAsync(
+        "ALTER TABLE contact_columns DROP CONSTRAINT IF EXISTS contact_columns_col_id_key;");
+    await db.Database.ExecuteSqlRawAsync(
+        "ALTER TABLE task_columns DROP CONSTRAINT IF EXISTS task_columns_col_id_key;");
+    await db.Database.ExecuteSqlRawAsync(
+        "ALTER TABLE timesheet_columns DROP CONSTRAINT IF EXISTS timesheet_columns_col_id_key;");
+
+    // Fix: Currency, ClientName, ClientGstin columns in project_finances are encrypted
+    // (AES-256 base64 ~88 chars) — widen any varchar(n) that is too short.
+    await db.Database.ExecuteSqlRawAsync(
+        "ALTER TABLE project_finances ALTER COLUMN currency TYPE text;");
+    await db.Database.ExecuteSqlRawAsync(
+        "ALTER TABLE project_finances ALTER COLUMN client_name TYPE text;");
+    await db.Database.ExecuteSqlRawAsync(
+        "ALTER TABLE project_finances ALTER COLUMN client_gstin TYPE text;");
+    await db.Database.ExecuteSqlRawAsync(
+        "ALTER TABLE project_finances ALTER COLUMN deal_value TYPE text;");
+
+    // Fix: same encrypted column widening for invoices table
+    await db.Database.ExecuteSqlRawAsync(
+        "ALTER TABLE invoices ALTER COLUMN client_name TYPE text;");
+    await db.Database.ExecuteSqlRawAsync(
+        "ALTER TABLE invoices ALTER COLUMN client_gstin TYPE text;");
+    await db.Database.ExecuteSqlRawAsync(
+        "ALTER TABLE invoices ALTER COLUMN currency TYPE text;");
+    await db.Database.ExecuteSqlRawAsync(
+        "ALTER TABLE invoices ALTER COLUMN sub_total TYPE text;");
+    await db.Database.ExecuteSqlRawAsync(
+        "ALTER TABLE invoices ALTER COLUMN tax_amount TYPE text;");
+    await db.Database.ExecuteSqlRawAsync(
+        "ALTER TABLE invoices ALTER COLUMN total_amount TYPE text;");
+
+    // Fix: delete stale OrgId=0 timesheet/task columns so per-org seeding can proceed
+    // without violating the (org_id, col_id) unique index.
+    await db.Database.ExecuteSqlRawAsync(
+        "DELETE FROM timesheet_columns WHERE org_id = 0;");
+    await db.Database.ExecuteSqlRawAsync(
+        "DELETE FROM task_columns WHERE org_id = 0;");
+
+    // Fix: backfill org_id on incomes and expenses that were created without it.
+    // Joins through users to find the correct org for each entry.
+    await db.Database.ExecuteSqlRawAsync(@"
+        UPDATE incomes
+        SET org_id = u.org_id
+        FROM users u
+        WHERE incomes.user_id = u.id
+          AND incomes.org_id = 0
+          AND u.org_id IS NOT NULL;");
+    await db.Database.ExecuteSqlRawAsync(@"
+        UPDATE expenses
+        SET org_id = u.org_id
+        FROM users u
+        WHERE expenses.user_id = u.id
+          AND expenses.org_id = 0
+          AND u.org_id IS NOT NULL;");
 }
 
 // ─── Middleware Pipeline ───────────────────────────────────

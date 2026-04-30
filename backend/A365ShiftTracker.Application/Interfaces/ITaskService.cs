@@ -10,10 +10,10 @@ public interface ITaskService
     Task<TaskDto> UpdateAsync(int id, UpdateTaskRequest request, int userId);
     Task DeleteAsync(int id, int userId);
 
-    // Columns (shared across users)
-    Task<List<TaskColumnDto>> GetColumnsAsync();
-    Task<TaskColumnDto> AddColumnAsync(CreateTaskColumnRequest request);
-    Task<TaskColumnDto> UpdateColumnAsync(string colId, UpdateTaskColumnRequest request);
-    Task DeleteColumnAsync(string colId);
-    Task ReorderColumnsAsync(ReorderTaskColumnsRequest request);
+    // Columns (per-org, shared across users within the org)
+    Task<List<TaskColumnDto>> GetColumnsAsync(int orgId);
+    Task<TaskColumnDto> AddColumnAsync(CreateTaskColumnRequest request, int orgId);
+    Task<TaskColumnDto> UpdateColumnAsync(string colId, UpdateTaskColumnRequest request, int orgId);
+    Task DeleteColumnAsync(string colId, int orgId);
+    Task ReorderColumnsAsync(ReorderTaskColumnsRequest request, int orgId);
 }

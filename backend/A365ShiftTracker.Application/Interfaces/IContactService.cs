@@ -11,13 +11,13 @@ public interface IContactService
     Task DeleteAsync(int id, int userId, int orgId);
     Task<IEnumerable<ContactDto>> GetVendorsAsync(int orgId);
 
-    // Columns (shared across users)
-    Task<IEnumerable<ContactColumnDto>> GetColumnsAsync();
-    Task<IEnumerable<ContactColumnDto>> SaveColumnsAsync(List<ContactColumnDto> columns);
-    Task<ContactColumnDto> AddColumnAsync(CreateContactColumnRequest request);
-    Task<ContactColumnDto> UpdateColumnAsync(string colId, UpdateContactColumnRequest request);
-    Task DeleteColumnAsync(string colId);
-    Task ReorderColumnsAsync(List<string> orderedColIds);
+    // Columns (per-org)
+    Task<IEnumerable<ContactColumnDto>> GetColumnsAsync(int orgId);
+    Task<IEnumerable<ContactColumnDto>> SaveColumnsAsync(int orgId, List<ContactColumnDto> columns);
+    Task<ContactColumnDto> AddColumnAsync(int orgId, CreateContactColumnRequest request);
+    Task<ContactColumnDto> UpdateColumnAsync(int orgId, string colId, UpdateContactColumnRequest request);
+    Task DeleteColumnAsync(int orgId, string colId);
+    Task ReorderColumnsAsync(int orgId, List<string> orderedColIds);
 
     // Vendor responses & emails
     Task<IEnumerable<VendorResponseDto>> GetVendorResponsesAsync(int vendorId);

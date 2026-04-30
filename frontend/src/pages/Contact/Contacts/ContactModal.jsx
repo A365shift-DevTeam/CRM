@@ -241,7 +241,7 @@ export const ContactModal = ({ show, onHide, contact, columns = [], onSave, onDe
   }
 
   const displayColumns = useMemo(() => {
-    return columns.filter(col => col && col.id && col.id !== 'type')
+    return columns.filter(col => col && col.id && col.id !== 'type' && (col.visible || col.required))
   }, [columns])
 
   const categorizeFields = (cols) => {
@@ -307,6 +307,7 @@ export const ContactModal = ({ show, onHide, contact, columns = [], onSave, onDe
       {renderCategorySection('Basic Information', fieldCategories.basic)}
       {renderCategorySection('Company & Location', fieldCategories.company)}
       {renderCategorySection('Classification', fieldCategories.classification)}
+      {renderCategorySection('Additional Details', fieldCategories.additional)}
       {contact?.id && (
         <div style={{ marginTop: 16, borderTop: '1px solid #E1E8F4', paddingTop: 12 }}>
           <div className="standard-modal-section-title">Change History</div>

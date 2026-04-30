@@ -9,6 +9,7 @@ public class AuditLogDto
     public string? OldValue { get; set; }
     public string? NewValue { get; set; }
     public string Action { get; set; } = string.Empty;
+    public string? Description { get; set; }
     public int ChangedByUserId { get; set; }
     public string ChangedByName { get; set; } = string.Empty;
     public DateTime ChangedAt { get; set; }

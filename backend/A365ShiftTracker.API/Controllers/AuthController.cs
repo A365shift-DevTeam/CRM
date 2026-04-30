@@ -1,4 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using A365ShiftTracker.Application.Common;
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
@@ -25,39 +25,61 @@ public class AuthController : BaseApiController
     [HttpPost("login")]
     public async Task<ActionResult<ApiResponse<LoginResponse>>> Login(LoginRequest request)
     {
-        var result = await _authService.LoginAsync(request);
-
-        if (result.Requires2FA)
-            return Ok(ApiResponse<LoginResponse>.Ok(result, "2FA required."));
-
-        SetAuthCookie(result.Token);
-        result.Token = string.Empty;
-        return Ok(ApiResponse<LoginResponse>.Ok(result, "Login successful."));
+        try
+        {
+            var result = await _authService.LoginAsync(request);
+            if (result.Requires2FA)
+                return Ok(ApiResponse<LoginResponse>.Ok(result, "2FA required."));
+            SetAuthCookie(result.Token);
+            result.Token = string.Empty;
+            return Ok(ApiResponse<LoginResponse>.Ok(result, "Login successful."));
+        }
+        catch (UnauthorizedAccessException ex) { return UnauthorizedResult(ex.Message); }
+        catch (InvalidOperationException ex) { return BadRequestResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost("send-otp")]
     public async Task<ActionResult<ApiResponse<bool>>> SendOtp([FromBody] SendOtpRequest request)
     {
-        await _authService.SendOtpAsync(request.PartialToken);
-        return Ok(ApiResponse<bool>.Ok(true, "OTP sent to your email."));
+        try
+        {
+            await _authService.SendOtpAsync(request.PartialToken);
+            return Ok(ApiResponse<bool>.Ok(true, "OTP sent to your email."));
+        }
+        catch (UnauthorizedAccessException ex) { return UnauthorizedResult(ex.Message); }
+        catch (KeyNotFoundException ex) { return NotFoundResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost("verify-otp")]
     public async Task<ActionResult<ApiResponse<LoginResponse>>> VerifyOtp(VerifyOtpRequest request)
     {
-        var result = await _authService.VerifyOtpAsync(request);
-        SetAuthCookie(result.Token);
-        result.Token = string.Empty;
-        return Ok(ApiResponse<LoginResponse>.Ok(result, "Login successful."));
+        try
+        {
+            var result = await _authService.VerifyOtpAsync(request);
+            SetAuthCookie(result.Token);
+            result.Token = string.Empty;
+            return Ok(ApiResponse<LoginResponse>.Ok(result, "Login successful."));
+        }
+        catch (UnauthorizedAccessException ex) { return UnauthorizedResult(ex.Message); }
+        catch (InvalidOperationException ex) { return BadRequestResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost("verify-totp")]
     public async Task<ActionResult<ApiResponse<LoginResponse>>> VerifyTotp(VerifyTotpRequest request)
     {
-        var result = await _authService.VerifyTotpAsync(request);
-        SetAuthCookie(result.Token);
-        result.Token = string.Empty;
-        return Ok(ApiResponse<LoginResponse>.Ok(result, "Login successful."));
+        try
+        {
+            var result = await _authService.VerifyTotpAsync(request);
+            SetAuthCookie(result.Token);
+            result.Token = string.Empty;
+            return Ok(ApiResponse<LoginResponse>.Ok(result, "Login successful."));
+        }
+        catch (UnauthorizedAccessException ex) { return UnauthorizedResult(ex.Message); }
+        catch (InvalidOperationException ex) { return BadRequestResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost("reset-first-password")]
@@ -65,8 +87,14 @@ public class AuthController : BaseApiController
     [DisableRateLimiting]
     public async Task<ActionResult<ApiResponse<bool>>> ResetFirstPassword(ResetFirstPasswordRequest request)
     {
-        await _authService.ResetFirstPasswordAsync(GetCurrentUserId(), request.NewPassword);
-        return Ok(ApiResponse<bool>.Ok(true, "Password updated. Please log in again."));
+        try
+        {
+            await _authService.ResetFirstPasswordAsync(GetCurrentUserId(), request.NewPassword);
+            return Ok(ApiResponse<bool>.Ok(true, "Password updated. Please log in again."));
+        }
+        catch (KeyNotFoundException ex) { return NotFoundResult(ex.Message); }
+        catch (InvalidOperationException ex) { return BadRequestResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpGet("totp/setup")]
@@ -74,8 +102,14 @@ public class AuthController : BaseApiController
     [DisableRateLimiting]
     public async Task<ActionResult<ApiResponse<TotpSetupResponse>>> TotpSetup()
     {
-        var result = await _authService.GetTotpSetupAsync(GetCurrentUserId());
-        return Ok(ApiResponse<TotpSetupResponse>.Ok(result));
+        try
+        {
+            var result = await _authService.GetTotpSetupAsync(GetCurrentUserId());
+            return Ok(ApiResponse<TotpSetupResponse>.Ok(result));
+        }
+        catch (KeyNotFoundException ex) { return NotFoundResult(ex.Message); }
+        catch (InvalidOperationException ex) { return BadRequestResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost("totp/verify-setup")]
@@ -83,8 +117,15 @@ public class AuthController : BaseApiController
     [DisableRateLimiting]
     public async Task<ActionResult<ApiResponse<bool>>> TotpVerifySetup(VerifyTotpSetupRequest request)
     {
-        await _authService.VerifyAndEnableTotpAsync(GetCurrentUserId(), request);
-        return Ok(ApiResponse<bool>.Ok(true, "Authenticator app enabled."));
+        try
+        {
+            await _authService.VerifyAndEnableTotpAsync(GetCurrentUserId(), request);
+            return Ok(ApiResponse<bool>.Ok(true, "Authenticator app enabled."));
+        }
+        catch (KeyNotFoundException ex) { return NotFoundResult(ex.Message); }
+        catch (UnauthorizedAccessException ex) { return UnauthorizedResult(ex.Message); }
+        catch (InvalidOperationException ex) { return BadRequestResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost("totp/disable")]
@@ -92,8 +133,13 @@ public class AuthController : BaseApiController
     [DisableRateLimiting]
     public async Task<ActionResult<ApiResponse<bool>>> TotpDisable()
     {
-        await _authService.DisableTotpAsync(GetCurrentUserId());
-        return Ok(ApiResponse<bool>.Ok(true, "Authenticator app disabled."));
+        try
+        {
+            await _authService.DisableTotpAsync(GetCurrentUserId());
+            return Ok(ApiResponse<bool>.Ok(true, "Authenticator app disabled."));
+        }
+        catch (KeyNotFoundException ex) { return NotFoundResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost("email-otp/send-enable")]
@@ -101,8 +147,14 @@ public class AuthController : BaseApiController
     [DisableRateLimiting]
     public async Task<ActionResult<ApiResponse<bool>>> EmailOtpSendEnable()
     {
-        await _authService.SendEmailOtpEnableAsync(GetCurrentUserId());
-        return Ok(ApiResponse<bool>.Ok(true, "Verification code sent to your email."));
+        try
+        {
+            await _authService.SendEmailOtpEnableAsync(GetCurrentUserId());
+            return Ok(ApiResponse<bool>.Ok(true, "Verification code sent to your email."));
+        }
+        catch (KeyNotFoundException ex) { return NotFoundResult(ex.Message); }
+        catch (InvalidOperationException ex) { return BadRequestResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost("email-otp/verify-enable")]
@@ -110,8 +162,15 @@ public class AuthController : BaseApiController
     [DisableRateLimiting]
     public async Task<ActionResult<ApiResponse<bool>>> EmailOtpVerifyEnable(VerifyEmailOtpEnableRequest request)
     {
-        await _authService.VerifyAndEnableEmailOtpAsync(GetCurrentUserId(), request.Code);
-        return Ok(ApiResponse<bool>.Ok(true, "Email OTP enabled successfully."));
+        try
+        {
+            await _authService.VerifyAndEnableEmailOtpAsync(GetCurrentUserId(), request.Code);
+            return Ok(ApiResponse<bool>.Ok(true, "Email OTP enabled successfully."));
+        }
+        catch (KeyNotFoundException ex) { return NotFoundResult(ex.Message); }
+        catch (UnauthorizedAccessException ex) { return UnauthorizedResult(ex.Message); }
+        catch (InvalidOperationException ex) { return BadRequestResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost("email-otp/disable")]
@@ -119,8 +178,14 @@ public class AuthController : BaseApiController
     [DisableRateLimiting]
     public async Task<ActionResult<ApiResponse<bool>>> EmailOtpDisable()
     {
-        await _authService.DisableEmailOtpAsync(GetCurrentUserId());
-        return Ok(ApiResponse<bool>.Ok(true, "Email OTP disabled."));
+        try
+        {
+            await _authService.DisableEmailOtpAsync(GetCurrentUserId());
+            return Ok(ApiResponse<bool>.Ok(true, "Email OTP disabled."));
+        }
+        catch (KeyNotFoundException ex) { return NotFoundResult(ex.Message); }
+        catch (InvalidOperationException ex) { return BadRequestResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost("logout")]
@@ -136,15 +201,24 @@ public class AuthController : BaseApiController
     [HttpPost("forgot-password")]
     public async Task<ActionResult<ApiResponse<bool>>> ForgotPassword(ForgotPasswordRequest request)
     {
-        await _authService.RequestPasswordResetAsync(request.Email);
-        return Ok(ApiResponse<bool>.Ok(true, "If an account with that email exists, a reset link has been sent."));
+        try
+        {
+            await _authService.RequestPasswordResetAsync(request.Email);
+            return Ok(ApiResponse<bool>.Ok(true, "If an account with that email exists, a reset link has been sent."));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost("reset-password")]
     public async Task<ActionResult<ApiResponse<bool>>> ResetPassword(ResetPasswordRequest request)
     {
-        await _authService.ResetPasswordAsync(request.Token, request.NewPassword);
-        return Ok(ApiResponse<bool>.Ok(true, "Password reset successful."));
+        try
+        {
+            await _authService.ResetPasswordAsync(request.Token, request.NewPassword);
+            return Ok(ApiResponse<bool>.Ok(true, "Password reset successful."));
+        }
+        catch (InvalidOperationException ex) { return BadRequestResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     private void SetAuthCookie(string token)
@@ -160,3 +234,4 @@ public class AuthController : BaseApiController
         });
     }
 }
+

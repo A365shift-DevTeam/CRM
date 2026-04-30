@@ -1,50 +1,79 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
 using A365ShiftTracker.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.Extensions.Logging;
 namespace A365ShiftTracker.Application.Services;
 
 public class OrganizationService : IOrganizationService
 {
     private readonly IUnitOfWork _uow;
+    private readonly ILogger<OrganizationService> _logger;
 
-    public OrganizationService(IUnitOfWork uow) => _uow = uow;
+    public OrganizationService(IUnitOfWork uow, ILogger<OrganizationService> logger)
+    {
+        _uow = uow;
+        _logger = logger;
+    }
 
     public async Task<OrganizationDto?> GetCurrentOrgAsync(int orgId)
     {
-        var org = await _uow.Organizations.Query()
-            .Include(o => o.Members)
-            .FirstOrDefaultAsync(o => o.Id == orgId);
-        return org is null ? null : MapToDto(org, org.Members.Count);
+        try
+        {
+            var org = await _uow.Organizations.Query()
+                .Include(o => o.Members)
+                .FirstOrDefaultAsync(o => o.Id == orgId);
+            return org is null ? null : MapToDto(org, org.Members.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in {Method}", nameof(GetCurrentOrgAsync));
+            throw;
+        }
     }
 
     public async Task<OrgSalesSettingsDto> GetSalesSettingsAsync(int orgId)
     {
-        var settings = (await _uow.OrgSalesSettings.FindAsync(s => s.OrgId == orgId)).FirstOrDefault();
-        return settings is not null ? MapSettingsToDto(settings) : DefaultSettings(orgId);
+        try
+        {
+            var settings = (await _uow.OrgSalesSettings.FindAsync(s => s.OrgId == orgId)).FirstOrDefault();
+            return settings is not null ? MapSettingsToDto(settings) : DefaultSettings(orgId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in {Method}", nameof(GetSalesSettingsAsync));
+            throw;
+        }
     }
 
     public async Task<OrgSalesSettingsDto> UpsertSalesSettingsAsync(int orgId, UpsertOrgSalesSettingsRequest request)
     {
-        var settings = (await _uow.OrgSalesSettings.FindAsync(s => s.OrgId == orgId)).FirstOrDefault();
-
-        if (settings is null)
+        try
         {
-            settings = new OrgSalesSettings { OrgId = orgId };
-            ApplyRequest(settings, request);
-            await _uow.OrgSalesSettings.AddAsync(settings);
+            var settings = (await _uow.OrgSalesSettings.FindAsync(s => s.OrgId == orgId)).FirstOrDefault();
+    
+            if (settings is null)
+            {
+                settings = new OrgSalesSettings { OrgId = orgId };
+                ApplyRequest(settings, request);
+                await _uow.OrgSalesSettings.AddAsync(settings);
+            }
+            else
+            {
+                ApplyRequest(settings, request);
+                settings.UpdatedAt = DateTime.UtcNow;
+                await _uow.OrgSalesSettings.UpdateAsync(settings);
+            }
+    
+            await _uow.SaveChangesAsync();
+            return MapSettingsToDto(settings);
         }
-        else
+        catch (Exception ex)
         {
-            ApplyRequest(settings, request);
-            settings.UpdatedAt = DateTime.UtcNow;
-            await _uow.OrgSalesSettings.UpdateAsync(settings);
+            _logger.LogError(ex, "Error in {Method}", nameof(UpsertSalesSettingsAsync));
+            throw;
         }
-
-        await _uow.SaveChangesAsync();
-        return MapSettingsToDto(settings);
     }
 
     private static void ApplyRequest(OrgSalesSettings s, UpsertOrgSalesSettingsRequest r)
@@ -85,3 +114,4 @@ public class OrganizationService : IOrganizationService
         UserCount = userCount, UserLimit = o.UserLimit
     };
 }
+

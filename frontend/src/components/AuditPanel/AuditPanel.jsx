@@ -21,6 +21,24 @@ function absoluteTime(dateStr) {
   return new Date(dateStr).toLocaleString();
 }
 
+// Fallback: format raw field name when description is absent (old rows)
+function formatFieldName(name) {
+  if (!name || name === '_record') return '';
+  return name.replace(/([a-z])([A-Z])/g, '$1 $2')
+             .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
+}
+
+function buildFallbackDescription(log) {
+  if (log.fieldName === '_record') {
+    return `${log.entityName} was ${log.action.toLowerCase()}`;
+  }
+  const label = formatFieldName(log.fieldName) || log.fieldName;
+  if (log.oldValue && log.newValue) return `${label} was changed`;
+  if (log.newValue) return `${label} was set`;
+  if (log.oldValue) return `${label} was cleared`;
+  return `${label} was updated`;
+}
+
 export default function AuditPanel({ entityName, entityId }) {
   const [logs, setLogs] = useState([]);
   const [total, setTotal] = useState(0);
@@ -52,32 +70,31 @@ export default function AuditPanel({ entityName, entityId }) {
         <div className="audit-empty">No changes recorded yet.</div>
       ) : (
         <div className="audit-timeline">
-          {logs.map(log => (
-            <div key={log.id} className="audit-entry">
-              <div className={`audit-icon-wrap ${log.action.toLowerCase()}`}>
-                {ACTION_ICONS[log.action] ?? <RefreshCw size={13} />}
-              </div>
-              <div className="audit-body">
-                <div className="audit-meta">
-                  <span className={`audit-action-badge ${log.action.toLowerCase()}`}>{log.action}</span>
-                  {log.fieldName !== '_record' && (
-                    <span className="audit-field-name">{log.fieldName}</span>
-                  )}
-                  <span className="audit-by">by {log.changedByName}</span>
+          {logs.map(log => {
+            const description = log.description || buildFallbackDescription(log);
+            const isRecord = log.fieldName === '_record';
+
+            return (
+              <div key={log.id} className="audit-entry">
+                <div className={`audit-icon-wrap ${log.action.toLowerCase()}`}>
+                  {ACTION_ICONS[log.action] ?? <RefreshCw size={13} />}
                 </div>
-                {log.fieldName !== '_record' && (log.oldValue || log.newValue) && (
-                  <div className="audit-change">
-                    {log.oldValue && <span className="audit-old" title={log.oldValue}>{log.oldValue}</span>}
-                    {log.oldValue && log.newValue && <span className="audit-arrow">→</span>}
-                    {log.newValue && <span className="audit-new" title={log.newValue}>{log.newValue}</span>}
+                <div className="audit-body">
+                  <div className="audit-meta">
+                    <span className={`audit-action-badge ${log.action.toLowerCase()}`}>{log.action}</span>
+                    <span className="audit-by">by {log.changedByName}</span>
                   </div>
-                )}
-                <div className="audit-timestamp" title={absoluteTime(log.changedAt)}>
-                  {relativeTime(log.changedAt)}
+
+                  {/* Description — human-readable summary only, no raw values */}
+                  <div className="audit-description">{description}</div>
+
+                  <div className="audit-timestamp" title={absoluteTime(log.changedAt)}>
+                    {relativeTime(log.changedAt)}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {logs.length < total && (
             <button className="audit-load-more" onClick={() => load(page + 1)} disabled={loading}>
               <ChevronDown size={13} style={{ marginRight: 4 }} />

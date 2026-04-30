@@ -524,10 +524,10 @@ function Sales() {
 
     const loadOrgSettings = async () => {
         try {
-            const org = await organizationService.getMine()
+            const org = await organizationService.getProfile()
             if (!org) return
             setOrgId(org.id)
-            const settings = await organizationService.getSalesSettings(org.id)
+            const settings = await organizationService.getSalesSettings()
             if (settings.productStages?.length) {
                 setProductStages(settings.productStages)
                 localStorage.setItem(STAGE_STORAGE_KEYS.Product, JSON.stringify(settings.productStages))
@@ -1054,7 +1054,7 @@ function Sales() {
                 productLabel:   nextProductLabel,
                 serviceLabel:   nextServiceLabel,
             }
-            organizationService.upsertSalesSettings(orgId, payload).catch(e =>
+            organizationService.upsertSalesSettings(payload).catch(e =>
                 console.warn('Failed to persist settings to backend', e)
             )
         }

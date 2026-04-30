@@ -24,7 +24,7 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         => await _dbSet.AsNoTracking().ToListAsync();
 
     public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
-        => await _dbSet.Where(predicate).ToListAsync();
+        => await _dbSet.AsNoTracking().Where(predicate).ToListAsync();
 
     public async Task<PagedResult<T>> GetPagedAsync(
         Expression<Func<T, bool>> predicate,
@@ -80,4 +80,77 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
             : await _dbSet.CountAsync(predicate);
 
     public IQueryable<T> Query() => _dbSet;
+
+    public async Task<bool> AnyAsync(Expression<Func<T, bool>> predicate)
+        => await _dbSet.AnyAsync(predicate);
+
+    public async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate, bool tracking = false)
+        => tracking
+            ? await _dbSet.FirstOrDefaultAsync(predicate)
+            : await _dbSet.AsNoTracking().FirstOrDefaultAsync(predicate);
+
+    public async Task<TResult?> GetProjectedAsync<TResult>(
+        Expression<Func<T, bool>> predicate,
+        Expression<Func<T, TResult>> selector)
+        => await _dbSet.AsNoTracking().Where(predicate).Select(selector).FirstOrDefaultAsync();
+
+    public async Task<List<TResult>> GetProjectedListAsync<TResult>(
+        Expression<Func<T, bool>> predicate,
+        Expression<Func<T, TResult>> selector,
+        Func<IQueryable<T>, IQueryable<T>>? orderBy = null)
+    {
+        var query = _dbSet.AsNoTracking().Where(predicate);
+        if (orderBy != null) query = orderBy(query);
+        return await query.Select(selector).ToListAsync();
+    }
+
+    public async Task<PagedResult<TResult>> GetPagedProjectedAsync<TResult>(
+        Expression<Func<T, bool>> predicate,
+        Expression<Func<T, TResult>> selector,
+        int page,
+        int pageSize,
+        Func<IQueryable<T>, IQueryable<T>>? orderBy = null)
+    {
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        page = Math.Max(1, page);
+
+        var query = _dbSet.AsNoTracking().Where(predicate);
+        if (orderBy != null) query = orderBy(query);
+
+        var total = await query.CountAsync();
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(selector)
+            .ToListAsync();
+
+        return new PagedResult<TResult>
+        {
+            Items = items,
+            TotalCount = total,
+            Page = page,
+            PageSize = pageSize
+        };
+    }
+
+    public async Task AddRangeAsync(IEnumerable<T> entities)
+        => await _dbSet.AddRangeAsync(entities);
+
+    public Task UpdateRangeAsync(IEnumerable<T> entities)
+    {
+        _dbSet.UpdateRange(entities);
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteRangeAsync(IEnumerable<T> entities)
+    {
+        foreach (var entity in entities)
+        {
+            if (entity is AuditableEntity auditable)
+                auditable.IsDeleted = true;
+            else
+                _dbSet.Remove(entity);
+        }
+        return Task.CompletedTask;
+    }
 }

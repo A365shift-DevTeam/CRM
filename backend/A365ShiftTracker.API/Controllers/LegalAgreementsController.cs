@@ -1,4 +1,4 @@
-using A365ShiftTracker.Application.DTOs;
+﻿using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
 using A365ShiftTracker.Application.Common;
 using Microsoft.AspNetCore.Authorization;
@@ -21,52 +21,77 @@ public class LegalAgreementsController : BaseApiController
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.GetAllAsync(userId);
-        return Ok(ApiResponse<List<LegalAgreementDto>>.Ok(result, "Legal agreements retrieved"));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var result = await _service.GetAllAsync(userId);
+            return Ok(ApiResponse<List<LegalAgreementDto>>.Ok(result, "Legal agreements retrieved"));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.GetByIdAsync(id, userId);
-        if (result == null) return NotFound(ApiResponse<object>.Fail("Not found"));
-        return Ok(ApiResponse<LegalAgreementDto>.Ok(result, "Legal agreement retrieved"));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var result = await _service.GetByIdAsync(id, userId);
+            if (result == null) return NotFound(ApiResponse<object>.Fail("Not found"));
+            return Ok(ApiResponse<LegalAgreementDto>.Ok(result, "Legal agreement retrieved"));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateLegalAgreementRequest req)
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.CreateAsync(req, userId);
-        return CreatedAtAction(nameof(GetById), new { id = result.Id },
-            ApiResponse<LegalAgreementDto>.Ok(result, "Legal agreement created"));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var result = await _service.CreateAsync(req, userId);
+            return CreatedAtAction(nameof(GetById), new { id = result.Id },
+                ApiResponse<LegalAgreementDto>.Ok(result, "Legal agreement created"));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateLegalAgreementRequest req)
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.UpdateAsync(id, req, userId);
-        if (result == null) return NotFound(ApiResponse<object>.Fail("Not found"));
-        return Ok(ApiResponse<LegalAgreementDto>.Ok(result, "Legal agreement updated"));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var result = await _service.UpdateAsync(id, req, userId);
+            if (result == null) return NotFound(ApiResponse<object>.Fail("Not found"));
+            return Ok(ApiResponse<LegalAgreementDto>.Ok(result, "Legal agreement updated"));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var userId = GetCurrentUserId();
-        var deleted = await _service.DeleteAsync(id, userId);
-        if (!deleted) return NotFound(ApiResponse<object>.Fail("Not found"));
-        return Ok(ApiResponse<bool>.Ok(true, "Legal agreement deleted"));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var deleted = await _service.DeleteAsync(id, userId);
+            if (!deleted) return NotFound(ApiResponse<object>.Fail("Not found"));
+            return Ok(ApiResponse<bool>.Ok(true, "Legal agreement deleted"));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpGet("expiring-soon")]
     public async Task<IActionResult> GetExpiringSoon()
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.GetExpiringSoonAsync(userId);
-        return Ok(ApiResponse<List<LegalAgreementDto>>.Ok(result, "Expiring agreements retrieved"));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var result = await _service.GetExpiringSoonAsync(userId);
+            return Ok(ApiResponse<List<LegalAgreementDto>>.Ok(result, "Expiring agreements retrieved"));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 }
+

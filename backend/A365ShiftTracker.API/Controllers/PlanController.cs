@@ -1,4 +1,4 @@
-using A365ShiftTracker.Application.Common;
+﻿using A365ShiftTracker.Application.Common;
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -19,8 +19,13 @@ public class PlanController : BaseApiController
     [HttpGet("usage")]
     public async Task<ActionResult<ApiResponse<PlanUsageDto>>> GetUsage()
     {
-        var userId = GetCurrentUserId();
-        var usage = await _storageLimitService.GetUsageAsync(userId);
-        return Ok(ApiResponse<PlanUsageDto>.Ok(usage));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var usage = await _storageLimitService.GetUsageAsync(userId);
+            return Ok(ApiResponse<PlanUsageDto>.Ok(usage));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 }
+

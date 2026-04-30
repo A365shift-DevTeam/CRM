@@ -11,10 +11,10 @@ public interface ITimesheetService
     Task<TimesheetEntryDto> UpdateEntryAsync(int id, UpdateTimesheetEntryRequest request, int userId);
     Task DeleteEntryAsync(int id, int userId);
 
-    // Columns (shared across users)
-    Task<IEnumerable<TimesheetColumnDto>> GetColumnsAsync();
-    Task<TimesheetColumnDto> AddColumnAsync(CreateTimesheetColumnRequest request);
-    Task<TimesheetColumnDto> UpdateColumnAsync(string colId, UpdateTimesheetColumnRequest request);
-    Task DeleteColumnAsync(string colId);
-    Task ReorderColumnsAsync(List<string> orderedColIds);
+    // Columns (per-org, shared across users within the org)
+    Task<IEnumerable<TimesheetColumnDto>> GetColumnsAsync(int orgId);
+    Task<TimesheetColumnDto> AddColumnAsync(CreateTimesheetColumnRequest request, int orgId);
+    Task<TimesheetColumnDto> UpdateColumnAsync(string colId, UpdateTimesheetColumnRequest request, int orgId);
+    Task DeleteColumnAsync(string colId, int orgId);
+    Task ReorderColumnsAsync(List<string> orderedColIds, int orgId);
 }

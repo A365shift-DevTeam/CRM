@@ -1,17 +1,19 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using A365ShiftTracker.Application.Common;
 using Microsoft.AspNetCore.Mvc;
 
 namespace A365ShiftTracker.API.Controllers;
 
-/// <summary>
-/// Base controller that provides helper to extract current user ID from JWT token.
-/// </summary>
 public abstract class BaseApiController : ControllerBase
 {
-    /// <summary>
-    /// Gets the authenticated user's ID from the JWT "sub" claim.
-    /// </summary>
+    private ILogger? _logger;
+
+    protected ILogger Logger =>
+        _logger ??= HttpContext.RequestServices
+            .GetRequiredService<ILoggerFactory>()
+            .CreateLogger(GetType().FullName!);
+
     protected int GetCurrentUserId()
     {
         var claim = User.FindFirst(JwtRegisteredClaimNames.Sub)
@@ -39,4 +41,24 @@ public abstract class BaseApiController : ControllerBase
 
     protected string GetCurrentRole()
         => User.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
+
+    // ── Common HTTP result helpers ────────────────────────────────
+
+    protected ActionResult InternalError(Exception ex, string? context = null)
+    {
+        Logger.LogError(ex, "Unhandled error{Context}", context is null ? "" : $" in {context}");
+        return StatusCode(500, ApiResponse<object>.Fail("An unexpected error occurred."));
+    }
+
+    protected ActionResult NotFoundResult(string message)
+        => NotFound(ApiResponse<object>.Fail(message));
+
+    protected ActionResult ForbiddenResult(string message)
+        => StatusCode(403, ApiResponse<object>.Fail(message));
+
+    protected ActionResult BadRequestResult(string message)
+        => BadRequest(ApiResponse<object>.Fail(message));
+
+    protected ActionResult UnauthorizedResult(string message)
+        => Unauthorized(ApiResponse<object>.Fail(message));
 }

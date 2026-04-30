@@ -1,172 +1,250 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
 using A365ShiftTracker.Domain.Common;
 using A365ShiftTracker.Domain.Entities;
-
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 namespace A365ShiftTracker.Application.Services;
 
 public class TaskService : ITaskService
 {
     private readonly IUnitOfWork _uow;
+    private readonly ILogger<TaskService> _logger;
 
-    public TaskService(IUnitOfWork uow) => _uow = uow;
+    public TaskService(IUnitOfWork uow, ILogger<TaskService> logger)
+    {
+        _uow = uow;
+        _logger = logger;
+    }
 
     public async Task<PagedResult<TaskDto>> GetAllAsync(int userId, int page, int pageSize)
     {
-        var paged = await _uow.Tasks.GetPagedAsync(
-            t => t.UserId == userId, page, pageSize,
-            q => q.OrderByDescending(t => t.CreatedAt));
-        return new PagedResult<TaskDto>
+        try
         {
-            Items = paged.Items.Select(MapToDto),
-            TotalCount = paged.TotalCount, Page = paged.Page, PageSize = paged.PageSize
-        };
+            var paged = await _uow.Tasks.GetPagedAsync(
+                t => t.UserId == userId, page, pageSize,
+                q => q.OrderByDescending(t => t.CreatedAt));
+            return new PagedResult<TaskDto>
+            {
+                Items = paged.Items.Select(MapToDto),
+                TotalCount = paged.TotalCount, Page = paged.Page, PageSize = paged.PageSize
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in {Method}", nameof(GetAllAsync));
+            throw;
+        }
     }
 
     public async Task<TaskDto> CreateAsync(CreateTaskRequest request, int userId)
     {
-        var entity = new TaskItem
+        try
         {
-            UserId = userId,
-            Title = request.Title,
-            Status = request.Status,
-            Priority = request.Priority,
-            DueDate = request.DueDate,
-            Values = request.Values is not null ? JsonSerializer.Serialize(request.Values) : null
-        };
-
-        // Extract dedicated fields from Values JSON if top-level fields are defaults
-        ExtractDedicatedFieldsFromValues(entity);
-
-        await _uow.Tasks.AddAsync(entity);
-        await _uow.SaveChangesAsync();
-        return MapToDto(entity);
+            var entity = new TaskItem
+            {
+                UserId = userId,
+                Title = request.Title,
+                Status = request.Status,
+                Priority = request.Priority,
+                DueDate = request.DueDate,
+                Values = request.Values is not null ? JsonSerializer.Serialize(request.Values) : null
+            };
+    
+            // Extract dedicated fields from Values JSON if top-level fields are defaults
+            ExtractDedicatedFieldsFromValues(entity);
+    
+            await _uow.Tasks.AddAsync(entity);
+            await _uow.SaveChangesAsync();
+            return MapToDto(entity);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in {Method}", nameof(CreateAsync));
+            throw;
+        }
     }
 
     public async Task<TaskDto> UpdateAsync(int id, UpdateTaskRequest request, int userId)
     {
-        var entity = await _uow.Tasks.GetByIdAsync(id)
-            ?? throw new KeyNotFoundException($"Task {id} not found.");
-
-        if (entity.UserId != userId)
-            throw new UnauthorizedAccessException("You do not have access to this task.");
-
-        entity.Title = request.Title;
-        entity.Status = request.Status;
-        entity.Priority = request.Priority;
-        entity.DueDate = request.DueDate;
-        if (request.Values is not null)
-            entity.Values = JsonSerializer.Serialize(request.Values);
-
-        // Extract dedicated fields from Values JSON if top-level fields are defaults
-        ExtractDedicatedFieldsFromValues(entity);
-
-        await _uow.Tasks.UpdateAsync(entity);
-        await _uow.SaveChangesAsync();
-        return MapToDto(entity);
+        try
+        {
+            var entity = await _uow.Tasks.GetByIdAsync(id)
+                ?? throw new KeyNotFoundException($"Task {id} not found.");
+    
+            if (entity.UserId != userId)
+                throw new UnauthorizedAccessException("You do not have access to this task.");
+    
+            entity.Title = request.Title;
+            entity.Status = request.Status;
+            entity.Priority = request.Priority;
+            entity.DueDate = request.DueDate;
+            if (request.Values is not null)
+                entity.Values = JsonSerializer.Serialize(request.Values);
+    
+            // Extract dedicated fields from Values JSON if top-level fields are defaults
+            ExtractDedicatedFieldsFromValues(entity);
+    
+            await _uow.Tasks.UpdateAsync(entity);
+            await _uow.SaveChangesAsync();
+            return MapToDto(entity);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in {Method}", nameof(UpdateAsync));
+            throw;
+        }
     }
 
     public async Task DeleteAsync(int id, int userId)
     {
-        var entity = await _uow.Tasks.GetByIdAsync(id)
-            ?? throw new KeyNotFoundException($"Task {id} not found.");
-
-        if (entity.UserId != userId)
-            throw new UnauthorizedAccessException("You do not have access to this task.");
-
-        await _uow.Tasks.DeleteAsync(entity);
-        await _uow.SaveChangesAsync();
-    }
-
-    // ─── Columns (shared across users) ───────────────────
-
-    public async Task<List<TaskColumnDto>> GetColumnsAsync()
-    {
-        var columns = await _uow.TaskColumns.GetAllAsync();
-
-        // Seed defaults if empty
-        if (!columns.Any())
+        try
         {
-            var defaults = GetDefaultColumns();
-            foreach (var col in defaults)
-                await _uow.TaskColumns.AddAsync(col);
+            var entity = await _uow.Tasks.GetByIdAsync(id)
+                ?? throw new KeyNotFoundException($"Task {id} not found.");
+    
+            if (entity.UserId != userId)
+                throw new UnauthorizedAccessException("You do not have access to this task.");
+    
+            await _uow.Tasks.DeleteAsync(entity);
             await _uow.SaveChangesAsync();
-            columns = await _uow.TaskColumns.GetAllAsync();
         }
-
-        return columns.OrderBy(c => c.Order).Select(MapColumnToDto).ToList();
-    }
-
-    public async Task<TaskColumnDto> AddColumnAsync(CreateTaskColumnRequest request)
-    {
-        var allColumns = await _uow.TaskColumns.GetAllAsync();
-        var order = allColumns.Count();
-
-        var slug = request.Name.ToLower()
-            .Replace(" ", "-")
-            .Replace("_", "-");
-
-        var entity = new TaskColumn
+        catch (Exception ex)
         {
-            ColId = $"col-{slug}",
-            Name = request.Name,
-            Type = request.Type,
-            Required = request.Required,
-            Visible = request.Visible,
-            Order = order,
-            Config = request.Config is not null ? JsonSerializer.Serialize(request.Config) : null
-        };
-
-        await _uow.TaskColumns.AddAsync(entity);
-        await _uow.SaveChangesAsync();
-        return MapColumnToDto(entity);
+            _logger.LogError(ex, "Error in {Method}", nameof(DeleteAsync));
+            throw;
+        }
     }
 
-    public async Task<TaskColumnDto> UpdateColumnAsync(string colId, UpdateTaskColumnRequest request)
+    // ─── Columns (per-org, shared across users within org) ───
+
+    private IQueryable<TaskColumn> OrgColumns(int orgId)
+        => _uow.TaskColumns.Query().IgnoreQueryFilters().Where(c => c.OrgId == orgId && !c.IsDeleted);
+
+    public async Task<List<TaskColumnDto>> GetColumnsAsync(int orgId)
     {
-        var columns = await _uow.TaskColumns.FindAsync(c => c.ColId == colId);
-        var entity = columns.FirstOrDefault()
-            ?? throw new KeyNotFoundException($"Column '{colId}' not found.");
-
-        if (request.Name is not null) entity.Name = request.Name;
-        if (request.Type is not null) entity.Type = request.Type;
-        if (request.Required.HasValue) entity.Required = request.Required.Value;
-        if (request.Visible.HasValue) entity.Visible = request.Visible.Value;
-        if (request.Config is not null) entity.Config = JsonSerializer.Serialize(request.Config);
-
-        await _uow.TaskColumns.UpdateAsync(entity);
-        await _uow.SaveChangesAsync();
-        return MapColumnToDto(entity);
-    }
-
-    public async Task DeleteColumnAsync(string colId)
-    {
-        var defaultIds = new[] { "id", "title", "status", "priority", "dueDate" };
-        if (defaultIds.Contains(colId))
-            throw new InvalidOperationException("Cannot delete default columns.");
-
-        var columns = await _uow.TaskColumns.FindAsync(c => c.ColId == colId);
-        var entity = columns.FirstOrDefault()
-            ?? throw new KeyNotFoundException($"Column '{colId}' not found.");
-
-        await _uow.TaskColumns.DeleteAsync(entity);
-        await _uow.SaveChangesAsync();
-    }
-
-    public async Task ReorderColumnsAsync(ReorderTaskColumnsRequest request)
-    {
-        var allColumns = await _uow.TaskColumns.GetAllAsync();
-        foreach (var col in allColumns)
+        try
         {
-            var newOrder = request.OrderedColIds.IndexOf(col.ColId);
-            if (newOrder >= 0)
+            var columns = await OrgColumns(orgId).OrderBy(c => c.Order).ToListAsync();
+
+            if (!columns.Any())
             {
-                col.Order = newOrder;
-                await _uow.TaskColumns.UpdateAsync(col);
+                var defaults = GetDefaultColumns(orgId);
+                foreach (var col in defaults)
+                    await _uow.TaskColumns.AddAsync(col);
+                await _uow.SaveChangesAsync();
+                columns = await OrgColumns(orgId).OrderBy(c => c.Order).ToListAsync();
             }
+
+            return columns.Select(MapColumnToDto).ToList();
         }
-        await _uow.SaveChangesAsync();
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in {Method}", nameof(GetColumnsAsync));
+            throw;
+        }
+    }
+
+    public async Task<TaskColumnDto> AddColumnAsync(CreateTaskColumnRequest request, int orgId)
+    {
+        try
+        {
+            var order = await OrgColumns(orgId).CountAsync();
+
+            var slug = request.Name.ToLower()
+                .Replace(" ", "-")
+                .Replace("_", "-");
+
+            var entity = new TaskColumn
+            {
+                OrgId = orgId,
+                ColId = $"col-{slug}",
+                Name = request.Name,
+                Type = request.Type,
+                Required = request.Required,
+                Visible = request.Visible,
+                Order = order,
+                Config = request.Config is not null ? JsonSerializer.Serialize(request.Config) : null
+            };
+
+            await _uow.TaskColumns.AddAsync(entity);
+            await _uow.SaveChangesAsync();
+            return MapColumnToDto(entity);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in {Method}", nameof(AddColumnAsync));
+            throw;
+        }
+    }
+
+    public async Task<TaskColumnDto> UpdateColumnAsync(string colId, UpdateTaskColumnRequest request, int orgId)
+    {
+        try
+        {
+            var entity = await OrgColumns(orgId).FirstOrDefaultAsync(c => c.ColId == colId)
+                ?? throw new KeyNotFoundException($"Column '{colId}' not found.");
+
+            if (request.Name is not null) entity.Name = request.Name;
+            if (request.Type is not null) entity.Type = request.Type;
+            if (request.Required.HasValue) entity.Required = request.Required.Value;
+            if (request.Visible.HasValue) entity.Visible = request.Visible.Value;
+            if (request.Config is not null) entity.Config = JsonSerializer.Serialize(request.Config);
+
+            await _uow.TaskColumns.UpdateAsync(entity);
+            await _uow.SaveChangesAsync();
+            return MapColumnToDto(entity);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in {Method}", nameof(UpdateColumnAsync));
+            throw;
+        }
+    }
+
+    public async Task DeleteColumnAsync(string colId, int orgId)
+    {
+        try
+        {
+            var defaultIds = new[] { "id", "title", "status", "priority", "dueDate" };
+            if (defaultIds.Contains(colId))
+                throw new InvalidOperationException("Cannot delete default columns.");
+
+            var entity = await OrgColumns(orgId).FirstOrDefaultAsync(c => c.ColId == colId)
+                ?? throw new KeyNotFoundException($"Column '{colId}' not found.");
+
+            await _uow.TaskColumns.DeleteAsync(entity);
+            await _uow.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in {Method}", nameof(DeleteColumnAsync));
+            throw;
+        }
+    }
+
+    public async Task ReorderColumnsAsync(ReorderTaskColumnsRequest request, int orgId)
+    {
+        try
+        {
+            var columns = await OrgColumns(orgId).ToListAsync();
+            foreach (var col in columns)
+            {
+                var newOrder = request.OrderedColIds.IndexOf(col.ColId);
+                if (newOrder >= 0)
+                {
+                    col.Order = newOrder;
+                    await _uow.TaskColumns.UpdateAsync(col);
+                }
+            }
+            await _uow.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in {Method}", nameof(ReorderColumnsAsync));
+            throw;
+        }
     }
 
     // ─── Field Extraction from Values JSON ─────────────────
@@ -229,14 +307,15 @@ public class TaskService : ITaskService
         Config = c.Config is not null ? JsonSerializer.Deserialize<object>(c.Config) : null
     };
 
-    private static List<TaskColumn> GetDefaultColumns() =>
+    private static List<TaskColumn> GetDefaultColumns(int orgId) =>
     [
-        new() { ColId = "id", Name = "ID", Type = "number", Required = false, Visible = true, Order = 0, Config = "{\"readOnly\":true,\"autoIncrement\":true}" },
-        new() { ColId = "title", Name = "TITLE", Type = "text", Required = true, Visible = true, Order = 1 },
-        new() { ColId = "status", Name = "STATUS", Type = "choice", Required = false, Visible = true, Order = 2,
+        new() { OrgId = orgId, ColId = "id", Name = "ID", Type = "number", Required = false, Visible = true, Order = 0, Config = "{\"readOnly\":true,\"autoIncrement\":true}" },
+        new() { OrgId = orgId, ColId = "title", Name = "TITLE", Type = "text", Required = true, Visible = true, Order = 1 },
+        new() { OrgId = orgId, ColId = "status", Name = "STATUS", Type = "choice", Required = false, Visible = true, Order = 2,
             Config = "{\"options\":[{\"label\":\"Pending\",\"color\":\"#0ea5e9\"},{\"label\":\"In Progress\",\"color\":\"#22c55e\"},{\"label\":\"Completed\",\"color\":\"#10b981\"},{\"label\":\"On Hold\",\"color\":\"#64748b\"}]}" },
-        new() { ColId = "priority", Name = "PRIORITY", Type = "choice", Required = false, Visible = true, Order = 3,
+        new() { OrgId = orgId, ColId = "priority", Name = "PRIORITY", Type = "choice", Required = false, Visible = true, Order = 3,
             Config = "{\"options\":[{\"label\":\"High\",\"color\":\"#f97316\"},{\"label\":\"Medium\",\"color\":\"#16a34a\"},{\"label\":\"Low\",\"color\":\"#10b981\"}]}" },
-        new() { ColId = "dueDate", Name = "DUE DATE", Type = "datetime", Required = false, Visible = true, Order = 4, Config = "{\"dateOnly\":true}" }
+        new() { OrgId = orgId, ColId = "dueDate", Name = "DUE DATE", Type = "datetime", Required = false, Visible = true, Order = 4, Config = "{\"dateOnly\":true}" }
     ];
 }
+

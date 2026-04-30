@@ -1,4 +1,4 @@
-using A365ShiftTracker.Application.Common;
+﻿using A365ShiftTracker.Application.Common;
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
 using A365ShiftTracker.Domain.Common;
@@ -25,64 +25,89 @@ public class InvoicesController : BaseApiController
     public async Task<IActionResult> GetAll(
         [FromQuery] int page = 1, [FromQuery] int pageSize = 25)
     {
-        var orgId = GetCurrentOrgId() ?? 0;
-        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
-        var result = await _service.GetAllAsync(orgId, page, pageSize);
-        return Ok(ApiResponse<PagedResult<InvoiceDto>>.Ok(result, "Invoices retrieved"));
+        try
+        {
+            var orgId = GetCurrentOrgId() ?? 0;
+            if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
+            var result = await _service.GetAllAsync(orgId, page, pageSize);
+            return Ok(ApiResponse<PagedResult<InvoiceDto>>.Ok(result, "Invoices retrieved"));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
-        var orgId = GetCurrentOrgId() ?? 0;
-        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
-        var result = await _service.GetByIdAsync(id, orgId);
-        if (result == null) return NotFound(ApiResponse<object>.Fail("Not found"));
-        return Ok(ApiResponse<InvoiceDto>.Ok(result, "Invoice retrieved"));
+        try
+        {
+            var orgId = GetCurrentOrgId() ?? 0;
+            if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
+            var result = await _service.GetByIdAsync(id, orgId);
+            if (result == null) return NotFound(ApiResponse<object>.Fail("Not found"));
+            return Ok(ApiResponse<InvoiceDto>.Ok(result, "Invoice retrieved"));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateInvoiceRequest req)
     {
-        var userId = GetCurrentUserId();
-        var orgId = GetCurrentOrgId() ?? 0;
-        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
-        var (allowed, current, limit) = await _limits.CheckLimitAsync(userId, "Invoices");
-        if (!allowed)
-            return StatusCode(402, ApiResponse<object>.Fail($"Invoice limit reached ({current}/{limit}). Please upgrade your plan."));
-        var result = await _service.CreateAsync(req, userId, orgId);
-        return CreatedAtAction(nameof(GetById), new { id = result.Id },
-            ApiResponse<InvoiceDto>.Ok(result, "Invoice created"));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var orgId = GetCurrentOrgId() ?? 0;
+            if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
+            var (allowed, current, limit) = await _limits.CheckLimitAsync(userId, "Invoices");
+            if (!allowed)
+                return StatusCode(402, ApiResponse<object>.Fail($"Invoice limit reached ({current}/{limit}). Please upgrade your plan."));
+            var result = await _service.CreateAsync(req, userId, orgId);
+            return CreatedAtAction(nameof(GetById), new { id = result.Id },
+                ApiResponse<InvoiceDto>.Ok(result, "Invoice created"));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateInvoiceRequest req)
     {
-        var userId = GetCurrentUserId();
-        var orgId = GetCurrentOrgId() ?? 0;
-        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
-        var result = await _service.UpdateStatusAsync(id, req, userId, orgId);
-        if (result == null) return NotFound(ApiResponse<object>.Fail("Not found"));
-        return Ok(ApiResponse<InvoiceDto>.Ok(result, "Invoice updated"));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var orgId = GetCurrentOrgId() ?? 0;
+            if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
+            var result = await _service.UpdateStatusAsync(id, req, userId, orgId);
+            if (result == null) return NotFound(ApiResponse<object>.Fail("Not found"));
+            return Ok(ApiResponse<InvoiceDto>.Ok(result, "Invoice updated"));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var userId = GetCurrentUserId();
-        var orgId = GetCurrentOrgId() ?? 0;
-        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
-        var deleted = await _service.DeleteAsync(id, userId, orgId);
-        if (!deleted) return NotFound(ApiResponse<object>.Fail("Not found"));
-        return Ok(ApiResponse<bool>.Ok(true, "Invoice deleted"));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var orgId = GetCurrentOrgId() ?? 0;
+            if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
+            var deleted = await _service.DeleteAsync(id, userId, orgId);
+            if (!deleted) return NotFound(ApiResponse<object>.Fail("Not found"));
+            return Ok(ApiResponse<bool>.Ok(true, "Invoice deleted"));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpGet("by-project/{projectFinanceId}")]
     public async Task<IActionResult> GetByProject(int projectFinanceId)
     {
-        var orgId = GetCurrentOrgId() ?? 0;
-        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
-        var result = await _service.GetByProjectFinanceAsync(projectFinanceId, orgId);
-        return Ok(ApiResponse<List<InvoiceDto>>.Ok(result, "Invoices retrieved"));
+        try
+        {
+            var orgId = GetCurrentOrgId() ?? 0;
+            if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
+            var result = await _service.GetByProjectFinanceAsync(projectFinanceId, orgId);
+            return Ok(ApiResponse<List<InvoiceDto>>.Ok(result, "Invoices retrieved"));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 }
+

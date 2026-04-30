@@ -21,68 +21,121 @@ public class TimesheetController : BaseApiController
     public async Task<ActionResult<ApiResponse<PagedResult<TimesheetEntryDto>>>> GetEntries(
         [FromQuery] int page = 1, [FromQuery] int pageSize = 25, [FromQuery] string? customer = null)
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.GetEntriesAsync(userId, page, pageSize, customer);
-        return Ok(ApiResponse<PagedResult<TimesheetEntryDto>>.Ok(result));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var result = await _service.GetEntriesAsync(userId, page, pageSize, customer);
+            return Ok(ApiResponse<PagedResult<TimesheetEntryDto>>.Ok(result));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost("entries")]
     public async Task<ActionResult<ApiResponse<TimesheetEntryDto>>> CreateEntry(CreateTimesheetEntryRequest request)
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.CreateEntryAsync(request, userId);
-        return Ok(ApiResponse<TimesheetEntryDto>.Ok(result, "Entry created."));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var result = await _service.CreateEntryAsync(request, userId);
+            return Ok(ApiResponse<TimesheetEntryDto>.Ok(result, "Entry created."));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPut("entries/{id}")]
     public async Task<ActionResult<ApiResponse<TimesheetEntryDto>>> UpdateEntry(int id, UpdateTimesheetEntryRequest request)
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.UpdateEntryAsync(id, request, userId);
-        return Ok(ApiResponse<TimesheetEntryDto>.Ok(result, "Entry updated."));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var result = await _service.UpdateEntryAsync(id, request, userId);
+            return Ok(ApiResponse<TimesheetEntryDto>.Ok(result, "Entry updated."));
+        }
+        catch (KeyNotFoundException ex) { return NotFoundResult(ex.Message); }
+        catch (UnauthorizedAccessException ex) { return ForbiddenResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpDelete("entries/{id}")]
     public async Task<ActionResult<ApiResponse<bool>>> DeleteEntry(int id)
     {
-        var userId = GetCurrentUserId();
-        await _service.DeleteEntryAsync(id, userId);
-        return Ok(ApiResponse<bool>.Ok(true, "Entry deleted."));
+        try
+        {
+            var userId = GetCurrentUserId();
+            await _service.DeleteEntryAsync(id, userId);
+            return Ok(ApiResponse<bool>.Ok(true, "Entry deleted."));
+        }
+        catch (KeyNotFoundException ex) { return NotFoundResult(ex.Message); }
+        catch (UnauthorizedAccessException ex) { return ForbiddenResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
-    // ─── Columns (shared across users) ───────────────
+    // ─── Columns (per-org) ──────────────────────────────
     [HttpGet("columns")]
     public async Task<ActionResult<ApiResponse<IEnumerable<TimesheetColumnDto>>>> GetColumns()
     {
-        var result = await _service.GetColumnsAsync();
-        return Ok(ApiResponse<IEnumerable<TimesheetColumnDto>>.Ok(result));
+        try
+        {
+            var orgId = GetRequiredOrgId();
+            var result = await _service.GetColumnsAsync(orgId);
+            return Ok(ApiResponse<IEnumerable<TimesheetColumnDto>>.Ok(result));
+        }
+        catch (UnauthorizedAccessException ex) { return ForbiddenResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost("columns")]
     public async Task<ActionResult<ApiResponse<TimesheetColumnDto>>> AddColumn(CreateTimesheetColumnRequest request)
     {
-        var result = await _service.AddColumnAsync(request);
-        return Ok(ApiResponse<TimesheetColumnDto>.Ok(result, "Column added."));
+        try
+        {
+            var orgId = GetRequiredOrgId();
+            var result = await _service.AddColumnAsync(request, orgId);
+            return Ok(ApiResponse<TimesheetColumnDto>.Ok(result, "Column added."));
+        }
+        catch (UnauthorizedAccessException ex) { return ForbiddenResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPut("columns/{colId}")]
     public async Task<ActionResult<ApiResponse<TimesheetColumnDto>>> UpdateColumn(string colId, UpdateTimesheetColumnRequest request)
     {
-        var result = await _service.UpdateColumnAsync(colId, request);
-        return Ok(ApiResponse<TimesheetColumnDto>.Ok(result, "Column updated."));
+        try
+        {
+            var orgId = GetRequiredOrgId();
+            var result = await _service.UpdateColumnAsync(colId, request, orgId);
+            return Ok(ApiResponse<TimesheetColumnDto>.Ok(result, "Column updated."));
+        }
+        catch (KeyNotFoundException ex) { return NotFoundResult(ex.Message); }
+        catch (UnauthorizedAccessException ex) { return ForbiddenResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpDelete("columns/{colId}")]
     public async Task<ActionResult<ApiResponse<bool>>> DeleteColumn(string colId)
     {
-        await _service.DeleteColumnAsync(colId);
-        return Ok(ApiResponse<bool>.Ok(true, "Column deleted."));
+        try
+        {
+            var orgId = GetRequiredOrgId();
+            await _service.DeleteColumnAsync(colId, orgId);
+            return Ok(ApiResponse<bool>.Ok(true, "Column deleted."));
+        }
+        catch (KeyNotFoundException ex) { return NotFoundResult(ex.Message); }
+        catch (InvalidOperationException ex) { return BadRequestResult(ex.Message); }
+        catch (UnauthorizedAccessException ex) { return ForbiddenResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost("columns/reorder")]
     public async Task<ActionResult<ApiResponse<bool>>> ReorderColumns(ReorderColumnsRequest request)
     {
-        await _service.ReorderColumnsAsync(request.OrderedColIds);
-        return Ok(ApiResponse<bool>.Ok(true, "Columns reordered."));
+        try
+        {
+            var orgId = GetRequiredOrgId();
+            await _service.ReorderColumnsAsync(request.OrderedColIds, orgId);
+            return Ok(ApiResponse<bool>.Ok(true, "Columns reordered."));
+        }
+        catch (UnauthorizedAccessException ex) { return ForbiddenResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 }

@@ -1,91 +1,128 @@
-using A365ShiftTracker.Application.DTOs;
+﻿using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
 using A365ShiftTracker.Domain.Common;
 using A365ShiftTracker.Domain.Entities;
-
+using Microsoft.Extensions.Logging;
 namespace A365ShiftTracker.Application.Services;
 
 public class LeadService : ILeadService
 {
     private readonly IUnitOfWork _uow;
+    private readonly ILogger<LeadService> _logger;
 
-    public LeadService(IUnitOfWork uow) => _uow = uow;
+    public LeadService(IUnitOfWork uow, ILogger<LeadService> logger)
+    {
+        _uow = uow;
+        _logger = logger;
+    }
 
     public async Task<PagedResult<LeadDto>> GetAllAsync(int orgId, int page, int pageSize)
     {
-        var paged = await _uow.Leads.GetPagedAsync(
-            l => l.OrgId == orgId && !l.IsDeleted,
-            page,
-            pageSize,
-            q => q.OrderByDescending(l => l.CreatedAt));
-        return new PagedResult<LeadDto>
+        try
         {
-            Items = paged.Items.Select(MapToDto),
-            TotalCount = paged.TotalCount,
-            Page = paged.Page,
-            PageSize = paged.PageSize
-        };
+            var paged = await _uow.Leads.GetPagedAsync(
+                l => l.OrgId == orgId && !l.IsDeleted,
+                page,
+                pageSize,
+                q => q.OrderByDescending(l => l.CreatedAt));
+            return new PagedResult<LeadDto>
+            {
+                Items = paged.Items.Select(MapToDto),
+                TotalCount = paged.TotalCount,
+                Page = paged.Page,
+                PageSize = paged.PageSize
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in {Method}", nameof(GetAllAsync));
+            throw;
+        }
     }
 
     public async Task<LeadDto> CreateAsync(CreateLeadRequest request, int userId, int orgId)
     {
-        var entity = new Lead
+        try
         {
-            UserId = userId,
-            OrgId = orgId,
-            ContactId = request.ContactId,
-            ContactName = request.ContactName,
-            Company = request.Company,
-            Source = request.Source ?? "Inbound",
-            Score = request.Score ?? "Warm",
-            Stage = request.Stage ?? "New",
-            AssignedTo = request.AssignedTo,
-            Notes = request.Notes,
-            Type = request.Type,
-            ExpectedValue = request.ExpectedValue,
-            ExpectedCloseDate = ToUtc(request.ExpectedCloseDate),
-        };
-
-        await _uow.Leads.AddAsync(entity);
-        await _uow.SaveChangesAsync();
-        return MapToDto(entity);
+            var entity = new Lead
+            {
+                UserId = userId,
+                OrgId = orgId,
+                ContactId = request.ContactId,
+                ContactName = request.ContactName,
+                Company = request.Company,
+                Source = request.Source ?? "Inbound",
+                Score = request.Score ?? "Warm",
+                Stage = request.Stage ?? "New",
+                AssignedTo = request.AssignedTo,
+                Notes = request.Notes,
+                Type = request.Type,
+                ExpectedValue = request.ExpectedValue,
+                ExpectedCloseDate = ToUtc(request.ExpectedCloseDate),
+            };
+    
+            await _uow.Leads.AddAsync(entity);
+            await _uow.SaveChangesAsync();
+            return MapToDto(entity);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in {Method}", nameof(CreateAsync));
+            throw;
+        }
     }
 
     public async Task<LeadDto> UpdateAsync(int id, UpdateLeadRequest request, int userId, int orgId)
     {
-        var entity = await _uow.Leads.GetByIdAsync(id)
-            ?? throw new KeyNotFoundException($"Lead {id} not found.");
-
-        if (entity.OrgId != orgId)
-            throw new UnauthorizedAccessException("You do not have access to this lead.");
-
-        entity.ContactId = request.ContactId;
-        entity.ContactName = request.ContactName;
-        entity.Company = request.Company;
-        entity.Source = request.Source ?? entity.Source;
-        entity.Score = request.Score ?? entity.Score;
-        entity.Stage = request.Stage ?? entity.Stage;
-        entity.AssignedTo = request.AssignedTo;
-        entity.Notes = request.Notes;
-        entity.Type = request.Type;
-        entity.ExpectedValue = request.ExpectedValue;
-        entity.ExpectedCloseDate = ToUtc(request.ExpectedCloseDate);
-
-        await _uow.Leads.UpdateAsync(entity);
-        await _uow.SaveChangesAsync();
-        return MapToDto(entity);
+        try
+        {
+            var entity = await _uow.Leads.GetByIdAsync(id)
+                ?? throw new KeyNotFoundException($"Lead {id} not found.");
+    
+            if (entity.OrgId != orgId)
+                throw new UnauthorizedAccessException("You do not have access to this lead.");
+    
+            entity.ContactId = request.ContactId;
+            entity.ContactName = request.ContactName;
+            entity.Company = request.Company;
+            entity.Source = request.Source ?? entity.Source;
+            entity.Score = request.Score ?? entity.Score;
+            entity.Stage = request.Stage ?? entity.Stage;
+            entity.AssignedTo = request.AssignedTo;
+            entity.Notes = request.Notes;
+            entity.Type = request.Type;
+            entity.ExpectedValue = request.ExpectedValue;
+            entity.ExpectedCloseDate = ToUtc(request.ExpectedCloseDate);
+    
+            await _uow.Leads.UpdateAsync(entity);
+            await _uow.SaveChangesAsync();
+            return MapToDto(entity);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in {Method}", nameof(UpdateAsync));
+            throw;
+        }
     }
 
     public async Task DeleteAsync(int id, int userId, int orgId)
     {
-        var entity = await _uow.Leads.GetByIdAsync(id)
-            ?? throw new KeyNotFoundException($"Lead {id} not found.");
-
-        if (entity.OrgId != orgId)
-            throw new UnauthorizedAccessException("You do not have access to this lead.");
-
-        await _uow.Leads.DeleteAsync(entity);
-        await _uow.SaveChangesAsync();
+        try
+        {
+            var entity = await _uow.Leads.GetByIdAsync(id)
+                ?? throw new KeyNotFoundException($"Lead {id} not found.");
+    
+            if (entity.OrgId != orgId)
+                throw new UnauthorizedAccessException("You do not have access to this lead.");
+    
+            await _uow.Leads.DeleteAsync(entity);
+            await _uow.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in {Method}", nameof(DeleteAsync));
+            throw;
+        }
     }
 
     private static DateTime? ToUtc(DateTime? dt) =>
@@ -99,3 +136,4 @@ public class LeadService : ILeadService
         ExpectedCloseDate = l.ExpectedCloseDate, CreatedAt = l.CreatedAt,
     };
 }
+

@@ -3,6 +3,33 @@
  * Ensures consistent locales based on the currency code provided.
  */
 
+const CURRENCY_SYMBOLS = { INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'AED ' }
+
+/**
+ * Compact formatter for stat cards — prevents overflow when amounts grow large.
+ * < 1K: full format   1K+: ₹45K   1M+: ₹1.2M   1B+: ₹1.2B
+ */
+export const formatCompactCurrency = (amount, currencyCode = 'INR') => {
+    const num = amount || 0
+    const abs = Math.abs(num)
+    const sign = num < 0 ? '-' : ''
+    const sym = CURRENCY_SYMBOLS[currencyCode.toUpperCase()] ?? (currencyCode + ' ')
+
+    if (abs >= 1_000_000_000) {
+        const n = abs / 1_000_000_000
+        return `${sign}${sym}${n >= 10 ? n.toFixed(0) : n.toFixed(1)}B`
+    }
+    if (abs >= 1_000_000) {
+        const n = abs / 1_000_000
+        return `${sign}${sym}${n >= 10 ? n.toFixed(0) : n.toFixed(1)}M`
+    }
+    if (abs >= 1_000) {
+        const n = abs / 1_000
+        return `${sign}${sym}${n >= 100 ? n.toFixed(0) : n >= 10 ? n.toFixed(0) : n.toFixed(1)}K`
+    }
+    return formatGlobalCurrency(num, currencyCode)
+}
+
 export const formatGlobalCurrency = (amount, currencyCode = 'INR', options = {}) => {
     // Map specific currencies to their correct locales
     const localeMap = {

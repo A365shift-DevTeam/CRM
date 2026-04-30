@@ -104,19 +104,8 @@ const Contacts = () => {
     }
   }
 
-  const handleColumnsChange = async (newColumns) => {
-    try {
-      const updatedColumns = await contactService.getColumns()
-      const mapped = (updatedColumns || []).map(col => ({
-        ...col,
-        id: col.colId || col.id,
-        config: col.config || {}
-      }))
-      setContactColumns(mapped)
-    } catch (error) {
-      console.error('Error refreshing columns:', error)
-      setContactColumns(newColumns || [])
-    }
+  const handleColumnsChange = (newColumns) => {
+    setContactColumns(newColumns || [])
   }
 
   const loadContacts = async () => {

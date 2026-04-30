@@ -20,69 +20,122 @@ public class TasksController : BaseApiController
     public async Task<ActionResult<ApiResponse<PagedResult<TaskDto>>>> GetAll(
         [FromQuery] int page = 1, [FromQuery] int pageSize = 25)
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.GetAllAsync(userId, page, pageSize);
-        return Ok(ApiResponse<PagedResult<TaskDto>>.Ok(result));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var result = await _service.GetAllAsync(userId, page, pageSize);
+            return Ok(ApiResponse<PagedResult<TaskDto>>.Ok(result));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost]
     public async Task<ActionResult<ApiResponse<TaskDto>>> Create(CreateTaskRequest request)
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.CreateAsync(request, userId);
-        return Ok(ApiResponse<TaskDto>.Ok(result, "Task created."));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var result = await _service.CreateAsync(request, userId);
+            return Ok(ApiResponse<TaskDto>.Ok(result, "Task created."));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPut("{id}")]
     public async Task<ActionResult<ApiResponse<TaskDto>>> Update(int id, UpdateTaskRequest request)
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.UpdateAsync(id, request, userId);
-        return Ok(ApiResponse<TaskDto>.Ok(result, "Task updated."));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var result = await _service.UpdateAsync(id, request, userId);
+            return Ok(ApiResponse<TaskDto>.Ok(result, "Task updated."));
+        }
+        catch (KeyNotFoundException ex) { return NotFoundResult(ex.Message); }
+        catch (UnauthorizedAccessException ex) { return ForbiddenResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpDelete("{id}")]
     public async Task<ActionResult<ApiResponse<bool>>> Delete(int id)
     {
-        var userId = GetCurrentUserId();
-        await _service.DeleteAsync(id, userId);
-        return Ok(ApiResponse<bool>.Ok(true, "Task deleted."));
+        try
+        {
+            var userId = GetCurrentUserId();
+            await _service.DeleteAsync(id, userId);
+            return Ok(ApiResponse<bool>.Ok(true, "Task deleted."));
+        }
+        catch (KeyNotFoundException ex) { return NotFoundResult(ex.Message); }
+        catch (UnauthorizedAccessException ex) { return ForbiddenResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
-    // ─── Columns (shared across users) ───────────────────
+    // ─── Columns (per-org) ────────────────────────────────
 
     [HttpGet("columns")]
     public async Task<ActionResult<ApiResponse<List<TaskColumnDto>>>> GetColumns()
     {
-        var result = await _service.GetColumnsAsync();
-        return Ok(ApiResponse<List<TaskColumnDto>>.Ok(result));
+        try
+        {
+            var orgId = GetRequiredOrgId();
+            var result = await _service.GetColumnsAsync(orgId);
+            return Ok(ApiResponse<List<TaskColumnDto>>.Ok(result));
+        }
+        catch (UnauthorizedAccessException ex) { return ForbiddenResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost("columns/add")]
     public async Task<ActionResult<ApiResponse<TaskColumnDto>>> AddColumn(CreateTaskColumnRequest request)
     {
-        var result = await _service.AddColumnAsync(request);
-        return Ok(ApiResponse<TaskColumnDto>.Ok(result, "Column added."));
+        try
+        {
+            var orgId = GetRequiredOrgId();
+            var result = await _service.AddColumnAsync(request, orgId);
+            return Ok(ApiResponse<TaskColumnDto>.Ok(result, "Column added."));
+        }
+        catch (UnauthorizedAccessException ex) { return ForbiddenResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPut("columns/{colId}")]
     public async Task<ActionResult<ApiResponse<TaskColumnDto>>> UpdateColumn(string colId, UpdateTaskColumnRequest request)
     {
-        var result = await _service.UpdateColumnAsync(colId, request);
-        return Ok(ApiResponse<TaskColumnDto>.Ok(result, "Column updated."));
+        try
+        {
+            var orgId = GetRequiredOrgId();
+            var result = await _service.UpdateColumnAsync(colId, request, orgId);
+            return Ok(ApiResponse<TaskColumnDto>.Ok(result, "Column updated."));
+        }
+        catch (KeyNotFoundException ex) { return NotFoundResult(ex.Message); }
+        catch (UnauthorizedAccessException ex) { return ForbiddenResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpDelete("columns/{colId}")]
     public async Task<ActionResult<ApiResponse<bool>>> DeleteColumn(string colId)
     {
-        await _service.DeleteColumnAsync(colId);
-        return Ok(ApiResponse<bool>.Ok(true, "Column deleted."));
+        try
+        {
+            var orgId = GetRequiredOrgId();
+            await _service.DeleteColumnAsync(colId, orgId);
+            return Ok(ApiResponse<bool>.Ok(true, "Column deleted."));
+        }
+        catch (KeyNotFoundException ex) { return NotFoundResult(ex.Message); }
+        catch (InvalidOperationException ex) { return BadRequestResult(ex.Message); }
+        catch (UnauthorizedAccessException ex) { return ForbiddenResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost("columns/reorder")]
     public async Task<ActionResult<ApiResponse<bool>>> ReorderColumns(ReorderTaskColumnsRequest request)
     {
-        await _service.ReorderColumnsAsync(request);
-        return Ok(ApiResponse<bool>.Ok(true, "Columns reordered."));
+        try
+        {
+            var orgId = GetRequiredOrgId();
+            await _service.ReorderColumnsAsync(request, orgId);
+            return Ok(ApiResponse<bool>.Ok(true, "Columns reordered."));
+        }
+        catch (UnauthorizedAccessException ex) { return ForbiddenResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 }

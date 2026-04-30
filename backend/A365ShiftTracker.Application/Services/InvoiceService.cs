@@ -1,117 +1,168 @@
-using A365ShiftTracker.Application.DTOs;
+﻿using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
 using A365ShiftTracker.Domain.Common;
 using A365ShiftTracker.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.Extensions.Logging;
 namespace A365ShiftTracker.Application.Services;
 
 public class InvoiceService : IInvoiceService
 {
     private readonly IUnitOfWork _uow;
 
-    public InvoiceService(IUnitOfWork uow)
+    private readonly ILogger<InvoiceService> _logger;
+
+    public InvoiceService(IUnitOfWork uow, ILogger<InvoiceService> logger)
     {
+        _logger = logger;
         _uow = uow;
     }
 
     public async Task<PagedResult<InvoiceDto>> GetAllAsync(int orgId, int page, int pageSize)
     {
-        pageSize = Math.Clamp(pageSize, 1, 100);
-        page = Math.Max(1, page);
-        var query = _uow.Invoices.Query()
-            .AsNoTracking()
-            .Include(i => i.Milestone)
-            .Where(i => i.OrgId == orgId && !i.IsDeleted)
-            .OrderByDescending(i => i.CreatedAt);
-        var total = await query.CountAsync();
-        var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-        return new PagedResult<InvoiceDto>
+        try
         {
-            Items = items.Select(MapToDto),
-            TotalCount = total,
-            Page = page,
-            PageSize = pageSize
-        };
+            pageSize = Math.Clamp(pageSize, 1, 100);
+            page = Math.Max(1, page);
+            var query = _uow.Invoices.Query()
+                .AsNoTracking()
+                .Include(i => i.Milestone)
+                .Where(i => i.OrgId == orgId && !i.IsDeleted)
+                .OrderByDescending(i => i.CreatedAt);
+            var total = await query.CountAsync();
+            var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+            return new PagedResult<InvoiceDto>
+            {
+                Items = items.Select(MapToDto),
+                TotalCount = total,
+                Page = page,
+                PageSize = pageSize
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in {Method}", nameof(GetAllAsync));
+            throw;
+        }
     }
 
     public async Task<InvoiceDto?> GetByIdAsync(int id, int orgId)
     {
-        var item = await _uow.Invoices.Query()
-            .Include(i => i.Milestone)
-            .FirstOrDefaultAsync(i => i.Id == id && i.OrgId == orgId);
-        return item == null ? null : MapToDto(item);
+        try
+        {
+            var item = await _uow.Invoices.Query()
+                .Include(i => i.Milestone)
+                .FirstOrDefaultAsync(i => i.Id == id && i.OrgId == orgId);
+            return item == null ? null : MapToDto(item);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in {Method}", nameof(GetByIdAsync));
+            throw;
+        }
     }
 
     public async Task<InvoiceDto> CreateAsync(CreateInvoiceRequest req, int userId, int orgId)
     {
-        // Generate invoice number: INV-{YYYY}-{sequential padded to 4}
-        var existingCount = await _uow.Invoices.Query().CountAsync(i => i.OrgId == orgId);
-        var number = $"INV-{DateTime.UtcNow.Year}-{(existingCount + 1):D4}";
-
-        var entity = new Invoice
+        try
         {
-            UserId = userId,
-            OrgId = orgId,
-            InvoiceNumber = number,
-            ProjectFinanceId = req.ProjectFinanceId,
-            MilestoneId = req.MilestoneId,
-            ClientName = req.ClientName,
-            ClientAddress = req.ClientAddress,
-            ClientGstin = req.ClientGstin,
-            DueDate = req.DueDate,
-            SubTotal = req.SubTotal,
-            TaxAmount = req.TaxAmount,
-            TotalAmount = req.TotalAmount,
-            Currency = req.Currency,
-            Notes = req.Notes
-        };
-
-        await _uow.Invoices.AddAsync(entity);
-        await _uow.SaveChangesAsync();
-        return MapToDto(entity);
+            // Generate invoice number: INV-{YYYY}-{sequential padded to 4}
+            var existingCount = await _uow.Invoices.CountAsync(i => i.OrgId == orgId);
+            var number = $"INV-{DateTime.UtcNow.Year}-{(existingCount + 1):D4}";
+    
+            var entity = new Invoice
+            {
+                UserId = userId,
+                OrgId = orgId,
+                InvoiceNumber = number,
+                ProjectFinanceId = req.ProjectFinanceId,
+                MilestoneId = req.MilestoneId,
+                ClientName = req.ClientName,
+                ClientAddress = req.ClientAddress,
+                ClientGstin = req.ClientGstin,
+                DueDate = req.DueDate,
+                SubTotal = req.SubTotal,
+                TaxAmount = req.TaxAmount,
+                TotalAmount = req.TotalAmount,
+                Currency = req.Currency,
+                Notes = req.Notes
+            };
+    
+            await _uow.Invoices.AddAsync(entity);
+            await _uow.SaveChangesAsync();
+            return MapToDto(entity);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in {Method}", nameof(CreateAsync));
+            throw;
+        }
     }
 
     public async Task<InvoiceDto?> UpdateStatusAsync(int id, UpdateInvoiceRequest req, int userId, int orgId)
     {
-        var entity = await _uow.Invoices.Query()
-            .Include(i => i.Milestone)
-            .FirstOrDefaultAsync(i => i.Id == id && i.OrgId == orgId);
-        if (entity == null) return null;
-
-        entity.Status = req.Status;
-        entity.Notes = req.Notes ?? entity.Notes;
-        entity.PdfUrl = req.PdfUrl ?? entity.PdfUrl;
-        entity.DueDate = req.DueDate ?? entity.DueDate;
-
-        // If marking Paid, update the milestone PaidDate
-        if (req.Status == "Paid" && entity.Milestone != null && entity.Milestone.PaidDate == null)
+        try
         {
-            entity.Milestone.PaidDate = DateTime.UtcNow;
+            var entity = await _uow.Invoices.Query()
+                .Include(i => i.Milestone)
+                .FirstOrDefaultAsync(i => i.Id == id && i.OrgId == orgId);
+            if (entity == null) return null;
+    
+            entity.Status = req.Status;
+            entity.Notes = req.Notes ?? entity.Notes;
+            entity.PdfUrl = req.PdfUrl ?? entity.PdfUrl;
+            entity.DueDate = req.DueDate ?? entity.DueDate;
+    
+            // If marking Paid, update the milestone PaidDate
+            if (req.Status == "Paid" && entity.Milestone != null && entity.Milestone.PaidDate == null)
+            {
+                entity.Milestone.PaidDate = DateTime.UtcNow;
+            }
+    
+            await _uow.SaveChangesAsync();
+            return MapToDto(entity);
         }
-
-        await _uow.SaveChangesAsync();
-        return MapToDto(entity);
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in {Method}", nameof(UpdateStatusAsync));
+            throw;
+        }
     }
 
     public async Task<bool> DeleteAsync(int id, int userId, int orgId)
     {
-        var entity = await _uow.Invoices.Query()
-            .FirstOrDefaultAsync(i => i.Id == id && i.OrgId == orgId);
-        if (entity == null) return false;
-        await _uow.Invoices.DeleteAsync(entity);
-        await _uow.SaveChangesAsync();
-        return true;
+        try
+        {
+            var entity = await _uow.Invoices.Query()
+                .FirstOrDefaultAsync(i => i.Id == id && i.OrgId == orgId);
+            if (entity == null) return false;
+            await _uow.Invoices.DeleteAsync(entity);
+            await _uow.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in {Method}", nameof(DeleteAsync));
+            throw;
+        }
     }
 
     public async Task<List<InvoiceDto>> GetByProjectFinanceAsync(int projectFinanceId, int orgId)
     {
-        var items = await _uow.Invoices.Query()
-            .Where(i => i.ProjectFinanceId == projectFinanceId && i.OrgId == orgId)
-            .Include(i => i.Milestone)
-            .OrderByDescending(i => i.InvoiceDate)
-            .ToListAsync();
-        return items.Select(MapToDto).ToList();
+        try
+        {
+            var items = await _uow.Invoices.Query()
+                .Where(i => i.ProjectFinanceId == projectFinanceId && i.OrgId == orgId)
+                .Include(i => i.Milestone)
+                .OrderByDescending(i => i.InvoiceDate)
+                .ToListAsync();
+            return items.Select(MapToDto).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in {Method}", nameof(DeleteAsync));
+            throw;
+        }
     }
 
     private static InvoiceDto MapToDto(Invoice i) => new()
@@ -137,3 +188,4 @@ public class InvoiceService : IInvoiceService
         MilestonePercentage = i.Milestone?.Percentage,
     };
 }
+

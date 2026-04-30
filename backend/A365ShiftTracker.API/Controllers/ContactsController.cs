@@ -1,4 +1,4 @@
-using A365ShiftTracker.Application.Common;
+﻿using A365ShiftTracker.Application.Common;
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
 using A365ShiftTracker.Domain.Common;
@@ -26,117 +26,193 @@ public class ContactsController : BaseApiController
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 25)
     {
-        var orgId = GetCurrentOrgId() ?? 0;
-        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
-        var result = await _service.GetAllAsync(orgId, page, pageSize);
-        return Ok(ApiResponse<PagedResult<ContactDto>>.Ok(result));
+        try
+        {
+            var orgId = GetCurrentOrgId() ?? 0;
+            if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
+            var result = await _service.GetAllAsync(orgId, page, pageSize);
+            return Ok(ApiResponse<PagedResult<ContactDto>>.Ok(result));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpGet("vendors")]
     public async Task<ActionResult<ApiResponse<IEnumerable<ContactDto>>>> GetVendors()
     {
-        var orgId = GetCurrentOrgId() ?? 0;
-        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
-        var result = await _service.GetVendorsAsync(orgId);
-        return Ok(ApiResponse<IEnumerable<ContactDto>>.Ok(result));
+        try
+        {
+            var orgId = GetCurrentOrgId() ?? 0;
+            if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
+            var result = await _service.GetVendorsAsync(orgId);
+            return Ok(ApiResponse<IEnumerable<ContactDto>>.Ok(result));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost]
     public async Task<ActionResult<ApiResponse<ContactDto>>> Create(CreateContactRequest request)
     {
-        var userId = GetCurrentUserId();
-        var orgId = GetCurrentOrgId() ?? 0;
-        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
-        var (allowed, current, limit) = await _limits.CheckLimitAsync(userId, "Contacts");
-        if (!allowed)
-            return StatusCode(402, ApiResponse<object>.Fail($"Contact limit reached ({current}/{limit}). Please upgrade your plan."));
-        var result = await _service.CreateAsync(request, userId, orgId);
-        return Ok(ApiResponse<ContactDto>.Ok(result, "Contact created."));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var orgId = GetCurrentOrgId() ?? 0;
+            if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
+            var (allowed, current, limit) = await _limits.CheckLimitAsync(userId, "Contacts");
+            if (!allowed)
+                return StatusCode(402, ApiResponse<object>.Fail($"Contact limit reached ({current}/{limit}). Please upgrade your plan."));
+            var result = await _service.CreateAsync(request, userId, orgId);
+            return Ok(ApiResponse<ContactDto>.Ok(result, "Contact created."));
+        }
+        catch (InvalidOperationException ex) { return BadRequestResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPut("{id}")]
     public async Task<ActionResult<ApiResponse<ContactDto>>> Update(int id, UpdateContactRequest request)
     {
-        var userId = GetCurrentUserId();
-        var orgId = GetCurrentOrgId() ?? 0;
-        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
-        var result = await _service.UpdateAsync(id, request, userId, orgId);
-        return Ok(ApiResponse<ContactDto>.Ok(result, "Contact updated."));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var orgId = GetCurrentOrgId() ?? 0;
+            if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
+            var result = await _service.UpdateAsync(id, request, userId, orgId);
+            return Ok(ApiResponse<ContactDto>.Ok(result, "Contact updated."));
+        }
+        catch (KeyNotFoundException ex) { return NotFoundResult(ex.Message); }
+        catch (UnauthorizedAccessException ex) { return ForbiddenResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpDelete("{id}")]
     public async Task<ActionResult<ApiResponse<bool>>> Delete(int id)
     {
-        var userId = GetCurrentUserId();
-        var orgId = GetCurrentOrgId() ?? 0;
-        if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
-        await _service.DeleteAsync(id, userId, orgId);
-        return Ok(ApiResponse<bool>.Ok(true, "Contact deleted."));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var orgId = GetCurrentOrgId() ?? 0;
+            if (orgId == 0) return BadRequest(ApiResponse<object>.Fail("User must belong to an organization."));
+            await _service.DeleteAsync(id, userId, orgId);
+            return Ok(ApiResponse<bool>.Ok(true, "Contact deleted."));
+        }
+        catch (KeyNotFoundException ex) { return NotFoundResult(ex.Message); }
+        catch (UnauthorizedAccessException ex) { return ForbiddenResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
-    // ─── Columns (shared across users) ───────────────────
+    // ─── Columns (per-org) ───────────────────────────────
     [HttpGet("columns")]
     public async Task<ActionResult<ApiResponse<IEnumerable<ContactColumnDto>>>> GetColumns()
     {
-        var result = await _service.GetColumnsAsync();
-        return Ok(ApiResponse<IEnumerable<ContactColumnDto>>.Ok(result));
+        try
+        {
+            var orgId = GetRequiredOrgId();
+            var result = await _service.GetColumnsAsync(orgId);
+            return Ok(ApiResponse<IEnumerable<ContactColumnDto>>.Ok(result));
+        }
+        catch (UnauthorizedAccessException ex) { return ForbiddenResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost("columns")]
     public async Task<ActionResult<ApiResponse<IEnumerable<ContactColumnDto>>>> SaveColumns(SaveContactColumnsRequest request)
     {
-        var result = await _service.SaveColumnsAsync(request.Columns);
-        return Ok(ApiResponse<IEnumerable<ContactColumnDto>>.Ok(result, "Columns saved."));
+        try
+        {
+            var orgId = GetRequiredOrgId();
+            var result = await _service.SaveColumnsAsync(orgId, request.Columns);
+            return Ok(ApiResponse<IEnumerable<ContactColumnDto>>.Ok(result, "Columns saved."));
+        }
+        catch (UnauthorizedAccessException ex) { return ForbiddenResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost("columns/add")]
     public async Task<ActionResult<ApiResponse<ContactColumnDto>>> AddColumn(CreateContactColumnRequest request)
     {
-        var result = await _service.AddColumnAsync(request);
-        return Ok(ApiResponse<ContactColumnDto>.Ok(result, "Column added."));
+        try
+        {
+            var orgId = GetRequiredOrgId();
+            var result = await _service.AddColumnAsync(orgId, request);
+            return Ok(ApiResponse<ContactColumnDto>.Ok(result, "Column added."));
+        }
+        catch (UnauthorizedAccessException ex) { return ForbiddenResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPut("columns/{colId}")]
     public async Task<ActionResult<ApiResponse<ContactColumnDto>>> UpdateColumn(string colId, UpdateContactColumnRequest request)
     {
-        var result = await _service.UpdateColumnAsync(colId, request);
-        return Ok(ApiResponse<ContactColumnDto>.Ok(result, "Column updated."));
+        try
+        {
+            var orgId = GetRequiredOrgId();
+            var result = await _service.UpdateColumnAsync(orgId, colId, request);
+            return Ok(ApiResponse<ContactColumnDto>.Ok(result, "Column updated."));
+        }
+        catch (KeyNotFoundException ex) { return NotFoundResult(ex.Message); }
+        catch (UnauthorizedAccessException ex) { return ForbiddenResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpDelete("columns/{colId}")]
     public async Task<ActionResult<ApiResponse<bool>>> DeleteColumn(string colId)
     {
-        await _service.DeleteColumnAsync(colId);
-        return Ok(ApiResponse<bool>.Ok(true, "Column deleted."));
+        try
+        {
+            var orgId = GetRequiredOrgId();
+            await _service.DeleteColumnAsync(orgId, colId);
+            return Ok(ApiResponse<bool>.Ok(true, "Column deleted."));
+        }
+        catch (KeyNotFoundException ex) { return NotFoundResult(ex.Message); }
+        catch (UnauthorizedAccessException ex) { return ForbiddenResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost("columns/reorder")]
     public async Task<ActionResult<ApiResponse<bool>>> ReorderColumns(ReorderContactColumnsRequest request)
     {
-        await _service.ReorderColumnsAsync(request.OrderedColIds);
-        return Ok(ApiResponse<bool>.Ok(true, "Columns reordered."));
+        try
+        {
+            var orgId = GetRequiredOrgId();
+            await _service.ReorderColumnsAsync(orgId, request.OrderedColIds);
+            return Ok(ApiResponse<bool>.Ok(true, "Columns reordered."));
+        }
+        catch (UnauthorizedAccessException ex) { return ForbiddenResult(ex.Message); }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     // ─── Vendor Responses ──────────────────────────────
     [HttpGet("{vendorId}/responses")]
     public async Task<ActionResult<ApiResponse<IEnumerable<VendorResponseDto>>>> GetVendorResponses(int vendorId)
     {
-        var result = await _service.GetVendorResponsesAsync(vendorId);
-        return Ok(ApiResponse<IEnumerable<VendorResponseDto>>.Ok(result));
+        try
+        {
+            var result = await _service.GetVendorResponsesAsync(vendorId);
+            return Ok(ApiResponse<IEnumerable<VendorResponseDto>>.Ok(result));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     [HttpPost("responses")]
     public async Task<ActionResult<ApiResponse<VendorResponseDto>>> CreateVendorResponse(CreateVendorResponseRequest request)
     {
-        var result = await _service.CreateVendorResponseAsync(request);
-        return Ok(ApiResponse<VendorResponseDto>.Ok(result, "Vendor response created."));
+        try
+        {
+            var result = await _service.CreateVendorResponseAsync(request);
+            return Ok(ApiResponse<VendorResponseDto>.Ok(result, "Vendor response created."));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 
     // ─── Vendor Emails ─────────────────────────────────
     [HttpPost("emails")]
     public async Task<ActionResult<ApiResponse<VendorEmailDto>>> SaveEmailSent(CreateVendorEmailRequest request)
     {
-        var result = await _service.SaveEmailSentAsync(request);
-        return Ok(ApiResponse<VendorEmailDto>.Ok(result, "Email saved."));
+        try
+        {
+            var result = await _service.SaveEmailSentAsync(request);
+            return Ok(ApiResponse<VendorEmailDto>.Ok(result, "Email saved."));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 }
+

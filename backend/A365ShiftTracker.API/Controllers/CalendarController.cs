@@ -1,4 +1,4 @@
-using A365ShiftTracker.Application.Common;
+﻿using A365ShiftTracker.Application.Common;
 using A365ShiftTracker.Application.DTOs;
 using A365ShiftTracker.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -19,8 +19,13 @@ public class CalendarController : BaseApiController
     public async Task<ActionResult<ApiResponse<CalendarDataDto>>> GetEvents(
         [FromQuery] int month, [FromQuery] int year)
     {
-        var userId = GetCurrentUserId();
-        var result = await _service.GetEventsAsync(userId, month, year);
-        return Ok(ApiResponse<CalendarDataDto>.Ok(result));
+        try
+        {
+            var userId = GetCurrentUserId();
+            var result = await _service.GetEventsAsync(userId, month, year);
+            return Ok(ApiResponse<CalendarDataDto>.Ok(result));
+        }
+        catch (Exception ex) { return InternalError(ex); }
     }
 }
+

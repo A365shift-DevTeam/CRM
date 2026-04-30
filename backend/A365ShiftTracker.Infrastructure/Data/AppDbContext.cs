@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using System.Threading.Channels;
 using A365ShiftTracker.Domain.Common;
 using A365ShiftTracker.Domain.Entities;
@@ -86,7 +87,9 @@ public class AppDbContext : DbContext
         var encKey = _configuration?["Encryption:Key"];
         if (string.IsNullOrWhiteSpace(encKey))
             encKey = new string('x', 32);
+#pragma warning disable CS8619
         var strConv = new EncryptedStringConverter(encKey);
+#pragma warning restore CS8619
         var decConv = new EncryptedDecimalConverter(encKey);
         var decNullConv = new EncryptedNullableDecimalConverter(encKey);
 
@@ -480,11 +483,13 @@ public class AppDbContext : DbContext
                 var orgIdProp = System.Linq.Expressions.Expression.Property(param, "OrgId");
                 var currentOrgIdExpr = System.Linq.Expressions.Expression.Property(thisConst, nameof(CurrentOrgId));
 
-                // CurrentOrgId is int? — unwrap: HasValue && OrgId == Value
-                var hasValue = System.Linq.Expressions.Expression.Property(currentOrgIdExpr, "HasValue");
-                var value = System.Linq.Expressions.Expression.Property(currentOrgIdExpr, "Value");
-                var orgEquals = System.Linq.Expressions.Expression.AndAlso(hasValue,
-                    System.Linq.Expressions.Expression.Equal(orgIdProp, value));
+                // CurrentOrgId is int? — coalesce to 0 (no real org has ID 0) so .Value
+                // is never accessed on a null, which avoids InvalidOperationException
+                // during login before the JWT is present in the HTTP context.
+                var safeOrgId = System.Linq.Expressions.Expression.Coalesce(
+                    currentOrgIdExpr,
+                    System.Linq.Expressions.Expression.Constant(0));
+                var orgEquals = System.Linq.Expressions.Expression.Equal(orgIdProp, safeOrgId);
                 var orgFilter = System.Linq.Expressions.Expression.OrElse(isSuperAdminExpr, orgEquals);
 
                 combined = combined != null
@@ -537,14 +542,16 @@ public class AppDbContext : DbContext
                     entry.Entity.UpdatedByName = userName;
                 }
 
+                var entityNameForCreate = entry.Entity.GetType().Name;
                 auditEntries.Add(new AuditLog
                 {
-                    EntityName = entry.Entity.GetType().Name,
+                    EntityName = entityNameForCreate,
                     EntityId = 0,
                     FieldName = "_record",
                     OldValue = null,
                     NewValue = "created",
                     Action = "Created",
+                    Description = BuildDescription("Created", entityNameForCreate, "_record", null, null),
                     ChangedByUserId = userId ?? 0,
                     ChangedByName = userName,
                     ChangedAt = now,
@@ -563,14 +570,16 @@ public class AppDbContext : DbContext
                     entry.Entity.DeletedByUserId = userId;
                     entry.Entity.DeletedByName = userName;
 
+                    var entityNameForDelete = entry.Entity.GetType().Name;
                     auditEntries.Add(new AuditLog
                     {
-                        EntityName = entry.Entity.GetType().Name,
+                        EntityName = entityNameForDelete,
                         EntityId = entry.Entity.Id,
                         FieldName = "_record",
                         OldValue = "existed",
                         NewValue = null,
                         Action = "Deleted",
+                        Description = BuildDescription("Deleted", entityNameForDelete, "_record", null, null),
                         ChangedByUserId = userId ?? 0,
                         ChangedByName = userName,
                         ChangedAt = now,
@@ -589,6 +598,7 @@ public class AppDbContext : DbContext
                     var skipFields = new HashSet<string>(softDeleteFields)
                         { "UpdatedAt", "UpdatedByUserId", "UpdatedByName" };
 
+                    var entityNameForUpdate = entry.Entity.GetType().Name;
                     foreach (var prop in entry.Properties
                         .Where(p => p.IsModified && !skipFields.Contains(p.Metadata.Name)))
                     {
@@ -596,14 +606,16 @@ public class AppDbContext : DbContext
                         var newVal = prop.CurrentValue?.ToString();
                         if (oldVal == newVal) continue;
 
+                        var propName = prop.Metadata.Name;
                         auditEntries.Add(new AuditLog
                         {
-                            EntityName = entry.Entity.GetType().Name,
+                            EntityName = entityNameForUpdate,
                             EntityId = entry.Entity.Id,
-                            FieldName = prop.Metadata.Name,
+                            FieldName = GetFieldLabel(propName),
                             OldValue = oldVal,
                             NewValue = newVal,
                             Action = "Updated",
+                            Description = BuildDescription("Updated", entityNameForUpdate, propName, oldVal, newVal),
                             ChangedByUserId = userId ?? 0,
                             ChangedByName = userName,
                             ChangedAt = now,
@@ -614,14 +626,16 @@ public class AppDbContext : DbContext
             }
             else if (entry.State == EntityState.Deleted)
             {
+                var entityNameForHardDelete = entry.Entity.GetType().Name;
                 auditEntries.Add(new AuditLog
                 {
-                    EntityName = entry.Entity.GetType().Name,
+                    EntityName = entityNameForHardDelete,
                     EntityId = entry.Entity.Id,
                     FieldName = "_record",
                     OldValue = "existed",
                     NewValue = null,
                     Action = "Deleted",
+                    Description = BuildDescription("Deleted", entityNameForHardDelete, "_record", null, null),
                     ChangedByUserId = userId ?? 0,
                     ChangedByName = userName,
                     ChangedAt = now,
@@ -694,4 +708,111 @@ public class AppDbContext : DbContext
     private static string ToSnakeCase(string name) =>
         string.Concat(name.Select((c, i) =>
             i > 0 && char.IsUpper(c) ? "_" + c.ToString().ToLower() : c.ToString().ToLower()));
+
+    // ─── Audit description helpers ─────────────────────────────────
+    private static readonly Dictionary<string, string> _fieldLabels = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["JobTitle"]           = "Job Title",
+        ["ClientAddress"]      = "Client Address",
+        ["ClientCountry"]      = "Country",
+        ["InternationalTaxId"] = "International Tax ID",
+        ["MsmeStatus"]         = "MSME Status",
+        ["TdsSection"]         = "TDS Section",
+        ["TdsRate"]            = "TDS Rate",
+        ["EntityType"]         = "Entity Type",
+        ["CompanyId"]          = "Company",
+        ["UserId"]             = "User",
+        ["OrgId"]              = "Organization",
+        ["IsDeleted"]          = "Deleted",
+        ["CreatedAt"]          = "Created At",
+        ["UpdatedAt"]          = "Updated At",
+        ["AssignedToUserId"]   = "Assigned To",
+        ["AssignedToName"]     = "Assigned To",
+        ["DueDate"]            = "Due Date",
+        ["ResolvedAt"]         = "Resolved At",
+        ["ClosedAt"]           = "Closed At",
+        ["IsAiGenerated"]      = "AI Generated",
+        ["AiSource"]           = "AI Source",
+        ["AiConfidence"]       = "AI Confidence",
+        ["AiRawInput"]         = "AI Input",
+        ["TicketNumber"]       = "Ticket Number",
+        ["ContactId"]          = "Contact",
+        ["ProjectId"]          = "Project",
+        ["LeadId"]             = "Lead",
+        ["InvoiceId"]          = "Invoice",
+        ["ReceiptUrl"]         = "Receipt",
+        ["ProjectDepartment"]  = "Project / Department",
+        ["EmployeeName"]       = "Employee",
+        ["StartTime"]          = "Start Time",
+        ["EndTime"]            = "End Time",
+        ["HoursWorked"]        = "Hours Worked",
+        ["BillableHours"]      = "Billable Hours",
+        ["ExpiryDate"]         = "Expiry Date",
+        ["SignedAt"]           = "Signed At",
+        ["FileUrl"]            = "File",
+        ["InvoiceNumber"]      = "Invoice Number",
+        ["SubTotal"]           = "Sub Total",
+        ["TaxAmount"]          = "Tax Amount",
+        ["TotalAmount"]        = "Total Amount",
+        ["ClientName"]         = "Client Name",
+        ["ClientGstin"]        = "Client GSTIN",
+        ["IsTotpEnabled"]      = "TOTP Enabled",
+        ["TwoFactorRequired"]  = "2FA Required",
+        ["TwoFactorMethod"]    = "2FA Method",
+        ["IsFirstLogin"]       = "First Login",
+        ["IsActive"]           = "Active",
+        ["PasswordHash"]       = "Password",
+        ["PermissionCode"]     = "Permission",
+        ["ColId"]              = "Column ID",
+        ["ProductStages"]      = "Product Stages",
+        ["ServiceStages"]      = "Service Stages",
+        ["DeliveryStages"]     = "Delivery Stages",
+        ["FinanceStages"]      = "Finance Stages",
+        ["LegalStages"]        = "Legal Stages",
+        ["ProductLabel"]       = "Product Label",
+        ["ServiceLabel"]       = "Service Label",
+        ["TrialEndsAt"]        = "Trial Ends At",
+        ["SuspendedAt"]        = "Suspended At",
+        ["UserLimit"]          = "User Limit",
+        ["MatchScore"]         = "Match Score",
+        ["MatchLabel"]         = "Match Label",
+        ["MatchPercentage"]    = "Match Percentage",
+    };
+
+    private static string GetFieldLabel(string propName)
+    {
+        if (_fieldLabels.TryGetValue(propName, out var label)) return label;
+        // Split PascalCase: "JobTitle" → "Job Title", "GSTIN" stays "GSTIN"
+        return Regex.Replace(propName, @"(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", " ");
+    }
+
+    private static string BuildDescription(string action, string entityName, string fieldName, string? oldValue, string? newValue)
+    {
+        var entity = Regex.Replace(entityName, @"(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", " ");
+
+        if (fieldName == "_record")
+        {
+            return action switch
+            {
+                "Created" => $"{entity} was created",
+                "Deleted" => $"{entity} was deleted",
+                _         => $"{entity} was {action.ToLower()}"
+            };
+        }
+
+        var label = GetFieldLabel(fieldName);
+
+        if (action == "Updated")
+        {
+            if (!string.IsNullOrEmpty(oldValue) && !string.IsNullOrEmpty(newValue))
+                return $"{label} was changed";
+            if (!string.IsNullOrEmpty(newValue))
+                return $"{label} was set";
+            if (!string.IsNullOrEmpty(oldValue))
+                return $"{label} was cleared";
+            return $"{label} was updated";
+        }
+
+        return $"{label} was {action.ToLower()}";
+    }
 }
