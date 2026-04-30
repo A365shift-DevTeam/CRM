@@ -3,7 +3,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import {
-  FaChartColumn, FaUserGroup, FaClock, FaRightFromBracket, FaHouse,
+  FaChartColumn, FaUserGroup, FaClock, FaPowerOff, FaHouse,
   FaMoneyBillWave, FaListCheck, FaFileInvoice, FaBars, FaXmark,
   FaBrain, FaShieldHalved, FaArrowUpFromBracket, FaChevronDown, FaChevronUp,
   FaGear, FaCircleInfo,
@@ -103,18 +103,18 @@ export default function MainLayout() {
     {
       title: 'Operations',
       items: [
-        { path: '/finance',   icon: <FaMoneyBillWave size={14} />, label: 'Finance',      permission: 'finance.view' },
-        { path: '/invoice',   icon: <FaFileInvoiceDollar size={14} />,   label: 'Deal Finance', permission: 'invoice.view' },
-        { path: '/legal',     icon: <FaScaleBalanced size={14} />,   label: 'Legal',        permission: 'invoice.view' },
-        { path: '/documents', icon: <FaFolderOpen size={14} />,   label: 'Documents',    permission: 'documents.view' },
-        { path: '/calendar',  icon: <FaCalendarDays size={14} />,         label: 'Calendar',     permission: 'calendar.view' },
-        { path: '/tickets',   icon: <FaTicket size={14} />,     label: 'Tickets',      permission: 'notifications.view', orgAdminOnly: true },
+        { path: '/finance', icon: <FaMoneyBillWave size={14} />, label: 'Finance', permission: 'finance.view' },
+        { path: '/invoice', icon: <FaFileInvoiceDollar size={14} />, label: 'Deal Finance', permission: 'invoice.view' },
+        { path: '/legal', icon: <FaScaleBalanced size={14} />, label: 'Legal', permission: 'invoice.view' },
+        { path: '/documents', icon: <FaFolderOpen size={14} />, label: 'Documents', permission: 'documents.view' },
+        { path: '/calendar', icon: <FaCalendarDays size={14} />, label: 'Calendar', permission: 'calendar.view' },
+        { path: '/tickets', icon: <FaTicket size={14} />, label: 'Tickets', permission: 'notifications.view', orgAdminOnly: true },
       ],
     },
     {
       title: 'Reports',
       items: [
-        { path: '/reports',   icon: <FaChartPie size={14} />,   label: 'Reports',      permission: 'reports.view' },
+        { path: '/reports', icon: <FaChartPie size={14} />, label: 'Reports', permission: 'reports.view' },
       ],
     },
     {
@@ -227,13 +227,13 @@ export default function MainLayout() {
           flexShrink: 0,
           background: `linear-gradient(135deg, ${hexToRgba(themeColor, 0.06)} 0%, rgba(255,255,255,0) 100%)`,
         }}>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: sidebarOpen ? 'space-between' : 'center', 
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: sidebarOpen ? 'space-between' : 'center',
             flexDirection: sidebarOpen ? 'row' : 'column',
             gap: sidebarOpen ? '0' : '16px',
-            padding: sidebarOpen ? '0' : '0' 
+            padding: sidebarOpen ? '0' : '0'
           }}>
             {sidebarOpen && (
               <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
@@ -260,7 +260,7 @@ export default function MainLayout() {
                 </div>
               </Link>
             )}
-            
+
             {/* Hamburger */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -413,67 +413,35 @@ export default function MainLayout() {
           </div>
         </nav>
 
-        {/* Profile Footer */}
-        <div style={{ padding: sidebarOpen ? '12px' : '12px 8px', borderTop: '1px solid #EEF2F8', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          {currentUser && (
-            <Link
-              to="/settings"
-              title="Settings"
-              style={{
-                display: 'flex', alignItems: 'center', gap: '10px',
-                padding: sidebarOpen ? '10px 12px' : '8px', marginBottom: '8px',
-                justifyContent: sidebarOpen ? 'flex-start' : 'center',
-                width: '100%',
-                background: location.pathname === '/settings' ? hexToRgba(themeColor, 0.07) : '#F8FAFC',
-                border: `1px solid ${location.pathname === '/settings' ? hexToRgba(themeColor, 0.14) : '#E1E8F4'}`,
-                borderRadius: '12px', textDecoration: 'none', transition: 'all 0.2s',
-              }}
-            >
-              <div style={{
-                width: '36px', height: '36px', borderRadius: '10px',
-                background: `linear-gradient(135deg, ${themeColor}, ${hexToRgba(themeColor, 0.65)})`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', fontWeight: 800, fontSize: '12px',
-                fontFamily: 'Outfit, sans-serif',
-                boxShadow: `0 3px 10px ${hexToRgba(themeColor, 0.28)}`,
-                flexShrink: 0,
-              }}>
-                {userInitials}
-              </div>
-              {sidebarOpen && (
-                <>
-                  <div style={{ overflow: 'hidden', flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: '13px', color: '#0F172A', fontFamily: 'DM Sans, sans-serif', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {currentUser.displayName || 'User'}
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#94A3B8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '1px' }}>
-                      {currentUser.email}
-                    </div>
-                  </div>
-                  <FaGear size={12} style={{ color: '#94A3B8', flexShrink: 0 }} />
-                </>
-              )}
-            </Link>
-          )}
-          <button
-            onClick={handleLogout}
-            title="Sign Out"
+        {/* Settings Link */}
+        <div style={{ padding: sidebarOpen ? '8px 12px 12px' : '8px 8px 12px', borderTop: '1px solid #EEF2F8', flexShrink: 0 }}>
+          <Link
+            to="/settings"
+            title="Settings"
             style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              width: '100%', padding: sidebarOpen ? '9px' : '9px 0',
-              background: 'rgba(244, 63, 94, 0.06)',
-              border: '1px solid rgba(244, 63, 94, 0.14)',
-              borderRadius: '10px', color: '#E11D48',
-              fontWeight: 600, fontSize: '13px',
+              display: 'flex', alignItems: 'center', gap: '10px',
+              padding: sidebarOpen ? '8px 12px' : '8px',
+              justifyContent: sidebarOpen ? 'flex-start' : 'center',
+              borderRadius: '9px',
+              textDecoration: 'none',
+              color: location.pathname === '/settings' ? themeColor : '#64748B',
+              background: location.pathname === '/settings' ? hexToRgba(themeColor, 0.09) : 'transparent',
+              border: `1px solid ${location.pathname === '/settings' ? hexToRgba(themeColor, 0.14) : 'transparent'}`,
+              fontWeight: location.pathname === '/settings' ? 700 : 500,
+              fontSize: '13px',
               fontFamily: 'DM Sans, sans-serif',
-              cursor: 'pointer', transition: 'all 0.15s',
+              transition: 'all 0.15s',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(244, 63, 94, 0.1)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(244, 63, 94, 0.06)'; }}
           >
-            <FaRightFromBracket size={13} />
-            {sidebarOpen && <span>Sign Out</span>}
-          </button>
+            <div style={{
+              width: '26px', height: '26px', borderRadius: '7px',
+              background: location.pathname === '/settings' ? hexToRgba(themeColor, 0.12) : '#F1F5F9',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <FaGear size={13} style={{ color: location.pathname === '/settings' ? themeColor : '#94A3B8' }} />
+            </div>
+            {sidebarOpen && <span>Settings</span>}
+          </Link>
         </div>
       </div>
 
@@ -485,6 +453,82 @@ export default function MainLayout() {
           overflow: 'hidden',
         }}>
 
+          {/* ── Topbar ── */}
+          <div style={{
+            background: 'rgba(255,255,255,0.88)',
+            backdropFilter: 'blur(12px)',
+            borderBottom: '1px solid #E1E8F4',
+            padding: '10px 28px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
+            flexShrink: 0,
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
+          }}>
+            <div style={{ flex: 1 }}>
+              <h1 style={{
+                fontSize: '17px', fontWeight: 800, color: '#0F172A',
+                fontFamily: 'Outfit, sans-serif', letterSpacing: '-0.5px',
+                margin: 0, lineHeight: 1,
+              }}>{currentPageLabel}</h1>
+            </div>
+
+            <div style={{ width: '1px', height: '28px', background: '#E1E8F4', flexShrink: 0 }} />
+
+            <Link to="/settings" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', flexShrink: 0 }}>
+              <div style={{
+                width: '32px', height: '32px', borderRadius: '8px',
+                background: `linear-gradient(135deg, ${themeColor}, ${hexToRgba(themeColor, 0.65)})`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#fff', fontWeight: 800, fontSize: '12px',
+                fontFamily: 'Outfit, sans-serif', flexShrink: 0,
+              }}>
+                {userInitials}
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{
+                  fontSize: '12.5px', fontWeight: 700, color: '#0F172A',
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  maxWidth: '140px', lineHeight: 1.2,
+                }}>
+                  {currentUser?.displayName || currentUser?.email || 'User'}
+                </div>
+                <div style={{
+                  fontSize: '10px', fontWeight: 600, color: themeColor,
+                  textTransform: 'uppercase', letterSpacing: '0.05em', lineHeight: 1.2,
+                }}>
+                  {currentUser?.role === 'ORG_ADMIN' ? 'Admin' : currentUser?.role === 'MANAGER' ? 'Manager' : 'Member'}
+                </div>
+              </div>
+            </Link>
+
+            <button
+              onClick={handleLogout}
+              title="Sign out"
+              className="main-topbar-power-btn"
+              style={{
+                width: '34px', height: '34px', borderRadius: '9px',
+                border: '1.5px solid #E1E8F4', background: 'transparent',
+                color: '#94A3B8', cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.18s ease', flexShrink: 0,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#E11D48';
+                e.currentTarget.style.borderColor = 'rgba(225,29,72,0.3)';
+                e.currentTarget.style.background = 'rgba(225,29,72,0.06)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#94A3B8';
+                e.currentTarget.style.borderColor = '#E1E8F4';
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              <FaPowerOff size={14} />
+            </button>
+          </div>
 
 
           {/* ── Scrollable Content ── */}
